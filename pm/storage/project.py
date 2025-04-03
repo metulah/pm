@@ -60,21 +60,38 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
     return project
 
 
-def delete_project(conn: sqlite3.Connection, project_id: str) -> bool:
-    """Delete a project by ID after checking for tasks."""
-    from .task import list_tasks  # Import list_tasks inside the function
-    # Check for existing tasks in this project
-    tasks = list_tasks(conn, project_id=project_id)
-    if tasks:
-        raise ProjectNotEmptyError(
-            f"Cannot delete project '{project_id}' because it still contains {len(tasks)} task(s)."
-        )
+def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = False) -> bool:
+    """Delete a project by ID. If force is True, deletes associated tasks first."""
+    # Imports moved inside function to avoid circular dependency issues
+    from .task import list_tasks, delete_task
 
-    # Proceed with deletion if no tasks found
+    tasks = list_tasks(conn, project_id=project_id)
+
+    if tasks:
+        if force:
+            # Force delete: Delete associated tasks first
+            # Use a transaction for task deletion for atomicity (optional but good practice)
+            with conn:
+                for task in tasks:
+                    # We might want more robust error handling here in the future
+                    # e.g., log failures but continue? For now, assume success or let it fail.
+                    delete_task(conn, task.id)
+            # Proceed to delete project after tasks are deleted
+        else:
+            # Not forcing and tasks exist: Raise error
+            raise ProjectNotEmptyError(
+                f"Cannot delete project '{project_id}' because it still contains {len(tasks)} task(s). Use --force to delete anyway."
+            )
+    # Else: No tasks found, or tasks were deleted because force=True
+
+    # Proceed with project deletion
     with conn:
         cursor = conn.execute(
-            "DELETE FROM projects WHERE id = ?", (project_id,)
-        )
+            "DELETE FROM projects WHERE id = ?", (project_id,))
+
+    # Return True if the project was found and deleted (rowcount > 0)
+    # This is true even if force=True and tasks were deleted first.
+    # It returns False only if the project ID didn't exist initially.
     return cursor.rowcount > 0
 
 

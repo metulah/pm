@@ -94,12 +94,15 @@ def project_update(project_id: str, name: Optional[str], description: Optional[s
 
 @project.command("delete")
 @click.argument("project_id")
-def project_delete(project_id: str):
+# Add force flag
+@click.option('--force', is_flag=True, default=False, help='Force delete project and all associated tasks.')
+def project_delete(project_id: str, force: bool):  # Add force to signature
     """Delete a project."""
     conn = get_db_connection()
     try:
         # Call the modified storage function
-        success = delete_project(conn, project_id)
+        success = delete_project(
+            conn, project_id, force=force)  # Pass force flag
         if success:
             click.echo(json_response(
                 "success", message=f"Project {project_id} deleted"))

@@ -14,52 +14,52 @@ def db_connection(tmp_path):
     conn.close()
 
 
-# def test_project_creation(db_connection):
-#     """Test creating and retrieving a project."""
-#     project = Project(
-#         id="test-project",
-#         name="Test Project",
-#         description="A test project"
-#     )
+def test_project_creation(db_connection):
+    """Test creating and retrieving a project."""
+    project = Project(
+        id="test-project",
+        name="Test Project",
+        description="A test project"
+    )
 
-#     # Test create_project
-#     from pm.storage import create_project
-#     created_project = create_project(db_connection, project)
-#     assert created_project.id == "test-project"
-#     assert created_project.name == "Test Project"
+    # Test create_project
+    from pm.storage import create_project
+    created_project = create_project(db_connection, project)
+    assert created_project.id == "test-project"
+    assert created_project.name == "Test Project"
 
-#     # Test get_project
-#     from pm.storage import get_project
-#     retrieved_project = get_project(db_connection, "test-project")
-#     assert retrieved_project.id == "test-project"
-#     assert retrieved_project.name == "Test Project"
+    # Test get_project
+    from pm.storage import get_project
+    retrieved_project = get_project(db_connection, "test-project")
+    assert retrieved_project.id == "test-project"
+    assert retrieved_project.name == "Test Project"
 
 
-# def test_task_creation(db_connection):
-#     """Test creating and retrieving a task."""
-#     # First create a project
-#     from pm.storage import create_project
-#     project = create_project(db_connection, Project(
-#         id="test-project",
-#         name="Test Project"
-#     ))
+def test_task_creation(db_connection):
+    """Test creating and retrieving a task."""
+    # First create a project
+    from pm.storage import create_project
+    project = create_project(db_connection, Project(
+        id="test-project",
+        name="Test Project"
+    ))
 
-#     # Test create_task
-#     from pm.storage import create_task
-#     task = Task(
-#         id="test-task",
-#         project_id="test-project",
-#         name="Test Task"
-#     )
-#     created_task = create_task(db_connection, task)
-#     assert created_task.id == "test-task"
-#     assert created_task.project_id == "test-project"
+    # Test create_task
+    from pm.storage import create_task
+    task = Task(
+        id="test-task",
+        project_id="test-project",
+        name="Test Task"
+    )
+    created_task = create_task(db_connection, task)
+    assert created_task.id == "test-task"
+    assert created_task.project_id == "test-project"
 
-#     # Test get_task
-#     from pm.storage import get_task
-#     retrieved_task = get_task(db_connection, "test-task")
-#     assert retrieved_task.id == "test-task"
-#     assert retrieved_task.project_id == "test-project"
+    # Test get_task
+    from pm.storage import get_task
+    retrieved_task = get_task(db_connection, "test-task")
+    assert retrieved_task.id == "test-task"
+    assert retrieved_task.project_id == "test-project"
 
 
 def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
@@ -182,3 +182,50 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
         cli, ['--db-path', db_path, 'task', 'show', task_1_id])
     assert json.loads(result_show_after.output)[
         'data']['project_id'] == project_b_id
+
+    # --- Test Force Project Deletion ---
+    # Create Project C with Task 2 and Task 3
+    result_c = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Project C'])
+    project_c_id = json.loads(result_c.output)['data']['id']
+    result_task2 = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_c_id, '--name', 'Task 2'])
+    task_2_id = json.loads(result_task2.output)['data']['id']
+    result_task3 = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_c_id, '--name', 'Task 3'])
+    task_3_id = json.loads(result_task3.output)['data']['id']
+
+    # Attempt delete without force (should fail)
+    result_del_noforce = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'delete', project_c_id])
+    assert result_del_noforce.exit_code == 0  # CLI handles error
+    response_del_noforce = json.loads(result_del_noforce.output)
+    assert response_del_noforce['status'] == 'error'
+    assert "Cannot delete project" in response_del_noforce['message']
+    assert "contains 2 task(s)" in response_del_noforce['message']
+
+    # Attempt delete with force (should succeed)
+    result_del_force = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'delete', project_c_id, '--force'])
+    assert result_del_force.exit_code == 0
+    response_del_force = json.loads(result_del_force.output)
+    assert response_del_force['status'] == 'success'
+    assert "deleted" in response_del_force['message']
+
+    # Verify Project C is gone
+    result_show_c = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'show', project_c_id])
+    assert json.loads(result_show_c.output)['status'] == 'error'
+    assert "not found" in json.loads(result_show_c.output)['message']
+
+    # Verify Task 2 is gone
+    result_show_t2 = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'show', task_2_id])
+    assert json.loads(result_show_t2.output)['status'] == 'error'
+    assert "not found" in json.loads(result_show_t2.output)['message']
+
+    # Verify Task 3 is gone
+    result_show_t3 = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'show', task_3_id])
+    assert json.loads(result_show_t3.output)['status'] == 'error'
+    assert "not found" in json.loads(result_show_t3.output)['message']
