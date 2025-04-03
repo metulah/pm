@@ -1,6 +1,6 @@
 # Makefile for PM tool
 
-.PHONY: install-man test-man clean
+.PHONY: install-man test-man clean test
 
 # Default target
 all: install-man
@@ -23,10 +23,17 @@ clean:
 	@rm -f $(HOME)/.local/share/man/man1/pm.1
 	@echo "Man page removed."
 
+# Run all Python tests
+test:
+	@echo "Running Python tests..."
+	@python3 -m pytest
+	@echo "Tests completed."
+
 # Help target
 help:
 	@echo "Available targets:"
 	@echo "  install-man  - Install man page to local man directory"
 	@echo "  test-man     - Test man page formatting"
 	@echo "  clean        - Remove installed man page"
+	@echo "  test         - Run all Python tests"
 	@echo "  help         - Show this help message"
