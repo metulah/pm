@@ -3,9 +3,8 @@
 import sqlite3
 import datetime
 from typing import Optional, List
-
 from ..models import Project
-from .task import list_tasks  # Import list_tasks
+# Removed top-level import: from .task import list_tasks
 
 
 class ProjectNotEmptyError(Exception):
@@ -63,6 +62,7 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
 
 def delete_project(conn: sqlite3.Connection, project_id: str) -> bool:
     """Delete a project by ID after checking for tasks."""
+    from .task import list_tasks  # Import list_tasks inside the function
     # Check for existing tasks in this project
     tasks = list_tasks(conn, project_id=project_id)
     if tasks:

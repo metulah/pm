@@ -84,7 +84,10 @@ def task_show(task_id: str):
 @click.option("--description", help="New task description")
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               help="New task status")
-def task_update(task_id: str, name: Optional[str], description: Optional[str], status: Optional[str]):
+# Add project option
+@click.option("--project", help="Move task to a different project ID")
+# Add project to signature
+def task_update(task_id: str, name: Optional[str], description: Optional[str], status: Optional[str], project: Optional[str]):
     """Update a task."""
     conn = get_db_connection()
     try:
@@ -95,6 +98,8 @@ def task_update(task_id: str, name: Optional[str], description: Optional[str], s
             kwargs["description"] = description
         if status is not None:
             kwargs["status"] = status
+        if project is not None:  # Add project_id to kwargs if provided
+            kwargs["project_id"] = project
 
         task = update_task(conn, task_id, **kwargs)
         if task:

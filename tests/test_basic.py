@@ -141,3 +141,44 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
     response = json.loads(result.output)
     assert response["status"] == "error"
     assert "not found" in response["message"]
+
+    # --- Test Task Moving ---
+    # Create Project A and Project B
+    result_a = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Project A'])
+    project_a_id = json.loads(result_a.output)['data']['id']
+    result_b = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Project B'])
+    project_b_id = json.loads(result_b.output)['data']['id']
+
+    # Create Task 1 in Project A
+    result_task = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_a_id, '--name', 'Task 1'])
+    task_1_id = json.loads(result_task.output)['data']['id']
+
+    # Verify Task 1 is in Project A
+    result_show = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'show', task_1_id])
+    assert json.loads(result_show.output)['data']['project_id'] == project_a_id
+
+    # Attempt to move Task 1 to non-existent project (should fail)
+    result_move_fail = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'update', task_1_id, '--project', 'non-existent-project'])
+    assert result_move_fail.exit_code == 0  # CLI handles error
+    response_fail = json.loads(result_move_fail.output)
+    assert response_fail['status'] == 'error'
+    assert "Target project 'non-existent-project' not found" in response_fail['message']
+
+    # Move Task 1 to Project B (should succeed)
+    result_move_ok = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'update', task_1_id, '--project', project_b_id])
+    assert result_move_ok.exit_code == 0
+    response_ok = json.loads(result_move_ok.output)
+    assert response_ok['status'] == 'success'
+    assert response_ok['data']['project_id'] == project_b_id
+
+    # Verify Task 1 is now in Project B
+    result_show_after = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'show', task_1_id])
+    assert json.loads(result_show_after.output)[
+        'data']['project_id'] == project_b_id

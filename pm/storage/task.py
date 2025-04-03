@@ -4,6 +4,7 @@ import sqlite3
 from typing import Optional, List, Set
 
 from ..models import Task, TaskStatus
+# Removed top-level import: from .project import get_project
 
 
 def create_task(conn: sqlite3.Connection, task: Task) -> Task:
@@ -44,10 +45,24 @@ def update_task(conn: sqlite3.Connection, task_id: str, **kwargs) -> Optional[Ta
     # Store original status for comparison
     original_status = task.status
 
+    # Validate target project if project_id is being changed
+    if 'project_id' in kwargs:
+        from .project import get_project  # Import get_project inside the function
+        new_project_id = kwargs['project_id']
+        if new_project_id != task.project_id:  # Only validate if it's actually changing
+            target_project = get_project(conn, new_project_id)
+            if not target_project:
+                raise ValueError(
+                    f"Target project '{new_project_id}' not found.")
+
+    # Apply updates
     for key, value in kwargs.items():
         if hasattr(task, key):
             if key == 'status' and not isinstance(value, TaskStatus):
                 value = TaskStatus(value)
+            # Ensure project_id is only set if it exists in kwargs (already validated above)
+            if key == 'project_id' and key not in kwargs:
+                continue
             setattr(task, key, value)
 
     # If trying to mark as COMPLETED, check required subtasks
