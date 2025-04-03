@@ -28,12 +28,13 @@ python3 -m pm.cli note list       # List notes for current task/project
 ### During Session Guidelines
 
 1. Stay focused on the current task's scope
-2. Document significant decisions using the note system:
+2. Before implementing a plan, verify its assumptions against the relevant codebase sections.
+3. Document significant decisions using the note system:
    ```bash
    python3 -m pm.cli note add     # Add important decisions/progress
    ```
-3. Use the PM tool to track progress and state changes
-4. If scope changes are needed, they must be explicitly discussed with the user
+4. Use the PM tool to track progress and state changes
+5. If scope changes are needed, they must be explicitly discussed with the user
 
 ### Session End Requirements (CRITICAL)
 
