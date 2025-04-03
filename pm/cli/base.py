@@ -3,6 +3,7 @@
 import json
 import sqlite3
 import click
+import textwrap  # Import textwrap
 from typing import Any, Optional, List, Dict
 
 from ..storage import init_db
@@ -20,32 +21,76 @@ def get_db_connection() -> sqlite3.Connection:
 
 
 def _format_list_as_text(data: List[Dict[str, Any]]) -> str:
-    """Formats a list of dictionaries (representing objects) as a text table."""
+    """Formats a list of dictionaries (representing objects) as a text table with wrapping."""
     if not data:
         return "No items found."
 
-    # Determine headers from the keys of the first item
     headers = list(data[0].keys())
+    # Define max widths for specific columns that tend to be long
+    MAX_WIDTHS = {'name': 40, 'description': 60}
+    # Define minimum widths to prevent excessive squashing
+    MIN_WIDTHS = {'id': 36, 'project_id': 36, 'task_id': 36, 'template_id': 36}
 
-    # Calculate column widths (max length of header or data in that column)
-    col_widths = {header: len(header) for header in headers}
+    # Calculate initial widths based on headers
+    col_widths = {h: len(h) for h in headers}
+
+    # Calculate max content width for each column, respecting MAX/MIN_WIDTHS
     for row in data:
-        for header in headers:
-            col_widths[header] = max(
-                col_widths[header], len(str(row.get(header, ''))))
+        for h in headers:
+            content_len = len(str(row.get(h, '')))
+            max_w = MAX_WIDTHS.get(h.lower())
+            # Default min width if not specified
+            min_w = MIN_WIDTHS.get(h.lower(), 5)
+            current_max = col_widths[h]
 
-    # Create format strings for header and rows
-    header_fmt = "   ".join(f"{{:<{col_widths[h]}}}" for h in headers)
-    row_fmt = "   ".join(f"{{:<{col_widths[h]}}}" for h in headers)
-    separator = "   ".join("-" * col_widths[h] for h in headers)
+            # Determine the effective width based on content, respecting max/min constraints
+            effective_content_width = content_len
+            if max_w:
+                effective_content_width = min(effective_content_width, max_w)
 
-    # Build the output string
-    output = [header_fmt.format(*[h.upper() for h in headers])]
-    output.append(separator)
+            # Final width is the max of header length, min width, and effective content width
+            col_widths[h] = max(current_max, min_w, effective_content_width)
+
+    # Create header and separator lines using final calculated widths
+    header_line = "   ".join(f"{h.upper():<{col_widths[h]}}" for h in headers)
+    separator_line = "   ".join("-" * col_widths[h] for h in headers)
+
+    output_lines = [header_line, separator_line]
+
+    # Process and format each row with wrapping
     for row in data:
-        output.append(row_fmt.format(*[str(row.get(h, '')) for h in headers]))
+        wrapped_row_lines = []
+        max_lines_in_row = 1
+        cell_lines_dict = {}  # Store wrapped lines for each cell in the current row
 
-    return "\n".join(output)
+        # Wrap necessary columns and find max number of lines needed for this row
+        for h in headers:
+            content = str(row.get(h, ''))
+            width = col_widths[h]
+            # Wrap if content exceeds width OR if a max width was defined (to enforce it)
+            if len(content) > width or h.lower() in MAX_WIDTHS:
+                # Use textwrap.fill for simpler handling, join lines later if needed
+                # Or use textwrap.wrap if multi-line cell output is desired
+                wrapped_lines = textwrap.wrap(
+                    content, width=width, break_long_words=False, replace_whitespace=False) if content else ['']
+                cell_lines_dict[h] = wrapped_lines
+                max_lines_in_row = max(max_lines_in_row, len(wrapped_lines))
+            else:
+                # Ensure it's treated as a list of one line for consistency
+                cell_lines_dict[h] = [content]
+
+        # Construct the output lines for the current row
+        for i in range(max_lines_in_row):
+            line_parts = []
+            for h in headers:
+                lines_for_cell = cell_lines_dict[h]
+                # Get the i-th line for the cell, or empty string if it doesn't exist
+                line_part = lines_for_cell[i] if i < len(
+                    lines_for_cell) else ""
+                line_parts.append(f"{line_part:<{col_widths[h]}}")
+            output_lines.append("   ".join(line_parts))
+
+    return "\n".join(output_lines)
 
 
 def _format_dict_as_text(data: Dict[str, Any]) -> str:
