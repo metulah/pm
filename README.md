@@ -84,7 +84,7 @@ pm task list --status "IN_PROGRESS"
 pm task show <task_id>
 
 # Update a task
-pm task update <task_id> --name "New Name" --status "COMPLETED"
+pm task update <task_id> --name "New Name" --status "COMPLETED" # Prints reminder checklist to stderr on status change
 
 # Delete a task
 pm task delete <task_id>
