@@ -160,11 +160,11 @@ def test_delete_metadata(tmp_path):
     conn.close()
 
 
-def test_cli_metadata_commands(tmp_path, monkeypatch):
-    """Test metadata CLI commands."""
-    from pm.cli import cli, get_db_connection
+def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
+    """Test metadata CLI commands using --db-path option."""
+    from pm.cli import cli  # No longer need get_db_connection here
     from click.testing import CliRunner
-    import os
+    # import os # No longer needed
 
     # Use a fresh temporary database
     db_path = str(tmp_path / "test.db")
@@ -184,18 +184,14 @@ def test_cli_metadata_commands(tmp_path, monkeypatch):
 
     conn.close()
 
-    # Patch the get_db_connection function to use our test database
-    def mock_get_db_connection():
-        return init_db(db_path)
-
-    monkeypatch.setattr('pm.cli.base.get_db_connection',
-                        mock_get_db_connection)
+    # No more monkeypatching needed here
 
     runner = CliRunner()
 
     # Test setting metadata
+    # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['task', 'metadata', 'set', 'cli-task', '--key', 'status', '--value', 'in-progress'])
+        cli, ['--db-path', db_path, 'task', 'metadata', 'set', 'cli-task', '--key', 'status', '--value', 'in-progress'])
     assert result.exit_code == 0
     response = json.loads(result.output)
     assert response["status"] == "success"
@@ -203,8 +199,9 @@ def test_cli_metadata_commands(tmp_path, monkeypatch):
     assert response["data"]["value"] == "in-progress"
 
     # Test getting specific metadata
+    # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['task', 'metadata', 'get', 'cli-task', '--key', 'status'])
+        cli, ['--db-path', db_path, 'task', 'metadata', 'get', 'cli-task', '--key', 'status'])
     assert result.exit_code == 0
     response = json.loads(result.output)
     assert response["status"] == "success"
@@ -213,12 +210,15 @@ def test_cli_metadata_commands(tmp_path, monkeypatch):
     assert response["data"][0]["value"] == "in-progress"
 
     # Test setting metadata with explicit type
+    # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['task', 'metadata', 'set', 'cli-task', '--key', 'priority', '--value', '1', '--type', 'int'])
+        cli, ['--db-path', db_path, 'task', 'metadata', 'set', 'cli-task', '--key', 'priority', '--value', '1', '--type', 'int'])
     assert result.exit_code == 0
 
     # Test getting all metadata
-    result = runner.invoke(cli, ['task', 'metadata', 'get', 'cli-task'])
+    # Pass --db-path *before* the command group
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'metadata', 'get', 'cli-task'])
     assert result.exit_code == 0
     response = json.loads(result.output)
     assert response["status"] == "success"
