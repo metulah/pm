@@ -3,11 +3,13 @@ import sqlite3
 import uuid
 import click
 from datetime import datetime
-from .models import Project, Task, TaskStatus
+from .models import Project, Task, TaskStatus, TaskMetadata
 from .storage import (
     init_db, create_project, get_project, update_project, delete_project, list_projects,
     create_task, get_task, update_task, delete_task, list_tasks,
-    add_task_dependency, remove_task_dependency, get_task_dependencies
+    add_task_dependency, remove_task_dependency, get_task_dependencies,
+    create_task_metadata, get_task_metadata, get_task_metadata_value,
+    update_task_metadata, delete_task_metadata, query_tasks_by_metadata
 )
 
 
@@ -301,6 +303,113 @@ def dependency_list(task_id):
         dependencies = get_task_dependencies(conn, task_id)
         click.echo(json_response(
             "success", [d.__dict__ for d in dependencies]))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@task.group()
+def metadata():
+    """Manage task metadata."""
+    pass
+
+
+@metadata.command("set")
+@click.argument("task_id")
+@click.option("--key", required=True, help="Metadata key")
+@click.option("--value", required=True, help="Metadata value")
+@click.option("--type", "value_type", type=click.Choice(["string", "int", "float", "datetime", "bool", "json"]),
+              help="Value type (auto-detected if not specified)")
+def metadata_set(task_id, key, value, value_type):
+    """Set metadata for a task."""
+    conn = get_db_connection()
+    try:
+        # Convert value based on type
+        if value_type == "int":
+            value = int(value)
+        elif value_type == "float":
+            value = float(value)
+        elif value_type == "datetime":
+            value = datetime.fromisoformat(value)
+        elif value_type == "bool":
+            value = value.lower() in ("true", "yes", "1")
+        elif value_type == "json":
+            value = json.loads(value)
+
+        metadata = update_task_metadata(conn, task_id, key, value, value_type)
+        if metadata:
+            click.echo(json_response("success", {
+                       "task_id": metadata.task_id, "key": metadata.key, "value": metadata.get_value()}))
+        else:
+            click.echo(json_response(
+                "error", message=f"Task {task_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@metadata.command("get")
+@click.argument("task_id")
+@click.option("--key", help="Metadata key (optional)")
+def metadata_get(task_id, key):
+    """Get metadata for a task."""
+    conn = get_db_connection()
+    try:
+        metadata_list = get_task_metadata(conn, task_id, key)
+        result = [{"key": m.key, "value": m.get_value(), "type": m.value_type}
+                  for m in metadata_list]
+        click.echo(json_response("success", result))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@metadata.command("delete")
+@click.argument("task_id")
+@click.option("--key", required=True, help="Metadata key")
+def metadata_delete(task_id, key):
+    """Delete metadata for a task."""
+    conn = get_db_connection()
+    try:
+        success = delete_task_metadata(conn, task_id, key)
+        if success:
+            click.echo(json_response(
+                "success", message=f"Metadata '{key}' deleted from task {task_id}"))
+        else:
+            click.echo(json_response(
+                "error", message=f"Metadata '{key}' not found for task {task_id}"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@metadata.command("query")
+@click.option("--key", required=True, help="Metadata key")
+@click.option("--value", required=True, help="Metadata value")
+@click.option("--type", "value_type", type=click.Choice(["string", "int", "float", "datetime", "bool", "json"]),
+              help="Value type (auto-detected if not specified)")
+def metadata_query(key, value, value_type):
+    """Query tasks by metadata."""
+    conn = get_db_connection()
+    try:
+        # Convert value based on type
+        if value_type == "int":
+            value = int(value)
+        elif value_type == "float":
+            value = float(value)
+        elif value_type == "datetime":
+            value = datetime.fromisoformat(value)
+        elif value_type == "bool":
+            value = value.lower() in ("true", "yes", "1")
+        elif value_type == "json":
+            value = json.loads(value)
+
+        tasks = query_tasks_by_metadata(conn, key, value, value_type)
+        click.echo(json_response("success", [t.__dict__ for t in tasks]))
     except Exception as e:
         click.echo(json_response("error", message=str(e)))
     finally:
