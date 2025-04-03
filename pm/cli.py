@@ -3,13 +3,14 @@ import sqlite3
 import uuid
 import click
 from datetime import datetime
-from .models import Project, Task, TaskStatus, TaskMetadata
+from .models import Project, Task, TaskStatus, TaskMetadata, Note
 from .storage import (
     init_db, create_project, get_project, update_project, delete_project, list_projects,
     create_task, get_task, update_task, delete_task, list_tasks,
     add_task_dependency, remove_task_dependency, get_task_dependencies,
     create_task_metadata, get_task_metadata, get_task_metadata_value,
-    update_task_metadata, delete_task_metadata, query_tasks_by_metadata
+    update_task_metadata, delete_task_metadata, query_tasks_by_metadata,
+    create_note, get_note, update_note, delete_note, list_notes
 )
 
 
@@ -410,6 +411,138 @@ def metadata_query(key, value, value_type):
 
         tasks = query_tasks_by_metadata(conn, key, value, value_type)
         click.echo(json_response("success", [t.__dict__ for t in tasks]))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@cli.group()
+def note():
+    """Manage notes for tasks and projects."""
+    pass
+
+
+@note.command("add")
+@click.option("--task", help="Task ID to add note to")
+@click.option("--project", help="Project ID to add note to")
+@click.option("--content", required=True, help="Note content")
+@click.option("--author", help="Note author")
+def note_add(task, project, content, author):
+    """Add a note to a task or project."""
+    if not task and not project:
+        click.echo(json_response(
+            "error", message="Must specify either --task or --project"))
+        return
+    if task and project:
+        click.echo(json_response(
+            "error", message="Cannot specify both --task and --project"))
+        return
+
+    entity_type = "task" if task else "project"
+    entity_id = task if task else project
+
+    conn = get_db_connection()
+    try:
+        note = Note(
+            id=str(uuid.uuid4()),
+            content=content,
+            author=author,
+            entity_type=entity_type,
+            entity_id=entity_id
+        )
+        note = create_note(conn, note)
+        click.echo(json_response("success", note.to_dict()))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@note.command("list")
+@click.option("--task", help="Task ID to list notes for")
+@click.option("--project", help="Project ID to list notes for")
+def note_list(task, project):
+    """List notes for a task or project."""
+    if not task and not project:
+        click.echo(json_response(
+            "error", message="Must specify either --task or --project"))
+        return
+    if task and project:
+        click.echo(json_response(
+            "error", message="Cannot specify both --task and --project"))
+        return
+
+    entity_type = "task" if task else "project"
+    entity_id = task if task else project
+
+    conn = get_db_connection()
+    try:
+        notes = list_notes(conn, entity_type, entity_id)
+        click.echo(json_response("success", [n.to_dict() for n in notes]))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@note.command("show")
+@click.argument("note_id")
+def note_show(note_id):
+    """Show note details."""
+    conn = get_db_connection()
+    try:
+        note = get_note(conn, note_id)
+        if note:
+            click.echo(json_response("success", note.to_dict()))
+        else:
+            click.echo(json_response(
+                "error", message=f"Note {note_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@note.command("update")
+@click.argument("note_id")
+@click.option("--content", help="New note content")
+@click.option("--author", help="New note author")
+def note_update(note_id, content, author):
+    """Update a note."""
+    conn = get_db_connection()
+    try:
+        kwargs = {}
+        if content is not None:
+            kwargs["content"] = content
+        if author is not None:
+            kwargs["author"] = author
+
+        note = update_note(conn, note_id, **kwargs)
+        if note:
+            click.echo(json_response("success", note.to_dict()))
+        else:
+            click.echo(json_response(
+                "error", message=f"Note {note_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@note.command("delete")
+@click.argument("note_id")
+def note_delete(note_id):
+    """Delete a note."""
+    conn = get_db_connection()
+    try:
+        success = delete_note(conn, note_id)
+        if success:
+            click.echo(json_response(
+                "success", message=f"Note {note_id} deleted"))
+        else:
+            click.echo(json_response(
+                "error", message=f"Note {note_id} not found"))
     except Exception as e:
         click.echo(json_response("error", message=str(e)))
     finally:

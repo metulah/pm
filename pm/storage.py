@@ -3,7 +3,7 @@ import uuid
 import datetime
 import json
 from typing import Optional, List, Any
-from .models import Project, Task, TaskStatus, TaskMetadata
+from .models import Project, Task, TaskStatus, TaskMetadata, Note
 
 
 def adapt_datetime(dt):
@@ -77,6 +77,19 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
             PRIMARY KEY (task_id, key),
             FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE,
             CHECK (value_type IN ('string', 'int', 'float', 'datetime', 'bool', 'json'))
+        )
+        """)
+
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id TEXT PRIMARY KEY,
+            content TEXT NOT NULL,
+            author TEXT,
+            entity_type TEXT NOT NULL,
+            entity_id TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP NOT NULL,
+            CHECK (entity_type IN ('task', 'project'))
         )
         """)
 
@@ -412,6 +425,85 @@ def delete_task_metadata(conn: sqlite3.Connection, task_id: str, key: str) -> bo
             (task_id, key)
         )
     return cursor.rowcount > 0
+
+
+def create_note(conn: sqlite3.Connection, note: Note) -> Note:
+    """Create a new note in the database."""
+    note.validate()
+    with conn:
+        conn.execute(
+            "INSERT INTO notes (id, content, author, entity_type, entity_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (note.id, note.content, note.author, note.entity_type, note.entity_id,
+             note.created_at, note.updated_at)
+        )
+    return note
+
+
+def get_note(conn: sqlite3.Connection, note_id: str) -> Optional[Note]:
+    """Get a note by ID."""
+    row = conn.execute("SELECT * FROM notes WHERE id = ?",
+                       (note_id,)).fetchone()
+    if not row:
+        return None
+    return Note(
+        id=row['id'],
+        content=row['content'],
+        author=row['author'],
+        entity_type=row['entity_type'],
+        entity_id=row['entity_id'],
+        created_at=row['created_at'],
+        updated_at=row['updated_at']
+    )
+
+
+def update_note(conn: sqlite3.Connection, note_id: str, **kwargs) -> Optional[Note]:
+    """Update a note's attributes."""
+    note = get_note(conn, note_id)
+    if not note:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(note, key):
+            setattr(note, key, value)
+
+    note.updated_at = datetime.datetime.now()
+    note.validate()
+
+    with conn:
+        conn.execute(
+            "UPDATE notes SET content = ?, author = ?, updated_at = ? WHERE id = ?",
+            (note.content, note.author, note.updated_at, note.id)
+        )
+    return note
+
+
+def delete_note(conn: sqlite3.Connection, note_id: str) -> bool:
+    """Delete a note by ID."""
+    with conn:
+        cursor = conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    return cursor.rowcount > 0
+
+
+def list_notes(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> List[Note]:
+    """List notes for a task or project."""
+    if entity_type not in ["task", "project"]:
+        raise ValueError("Entity type must be 'task' or 'project'")
+
+    rows = conn.execute(
+        "SELECT * FROM notes WHERE entity_type = ? AND entity_id = ? ORDER BY created_at",
+        (entity_type, entity_id)
+    ).fetchall()
+    return [
+        Note(
+            id=row['id'],
+            content=row['content'],
+            author=row['author'],
+            entity_type=row['entity_type'],
+            entity_id=row['entity_id'],
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        ) for row in rows
+    ]
 
 
 def query_tasks_by_metadata(conn: sqlite3.Connection, key: str, value, value_type: Optional[str] = None) -> List[Task]:
