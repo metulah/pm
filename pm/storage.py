@@ -3,7 +3,10 @@ import uuid
 import datetime
 import json
 from typing import Optional, List, Any
-from .models import Project, Task, TaskStatus, TaskMetadata, Note
+from .models import (
+    Project, Task, TaskStatus, TaskMetadata, Note, Subtask,
+    TaskTemplate, SubtaskTemplate
+)
 
 
 def adapt_datetime(dt):
@@ -48,7 +51,7 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
             created_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP NOT NULL,
             FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
-            CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'COMPLETED'))
+            CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'PAUSED', 'COMPLETED'))
         )
         """)
 
@@ -90,6 +93,42 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
             created_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP NOT NULL,
             CHECK (entity_type IN ('task', 'project'))
+        )
+        """)
+
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS task_templates (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP NOT NULL
+        )
+        """)
+
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS subtask_templates (
+            id TEXT PRIMARY KEY,
+            template_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            required_for_completion INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY (template_id) REFERENCES task_templates (id) ON DELETE CASCADE
+        )
+        """)
+
+        conn.execute("""
+        CREATE TABLE IF NOT EXISTS subtasks (
+            id TEXT PRIMARY KEY,
+            task_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            required_for_completion INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'NOT_STARTED',
+            created_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP NOT NULL,
+            FOREIGN KEY (task_id) REFERENCES tasks (id) ON DELETE CASCADE,
+            CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'PAUSED', 'COMPLETED'))
         )
         """)
 
@@ -201,11 +240,38 @@ def update_task(conn: sqlite3.Connection, task_id: str, **kwargs) -> Optional[Ta
     if not task:
         return None
 
+    # Store original status for comparison
+    original_status = task.status
+
     for key, value in kwargs.items():
         if hasattr(task, key):
             if key == 'status' and not isinstance(value, TaskStatus):
                 value = TaskStatus(value)
             setattr(task, key, value)
+
+    # If trying to mark as COMPLETED, check required subtasks
+    if task.status == TaskStatus.COMPLETED and original_status != TaskStatus.COMPLETED:
+        # Check if all required subtasks are completed
+        subtasks = list_subtasks(conn, task_id)
+        incomplete_required = [s for s in subtasks
+                               if s.required_for_completion and s.status != TaskStatus.COMPLETED]
+        if incomplete_required:
+            names = ", ".join(s.name for s in incomplete_required)
+            raise ValueError(
+                f"Cannot mark task as COMPLETED. Required subtasks not completed: {names}")
+
+    # Validate status transition
+    if original_status != task.status:
+        valid_transitions = {
+            TaskStatus.NOT_STARTED: {TaskStatus.IN_PROGRESS},
+            TaskStatus.IN_PROGRESS: {TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.PAUSED},
+            TaskStatus.BLOCKED: {TaskStatus.IN_PROGRESS},
+            TaskStatus.PAUSED: {TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED},
+            TaskStatus.COMPLETED: set()  # No transitions allowed from COMPLETED
+        }
+        if task.status not in valid_transitions.get(original_status, set()):
+            raise ValueError(
+                f"Invalid status transition: {original_status.value} -> {task.status.value}")
 
     task.updated_at = datetime.datetime.now()
     task.validate()
@@ -342,6 +408,105 @@ def has_circular_dependency(conn: sqlite3.Connection, task_id: str, potential_de
             return True
 
     return False
+
+
+def create_subtask(conn: sqlite3.Connection, subtask: Subtask) -> Subtask:
+    """Create a new subtask in the database."""
+    subtask.validate()
+    with conn:
+        conn.execute(
+            "INSERT INTO subtasks (id, task_id, name, description, required_for_completion, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (subtask.id, subtask.task_id, subtask.name, subtask.description,
+             1 if subtask.required_for_completion else 0, subtask.status.value,
+             subtask.created_at, subtask.updated_at)
+        )
+    return subtask
+
+
+def get_subtask(conn: sqlite3.Connection, subtask_id: str) -> Optional[Subtask]:
+    """Get a subtask by ID."""
+    row = conn.execute("SELECT * FROM subtasks WHERE id = ?",
+                       (subtask_id,)).fetchone()
+    if not row:
+        return None
+    return Subtask(
+        id=row['id'],
+        task_id=row['task_id'],
+        name=row['name'],
+        description=row['description'],
+        required_for_completion=bool(row['required_for_completion']),
+        status=TaskStatus(row['status']),
+        created_at=row['created_at'],
+        updated_at=row['updated_at']
+    )
+
+
+def update_subtask(conn: sqlite3.Connection, subtask_id: str, **kwargs) -> Optional[Subtask]:
+    """Update a subtask's attributes."""
+    subtask = get_subtask(conn, subtask_id)
+    if not subtask:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(subtask, key):
+            if key == 'status' and not isinstance(value, TaskStatus):
+                value = TaskStatus(value)
+            setattr(subtask, key, value)
+
+    subtask.updated_at = datetime.datetime.now()
+    subtask.validate()
+
+    with conn:
+        conn.execute(
+            "UPDATE subtasks SET task_id = ?, name = ?, description = ?, required_for_completion = ?, status = ?, updated_at = ? WHERE id = ?",
+            (subtask.task_id, subtask.name, subtask.description,
+             1 if subtask.required_for_completion else 0, subtask.status.value,
+             subtask.updated_at, subtask.id)
+        )
+    return subtask
+
+
+def delete_subtask(conn: sqlite3.Connection, subtask_id: str) -> bool:
+    """Delete a subtask by ID."""
+    with conn:
+        cursor = conn.execute(
+            "DELETE FROM subtasks WHERE id = ?", (subtask_id,))
+    return cursor.rowcount > 0
+
+
+def list_subtasks(conn: sqlite3.Connection, task_id: Optional[str] = None, status: Optional[TaskStatus] = None) -> List[Subtask]:
+    """List subtasks with optional filtering."""
+    query = "SELECT * FROM subtasks"
+    params = []
+
+    if task_id or status:
+        query += " WHERE"
+
+    if task_id:
+        query += " task_id = ?"
+        params.append(task_id)
+
+    if status:
+        if task_id:
+            query += " AND"
+        query += " status = ?"
+        params.append(status.value)
+
+    query += " ORDER BY name"
+
+    rows = conn.execute(query, params).fetchall()
+    return [
+        Subtask(
+            id=row['id'],
+            task_id=row['task_id'],
+            name=row['name'],
+            description=row['description'],
+            required_for_completion=bool(row['required_for_completion']),
+            status=TaskStatus(row['status']),
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        ) for row in rows
+    ]
 
 
 def create_task_metadata(conn: sqlite3.Connection, metadata: TaskMetadata) -> TaskMetadata:
@@ -485,6 +650,375 @@ def delete_note(conn: sqlite3.Connection, note_id: str) -> bool:
 
 
 def list_notes(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> List[Note]:
+    """List notes for a task or project."""
+    if entity_type not in ["task", "project"]:
+        raise ValueError("Entity type must be 'task' or 'project'")
+
+    rows = conn.execute(
+        "SELECT * FROM notes WHERE entity_type = ? AND entity_id = ? ORDER BY created_at",
+        (entity_type, entity_id)
+    ).fetchall()
+    return [
+        Note(
+            id=row['id'],
+            content=row['content'],
+            author=row['author'],
+            entity_type=row['entity_type'],
+            entity_id=row['entity_id'],
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        ) for row in rows
+    ]
+
+
+def create_task_template(conn: sqlite3.Connection, template: TaskTemplate) -> TaskTemplate:
+    """Create a new task template in the database."""
+    template.validate()
+    with conn:
+        conn.execute(
+            "INSERT INTO task_templates (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+            (template.id, template.name, template.description,
+             template.created_at, template.updated_at)
+        )
+    return template
+
+
+def get_task_template(conn: sqlite3.Connection, template_id: str) -> Optional[TaskTemplate]:
+    """Get a task template by ID."""
+    row = conn.execute("SELECT * FROM task_templates WHERE id = ?",
+                       (template_id,)).fetchone()
+    if not row:
+        return None
+    return TaskTemplate(
+        id=row['id'],
+        name=row['name'],
+        description=row['description'],
+        created_at=row['created_at'],
+        updated_at=row['updated_at']
+    )
+
+
+def update_task_template(conn: sqlite3.Connection, template_id: str, **kwargs) -> Optional[TaskTemplate]:
+    """Update a task template's attributes."""
+    template = get_task_template(conn, template_id)
+    if not template:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(template, key):
+            setattr(template, key, value)
+
+    template.updated_at = datetime.datetime.now()
+    template.validate()
+
+    with conn:
+        conn.execute(
+            "UPDATE task_templates SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+            (template.name, template.description, template.updated_at, template.id)
+        )
+    return template
+
+
+def delete_task_template(conn: sqlite3.Connection, template_id: str) -> bool:
+    """Delete a task template by ID."""
+    with conn:
+        cursor = conn.execute(
+            "DELETE FROM task_templates WHERE id = ?", (template_id,))
+    return cursor.rowcount > 0
+
+
+def list_task_templates(conn: sqlite3.Connection) -> List[TaskTemplate]:
+    """List all task templates."""
+    rows = conn.execute(
+        "SELECT * FROM task_templates ORDER BY name").fetchall()
+    return [
+        TaskTemplate(
+            id=row['id'],
+            name=row['name'],
+            description=row['description'],
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        ) for row in rows
+    ]
+
+
+def create_subtask_template(conn: sqlite3.Connection, template: SubtaskTemplate) -> SubtaskTemplate:
+    """Create a new subtask template in the database."""
+    template.validate()
+    with conn:
+        conn.execute(
+            "INSERT INTO subtask_templates (id, template_id, name, description, required_for_completion) VALUES (?, ?, ?, ?, ?)",
+            (template.id, template.template_id, template.name, template.description,
+             1 if template.required_for_completion else 0)
+        )
+    return template
+
+
+def get_subtask_template(conn: sqlite3.Connection, template_id: str) -> Optional[SubtaskTemplate]:
+    """Get a subtask template by ID."""
+    row = conn.execute("SELECT * FROM subtask_templates WHERE id = ?",
+                       (template_id,)).fetchone()
+    if not row:
+        return None
+    return SubtaskTemplate(
+        id=row['id'],
+        template_id=row['template_id'],
+        name=row['name'],
+        description=row['description'],
+        required_for_completion=bool(row['required_for_completion'])
+    )
+
+
+def update_subtask_template(conn: sqlite3.Connection, template_id: str, **kwargs) -> Optional[SubtaskTemplate]:
+    """Update a subtask template's attributes."""
+    template = get_subtask_template(conn, template_id)
+    if not template:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(template, key):
+            setattr(template, key, value)
+
+    template.validate()
+
+    with conn:
+        conn.execute(
+            "UPDATE subtask_templates SET template_id = ?, name = ?, description = ?, required_for_completion = ? WHERE id = ?",
+            (template.template_id, template.name, template.description,
+             1 if template.required_for_completion else 0, template.id)
+        )
+    return template
+
+
+def delete_subtask_template(conn: sqlite3.Connection, template_id: str) -> bool:
+    """Delete a subtask template by ID."""
+    with conn:
+        cursor = conn.execute(
+            "DELETE FROM subtask_templates WHERE id = ?", (template_id,))
+    return cursor.rowcount > 0
+
+
+def list_subtask_templates(conn: sqlite3.Connection, template_id: Optional[str] = None) -> List[SubtaskTemplate]:
+    """List subtask templates, optionally filtered by template ID."""
+    query = "SELECT * FROM subtask_templates"
+    params = []
+
+    if template_id:
+        query += " WHERE template_id = ?"
+        params.append(template_id)
+
+    query += " ORDER BY name"
+
+    rows = conn.execute(query, params).fetchall()
+    return [
+        SubtaskTemplate(
+            id=row['id'],
+            template_id=row['template_id'],
+            name=row['name'],
+            description=row['description'],
+            required_for_completion=bool(row['required_for_completion'])
+        ) for row in rows
+    ]
+
+
+def apply_template_to_task(conn: sqlite3.Connection, task_id: str, template_id: str) -> List[Subtask]:
+    """Apply a task template to a task, creating subtasks from the template."""
+    # Verify task exists
+    task = get_task(conn, task_id)
+    if not task:
+        raise ValueError(f"Task {task_id} not found")
+
+    # Get template
+    template = get_task_template(conn, template_id)
+    if not template:
+        raise ValueError(f"Template {template_id} not found")
+
+    # Get subtask templates
+    subtask_templates = list_subtask_templates(conn, template_id)
+
+    # Create subtasks from templates
+    created_subtasks = []
+    for st in subtask_templates:
+        subtask = Subtask(
+            id=str(uuid.uuid4()),
+            task_id=task_id,
+            name=st.name,
+            description=st.description,
+            required_for_completion=st.required_for_completion,
+            status=TaskStatus.NOT_STARTED
+        )
+        created_subtask = create_subtask(conn, subtask)
+        created_subtasks.append(created_subtask)
+
+    return created_subtasks
+    """Get a task template by ID."""
+    row = conn.execute("SELECT * FROM task_templates WHERE id = ?",
+                       (template_id,)).fetchone()
+    if not row:
+        return None
+    return TaskTemplate(
+        id=row['id'],
+        name=row['name'],
+        description=row['description'],
+        created_at=row['created_at'],
+        updated_at=row['updated_at']
+    )
+
+
+def update_task_template(conn: sqlite3.Connection, template_id: str, **kwargs) -> Optional[TaskTemplate]:
+    """Update a task template's attributes."""
+    template = get_task_template(conn, template_id)
+    if not template:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(template, key):
+            setattr(template, key, value)
+
+    template.updated_at = datetime.datetime.now()
+    template.validate()
+
+    with conn:
+        conn.execute(
+            "UPDATE task_templates SET name = ?, description = ?, updated_at = ? WHERE id = ?",
+            (template.name, template.description, template.updated_at, template.id)
+        )
+    return template
+
+
+def delete_task_template(conn: sqlite3.Connection, template_id: str) -> bool:
+    """Delete a task template by ID."""
+    with conn:
+        cursor = conn.execute(
+            "DELETE FROM task_templates WHERE id = ?", (template_id,))
+    return cursor.rowcount > 0
+
+
+def list_task_templates(conn: sqlite3.Connection) -> List[TaskTemplate]:
+    """List all task templates."""
+    rows = conn.execute(
+        "SELECT * FROM task_templates ORDER BY name").fetchall()
+    return [
+        TaskTemplate(
+            id=row['id'],
+            name=row['name'],
+            description=row['description'],
+            created_at=row['created_at'],
+            updated_at=row['updated_at']
+        ) for row in rows
+    ]
+
+
+def create_subtask_template(conn: sqlite3.Connection, template: SubtaskTemplate) -> SubtaskTemplate:
+    """Create a new subtask template in the database."""
+    template.validate()
+    with conn:
+        conn.execute(
+            "INSERT INTO subtask_templates (id, template_id, name, description, required_for_completion) VALUES (?, ?, ?, ?, ?)",
+            (template.id, template.template_id, template.name, template.description,
+             1 if template.required_for_completion else 0)
+        )
+    return template
+
+
+def get_subtask_template(conn: sqlite3.Connection, template_id: str) -> Optional[SubtaskTemplate]:
+    """Get a subtask template by ID."""
+    row = conn.execute("SELECT * FROM subtask_templates WHERE id = ?",
+                       (template_id,)).fetchone()
+    if not row:
+        return None
+    return SubtaskTemplate(
+        id=row['id'],
+        template_id=row['template_id'],
+        name=row['name'],
+        description=row['description'],
+        required_for_completion=bool(row['required_for_completion'])
+    )
+
+
+def update_subtask_template(conn: sqlite3.Connection, template_id: str, **kwargs) -> Optional[SubtaskTemplate]:
+    """Update a subtask template's attributes."""
+    template = get_subtask_template(conn, template_id)
+    if not template:
+        return None
+
+    for key, value in kwargs.items():
+        if hasattr(template, key):
+            setattr(template, key, value)
+
+    template.validate()
+
+    with conn:
+        conn.execute(
+            "UPDATE subtask_templates SET template_id = ?, name = ?, description = ?, required_for_completion = ? WHERE id = ?",
+            (template.template_id, template.name, template.description,
+             1 if template.required_for_completion else 0, template.id)
+        )
+    return template
+
+
+def delete_subtask_template(conn: sqlite3.Connection, template_id: str) -> bool:
+    """Delete a subtask template by ID."""
+    with conn:
+        cursor = conn.execute(
+            "DELETE FROM subtask_templates WHERE id = ?", (template_id,))
+    return cursor.rowcount > 0
+
+
+def list_subtask_templates(conn: sqlite3.Connection, template_id: Optional[str] = None) -> List[SubtaskTemplate]:
+    """List subtask templates, optionally filtered by template ID."""
+    query = "SELECT * FROM subtask_templates"
+    params = []
+
+    if template_id:
+        query += " WHERE template_id = ?"
+        params.append(template_id)
+
+    query += " ORDER BY name"
+
+    rows = conn.execute(query, params).fetchall()
+    return [
+        SubtaskTemplate(
+            id=row['id'],
+            template_id=row['template_id'],
+            name=row['name'],
+            description=row['description'],
+            required_for_completion=bool(row['required_for_completion'])
+        ) for row in rows
+    ]
+
+
+def apply_template_to_task(conn: sqlite3.Connection, task_id: str, template_id: str) -> List[Subtask]:
+    """Apply a task template to a task, creating subtasks from the template."""
+    # Verify task exists
+    task = get_task(conn, task_id)
+    if not task:
+        raise ValueError(f"Task {task_id} not found")
+
+    # Get template
+    template = get_task_template(conn, template_id)
+    if not template:
+        raise ValueError(f"Template {template_id} not found")
+
+    # Get subtask templates
+    subtask_templates = list_subtask_templates(conn, template_id)
+
+    # Create subtasks from templates
+    created_subtasks = []
+    for st in subtask_templates:
+        subtask = Subtask(
+            id=str(uuid.uuid4()),
+            task_id=task_id,
+            name=st.name,
+            description=st.description,
+            required_for_completion=st.required_for_completion,
+            status=TaskStatus.NOT_STARTED
+        )
+        created_subtask = create_subtask(conn, subtask)
+        created_subtasks.append(created_subtask)
+
+    return created_subtasks
+
     """List notes for a task or project."""
     if entity_type not in ["task", "project"]:
         raise ValueError("Entity type must be 'task' or 'project'")

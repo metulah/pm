@@ -3,14 +3,22 @@ import sqlite3
 import uuid
 import click
 from datetime import datetime
-from .models import Project, Task, TaskStatus, TaskMetadata, Note
+from .models import (
+    Project, Task, TaskStatus, TaskMetadata, Note, Subtask,
+    TaskTemplate, SubtaskTemplate
+)
 from .storage import (
     init_db, create_project, get_project, update_project, delete_project, list_projects,
     create_task, get_task, update_task, delete_task, list_tasks,
     add_task_dependency, remove_task_dependency, get_task_dependencies,
     create_task_metadata, get_task_metadata, get_task_metadata_value,
     update_task_metadata, delete_task_metadata, query_tasks_by_metadata,
-    create_note, get_note, update_note, delete_note, list_notes
+    create_note, get_note, update_note, delete_note, list_notes,
+    create_subtask, get_subtask, update_subtask, delete_subtask, list_subtasks,
+    create_task_template, get_task_template, update_task_template, delete_task_template,
+    list_task_templates, create_subtask_template, get_subtask_template,
+    update_subtask_template, delete_subtask_template, list_subtask_templates,
+    apply_template_to_task
 )
 
 
@@ -411,6 +419,249 @@ def metadata_query(key, value, value_type):
 
         tasks = query_tasks_by_metadata(conn, key, value, value_type)
         click.echo(json_response("success", [t.__dict__ for t in tasks]))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@task.group()
+def subtask():
+    """Manage subtasks for tasks."""
+    pass
+
+
+@subtask.command("create")
+@click.argument("task_id")
+@click.option("--name", required=True, help="Subtask name")
+@click.option("--description", help="Subtask description")
+@click.option("--required/--optional", default=True, help="Whether this subtask is required for task completion")
+@click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
+              default=TaskStatus.NOT_STARTED.value, help="Subtask status")
+def subtask_create(task_id, name, description, required, status):
+    """Create a new subtask."""
+    conn = get_db_connection()
+    try:
+        subtask = Subtask(
+            id=str(uuid.uuid4()),
+            task_id=task_id,
+            name=name,
+            description=description,
+            required_for_completion=required,
+            status=TaskStatus(status)
+        )
+        subtask = create_subtask(conn, subtask)
+        click.echo(json_response("success", subtask.to_dict()))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@subtask.command("list")
+@click.argument("task_id")
+@click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
+              help="Filter by subtask status")
+def subtask_list(task_id, status):
+    """List subtasks for a task."""
+    conn = get_db_connection()
+    try:
+        status_enum = TaskStatus(status) if status else None
+        subtasks = list_subtasks(conn, task_id=task_id, status=status_enum)
+        click.echo(json_response("success", [s.to_dict() for s in subtasks]))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@subtask.command("show")
+@click.argument("subtask_id")
+def subtask_show(subtask_id):
+    """Show subtask details."""
+    conn = get_db_connection()
+    try:
+        subtask = get_subtask(conn, subtask_id)
+        if subtask:
+            click.echo(json_response("success", subtask.to_dict()))
+        else:
+            click.echo(json_response(
+                "error", message=f"Subtask {subtask_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@subtask.command("update")
+@click.argument("subtask_id")
+@click.option("--name", help="New subtask name")
+@click.option("--description", help="New subtask description")
+@click.option("--required/--optional", help="Whether this subtask is required for task completion")
+@click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
+              help="New subtask status")
+def subtask_update(subtask_id, name, description, required, status):
+    """Update a subtask."""
+    conn = get_db_connection()
+    try:
+        kwargs = {}
+        if name is not None:
+            kwargs["name"] = name
+        if description is not None:
+            kwargs["description"] = description
+        if required is not None:
+            kwargs["required_for_completion"] = required
+        if status is not None:
+            kwargs["status"] = status
+
+        subtask = update_subtask(conn, subtask_id, **kwargs)
+        if subtask:
+            click.echo(json_response("success", subtask.to_dict()))
+        else:
+            click.echo(json_response(
+                "error", message=f"Subtask {subtask_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@subtask.command("delete")
+@click.argument("subtask_id")
+def subtask_delete(subtask_id):
+    """Delete a subtask."""
+    conn = get_db_connection()
+    try:
+        success = delete_subtask(conn, subtask_id)
+        if success:
+            click.echo(json_response(
+                "success", message=f"Subtask {subtask_id} deleted"))
+        else:
+            click.echo(json_response(
+                "error", message=f"Subtask {subtask_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@cli.group()
+def template():
+    """Manage task templates."""
+    pass
+
+
+@template.command("create")
+@click.option("--name", required=True, help="Template name")
+@click.option("--description", help="Template description")
+def template_create(name, description):
+    """Create a new task template."""
+    conn = get_db_connection()
+    try:
+        template = TaskTemplate(
+            id=str(uuid.uuid4()),
+            name=name,
+            description=description
+        )
+        template = create_task_template(conn, template)
+        click.echo(json_response("success", template.to_dict()))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@template.command("list")
+def template_list():
+    """List all task templates."""
+    conn = get_db_connection()
+    try:
+        templates = list_task_templates(conn)
+        click.echo(json_response("success", [t.to_dict() for t in templates]))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@template.command("show")
+@click.argument("template_id")
+def template_show(template_id):
+    """Show template details."""
+    conn = get_db_connection()
+    try:
+        template = get_task_template(conn, template_id)
+        if template:
+            result = template.to_dict()
+            subtasks = list_subtask_templates(conn, template_id)
+            result["subtasks"] = [s.to_dict() for s in subtasks]
+            click.echo(json_response("success", result))
+        else:
+            click.echo(json_response(
+                "error", message=f"Template {template_id} not found"))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@template.command("add-subtask")
+@click.argument("template_id")
+@click.option("--name", required=True, help="Subtask template name")
+@click.option("--description", help="Subtask template description")
+@click.option("--required/--optional", default=True, help="Whether this subtask is required for task completion")
+def template_add_subtask(template_id, name, description, required):
+    """Add a subtask to a template."""
+    conn = get_db_connection()
+    try:
+        subtask = SubtaskTemplate(
+            id=str(uuid.uuid4()),
+            template_id=template_id,
+            name=name,
+            description=description,
+            required_for_completion=required
+        )
+        subtask = create_subtask_template(conn, subtask)
+        click.echo(json_response("success", subtask.to_dict()))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@template.command("apply")
+@click.argument("template_id")
+@click.option("--task", required=True, help="Task ID to apply template to")
+def template_apply(template_id, task):
+    """Apply a template to a task."""
+    conn = get_db_connection()
+    try:
+        subtasks = apply_template_to_task(conn, task, template_id)
+        click.echo(json_response("success", {
+            "task_id": task,
+            "template_id": template_id,
+            "subtasks_created": len(subtasks),
+            "subtasks": [s.to_dict() for s in subtasks]
+        }))
+    except Exception as e:
+        click.echo(json_response("error", message=str(e)))
+    finally:
+        conn.close()
+
+
+@template.command("delete")
+@click.argument("template_id")
+def template_delete(template_id):
+    """Delete a template."""
+    conn = get_db_connection()
+    try:
+        success = delete_task_template(conn, template_id)
+        if success:
+            click.echo(json_response(
+                "success", message=f"Template {template_id} deleted"))
+        else:
+            click.echo(json_response(
+                "error", message=f"Template {template_id} not found"))
     except Exception as e:
         click.echo(json_response("error", message=str(e)))
     finally:
