@@ -11,7 +11,7 @@ This tool provides a standardized way for AI assistants to manage projects, task
 - **Project Management**: Create, read, update, and delete projects
 - **Task Management**: Create, read, update, and delete tasks with status tracking
 - **Dependency Tracking**: Manage dependencies between tasks with circular dependency prevention
-- **Structured Output**: JSON-formatted responses for easy parsing by AI assistants
+- **Structured Output**: JSON-formatted responses (default) or human-readable text (`--format text`)
 - **SQLite Storage**: Lightweight, file-based database for easy deployment
 
 ## Installation
@@ -43,6 +43,13 @@ pm task --help
 
 ## Usage
 
+**Global Options:**
+
+- `--format {json|text}`: Specify the output format (default: `json`).
+- `--db-path PATH`: Specify the path to the database file (default: `pm.db`).
+
+These options should be placed _before_ the command group (e.g., `pm --format text project list`).
+
 ### Project Commands
 
 ```bash
@@ -59,7 +66,7 @@ pm project show <project_id>
 pm project update <project_id> --name "New Name" --description "New description"
 
 # Delete a project
-pm project delete <project_id>
+pm project delete <project_id> [--force] # Use --force to delete project and its tasks
 ```
 
 ### Task Commands

@@ -118,7 +118,7 @@ pm \- project management CLI for AI assistants
 ]
 .SH DESCRIPTION
 .PP
-\fBpm\fR is a command-line project management tool specifically designed for AI assistants to track projects, tasks, and dependencies. It provides a structured way to manage work and track progress through a simple CLI interface with standardized JSON output for easy parsing.
+\fBpm\fR is a command-line project management tool specifically designed for AI assistants to track projects, tasks, and dependencies. It provides a structured way to manage work and track progress through a simple CLI interface with standardized JSON output (default) or human-readable text output for easy parsing or viewing.
 .PP
 The tool is built around the concept of projects containing tasks, which can have dependencies, metadata, subtasks, and notes. All data is stored in a SQLite database for lightweight, file-based storage that requires minimal setup.
 .PP
@@ -136,7 +136,7 @@ Task templates for standardizing common task patterns
 .IP \(bu 4
 Note-taking for projects and tasks to capture context
 .IP \(bu 4
-JSON-formatted responses for easy parsing and integration
+JSON-formatted responses (default) or text output for easy parsing or reading
 .PP
 The tool follows a consistent command structure with command groups and subcommands, making it intuitive to use and extend. All operations return standardized JSON responses with a consistent structure, allowing for reliable parsing and error handling.
 .PP
@@ -161,6 +161,9 @@ Global options that apply to all commands:
 .TP
 .B --help
 Show help message and exit.
+.TP
+.B --format {json|text}
+Specify the output format. Defaults to \fBjson\fR.
 .SH COMMANDS
 .SS PROJECT COMMANDS
 .PP
@@ -178,8 +181,8 @@ Show detailed information about a specific project.
 .B pm project update PROJECT_ID [--name NAME] [--description DESCRIPTION]
 Update a project's name and/or description.
 .TP
-.B pm project delete PROJECT_ID
-Delete a project and all its associated tasks.
+.B pm project delete PROJECT_ID [--force]
+Delete a project. By default, fails if the project contains tasks. Use \fB--force\fR to delete the project and all its associated tasks.
 .SS TASK COMMANDS
 .PP
 Task commands manage the individual work items within projects.
@@ -389,7 +392,7 @@ SQLite database file that stores all project, task, and related data. This file 
 \fBpm\fR does not currently use any environment variables.
 .SH DIAGNOSTICS
 .PP
-All commands return JSON responses with the following structure:
+By default, all commands return JSON responses with the following structure (use \fB--format text\fR for human-readable output):
 .PP
 .nf
 {
