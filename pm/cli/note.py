@@ -9,7 +9,7 @@ from ..storage import (
     create_note, get_note, update_note,
     delete_note, list_notes
 )
-from .base import cli, get_db_connection, json_response
+from .base import cli, get_db_connection, format_output  # Use format_output
 
 
 @cli.group()
@@ -23,15 +23,20 @@ def note():
 @click.option("--project", help="Project ID")
 @click.option("--content", required=True, help="Note content")
 @click.option("--author", help="Note author")
-def note_add(task: Optional[str], project: Optional[str], content: str, author: Optional[str]):
+@click.pass_context  # Need context to get format
+def note_add(ctx, task: Optional[str], project: Optional[str], content: str, author: Optional[str]):  # Add ctx
     """Add a new note."""
     if not task and not project:
-        click.echo(json_response(
-            "error", message="Either --task or --project must be specified"))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message="Either --task or --project must be specified"))
         return
     if task and project:
-        click.echo(json_response(
-            "error", message="Cannot specify both --task and --project"))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message="Cannot specify both --task and --project"))
         return
 
     conn = get_db_connection()
@@ -44,9 +49,15 @@ def note_add(task: Optional[str], project: Optional[str], content: str, author: 
             author=author
         )
         note = create_note(conn, note)
-        click.echo(json_response("success", note.__dict__))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # Pass format and object
+        click.echo(format_output(output_format, "success", note))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -54,42 +65,61 @@ def note_add(task: Optional[str], project: Optional[str], content: str, author: 
 @note.command("list")
 @click.option("--task", help="Task ID")
 @click.option("--project", help="Project ID")
-def note_list(task: Optional[str], project: Optional[str]):
+@click.pass_context  # Need context to get format
+def note_list(ctx, task: Optional[str], project: Optional[str]):  # Add ctx
     """List notes for a task or project."""
     if not task and not project:
-        click.echo(json_response(
-            "error", message="Either --task or --project must be specified"))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message="Either --task or --project must be specified"))
         return
     if task and project:
-        click.echo(json_response(
-            "error", message="Cannot specify both --task and --project"))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message="Cannot specify both --task and --project"))
         return
 
     conn = get_db_connection()
     try:
-        notes = list_notes(
-            conn, "task" if task else "project", task or project)
-        click.echo(json_response("success", [n.__dict__ for n in notes]))
+        entity_type = "task" if task else "project"
+        entity_id = task or project
+        notes = list_notes(conn, entity_type=entity_type, entity_id=entity_id)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # Pass format and list of objects
+        click.echo(format_output(output_format, "success", notes))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
 
 @note.command("show")
 @click.argument("note_id")
-def note_show(note_id: str):
+@click.pass_context  # Need context to get format
+def note_show(ctx, note_id: str):  # Add ctx
     """Show note details."""
     conn = get_db_connection()
     try:
         note = get_note(conn, note_id)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if note:
-            click.echo(json_response("success", note.__dict__))
+            # Pass format and object
+            click.echo(format_output(output_format, "success", note))
         else:
-            click.echo(json_response(
-                "error", message=f"Note {note_id} not found"))
+            click.echo(format_output(output_format,
+                                     "error", message=f"Note {note_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -98,7 +128,9 @@ def note_show(note_id: str):
 @click.argument("note_id")
 @click.option("--content", required=True, help="New note content")
 @click.option("--author", help="New note author")
-def note_update(note_id: str, content: str, author: Optional[str]):
+@click.pass_context  # Need context to get format
+# Add ctx
+def note_update(ctx, note_id: str, content: str, author: Optional[str]):
     """Update a note."""
     conn = get_db_connection()
     try:
@@ -107,31 +139,43 @@ def note_update(note_id: str, content: str, author: Optional[str]):
             kwargs["author"] = author
 
         note = update_note(conn, note_id, **kwargs)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if note:
-            click.echo(json_response("success", note.__dict__))
+            # Pass format and object
+            click.echo(format_output(output_format, "success", note))
         else:
-            click.echo(json_response(
-                "error", message=f"Note {note_id} not found"))
+            click.echo(format_output(output_format,
+                                     "error", message=f"Note {note_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
 
 @note.command("delete")
 @click.argument("note_id")
-def note_delete(note_id: str):
+@click.pass_context  # Need context to get format
+def note_delete(ctx, note_id: str):  # Add ctx
     """Delete a note."""
     conn = get_db_connection()
     try:
         success = delete_note(conn, note_id)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if success:
-            click.echo(json_response(
-                "success", message=f"Note {note_id} deleted"))
+            click.echo(format_output(output_format,
+                                     "success", message=f"Note {note_id} deleted"))
         else:
-            click.echo(json_response(
-                "error", message=f"Note {note_id} not found"))
+            click.echo(format_output(output_format,
+                                     "error", message=f"Note {note_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()

@@ -66,7 +66,8 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
     """Test basic CLI commands using --db-path option."""
     from pm.cli import cli
     from click.testing import CliRunner
-    from pm.storage import init_db, list_projects
+    # Import needed storage functions
+    from pm.storage import init_db, list_projects, get_project, get_task
 
     # Use a fresh temporary database
     db_path = str(tmp_path / "test.db")  # Use string path
@@ -89,17 +90,40 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
     response = json.loads(result.output)
     assert response["status"] == "success"
     assert response["data"]["name"] == "CLI Project"
+    cli_project_id = response["data"]["id"]  # Store ID for later use
 
     # Test project listing via CLI
     # Pass --db-path *before* the command group
-    result = runner.invoke(cli, ['--db-path', db_path, 'project', 'list'])
-    assert result.exit_code == 0
-    response = json.loads(result.output)
-    assert response["status"] == "success"
-    projects = response["data"]
-    assert len(projects) >= 1  # At least our new project should be there
-    assert any(p["name"] == "CLI Project" for p in projects)
-    project_id = projects[0]["id"]  # Get the created project ID
+    # Test project listing (JSON default)
+    result_list_json = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'list'])
+    assert result_list_json.exit_code == 0
+    response_list_json = json.loads(result_list_json.output)
+    assert response_list_json["status"] == "success"
+    projects_json = response_list_json["data"]
+    assert len(projects_json) >= 1
+    assert any(p["name"] == "CLI Project" for p in projects_json)
+    # Use the ID we stored earlier
+    project_id = cli_project_id
+
+    # Test project listing (Text format)
+    result_list_text = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
+    assert result_list_text.exit_code == 0
+    # Check for table headers and project name in text output
+    assert "ID" in result_list_text.output
+    assert "NAME" in result_list_text.output
+    assert "DESCRIPTION" in result_list_text.output
+    assert "CLI Project" in result_list_text.output
+    assert project_id in result_list_text.output  # Check if ID is present
+
+    # Test project show (Text format)
+    result_show_text = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'show', project_id])
+    assert result_show_text.exit_code == 0
+    assert f"Id:          {project_id}" in result_show_text.output
+    assert "Name:        CLI Project" in result_show_text.output
+    assert "Description: CLI Test" in result_show_text.output
 
     # Test task creation via CLI
     result = runner.invoke(
@@ -108,7 +132,7 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
     response = json.loads(result.output)
     assert response["status"] == "success"
     assert response["data"]["name"] == "CLI Task"
-    task_id = response["data"]["id"]  # Get the created task ID
+    task_id = response["data"]["id"]  # Get the created task ID for CLI Project
 
     # Test deleting project with task (should fail)
     result = runner.invoke(
@@ -154,7 +178,8 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
     # Create Task 1 in Project A
     result_task = runner.invoke(
         cli, ['--db-path', db_path, 'task', 'create', '--project', project_a_id, '--name', 'Task 1'])
-    task_1_id = json.loads(result_task.output)['data']['id']
+    task_1_id = json.loads(result_task.output)[
+        'data']['id']  # Task in Project A
 
     # Verify Task 1 is in Project A
     result_show = runner.invoke(
@@ -182,6 +207,25 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
         cli, ['--db-path', db_path, 'task', 'show', task_1_id])
     assert json.loads(result_show_after.output)[
         'data']['project_id'] == project_b_id
+
+    # Test task list (Text format) - should show Task 1 in Project B
+    result_task_list_text = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', project_b_id])
+    assert result_task_list_text.exit_code == 0
+    assert "ID" in result_task_list_text.output
+    assert "NAME" in result_task_list_text.output
+    assert "STATUS" in result_task_list_text.output
+    assert "Task 1" in result_task_list_text.output
+    assert task_1_id in result_task_list_text.output
+
+    # Test task show (Text format)
+    result_task_show_text = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'show', task_1_id])
+    assert result_task_show_text.exit_code == 0
+    assert f"Id:          {task_1_id}" in result_task_show_text.output
+    # Verify it's in Project B
+    assert f"Project Id:  {project_b_id}" in result_task_show_text.output
+    assert "Name:        Task 1" in result_task_show_text.output
 
     # --- Test Force Project Deletion ---
     # Create Project C with Task 2 and Task 3
@@ -229,3 +273,19 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
         cli, ['--db-path', db_path, 'task', 'show', task_3_id])
     assert json.loads(result_show_t3.output)['status'] == 'error'
     assert "not found" in json.loads(result_show_t3.output)['message']
+
+    # Test simple message output (Text format) - e.g., delete success
+    # Re-create Project A for deletion test
+    result_a_del = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Project A Delete'])
+    project_a_del_id = json.loads(result_a_del.output)['data']['id']
+    result_del_text = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'delete', project_a_del_id])
+    assert result_del_text.exit_code == 0
+    assert f"Success: Project {project_a_del_id} deleted" in result_del_text.output
+
+    # Test simple message output (Text format) - e.g., error
+    result_del_err_text = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'delete', 'non-existent-project-id'])
+    assert result_del_err_text.exit_code == 0
+    assert "Error: Project non-existent-project-id not found" in result_del_err_text.output

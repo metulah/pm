@@ -9,7 +9,7 @@ from ..storage import (
     create_task, get_task, update_task, delete_task, list_tasks,
     add_task_dependency, remove_task_dependency, get_task_dependencies
 )
-from .base import cli, get_db_connection, json_response
+from .base import cli, get_db_connection, format_output  # Use format_output
 
 
 @cli.group()
@@ -24,7 +24,9 @@ def task():
 @click.option("--description", help="Task description")
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               default=TaskStatus.NOT_STARTED.value, help="Task status")
-def task_create(project: str, name: str, description: Optional[str], status: str):
+@click.pass_context  # Need context to get format
+# Add ctx
+def task_create(ctx, project: str, name: str, description: Optional[str], status: str):
     """Create a new task."""
     conn = get_db_connection()
     try:
@@ -36,9 +38,15 @@ def task_create(project: str, name: str, description: Optional[str], status: str
             status=TaskStatus(status)
         )
         task = create_task(conn, task)
-        click.echo(json_response("success", task.__dict__))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # Pass format and object
+        click.echo(format_output(output_format, "success", task))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -47,33 +55,47 @@ def task_create(project: str, name: str, description: Optional[str], status: str
 @click.option("--project", help="Filter by project ID")
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               help="Filter by task status")
-def task_list(project: Optional[str], status: Optional[str]):
+@click.pass_context  # Need context to get format
+def task_list(ctx, project: Optional[str], status: Optional[str]):  # Add ctx
     """List tasks with optional filters."""
     conn = get_db_connection()
     try:
         status_enum = TaskStatus(status) if status else None
         tasks = list_tasks(conn, project_id=project, status=status_enum)
-        click.echo(json_response("success", [t.__dict__ for t in tasks]))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # Pass format and list of objects
+        click.echo(format_output(output_format, "success", tasks))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
 
 @task.command("show")
 @click.argument("task_id")
-def task_show(task_id: str):
+@click.pass_context  # Need context to get format
+def task_show(ctx, task_id: str):  # Add ctx
     """Show task details."""
     conn = get_db_connection()
     try:
         task = get_task(conn, task_id)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if task:
-            click.echo(json_response("success", task.__dict__))
+            # Pass format and object
+            click.echo(format_output(output_format, "success", task))
         else:
-            click.echo(json_response(
-                "error", message=f"Task {task_id} not found"))
+            click.echo(format_output(output_format,
+                                     "error", message=f"Task {task_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -86,8 +108,9 @@ def task_show(task_id: str):
               help="New task status")
 # Add project option
 @click.option("--project", help="Move task to a different project ID")
-# Add project to signature
-def task_update(task_id: str, name: Optional[str], description: Optional[str], status: Optional[str], project: Optional[str]):
+@click.pass_context  # Need context to get format
+# Add ctx
+def task_update(ctx, task_id: str, name: Optional[str], description: Optional[str], status: Optional[str], project: Optional[str]):
     """Update a task."""
     conn = get_db_connection()
     try:
@@ -102,32 +125,44 @@ def task_update(task_id: str, name: Optional[str], description: Optional[str], s
             kwargs["project_id"] = project
 
         task = update_task(conn, task_id, **kwargs)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if task:
-            click.echo(json_response("success", task.__dict__))
+            # Pass format and object
+            click.echo(format_output(output_format, "success", task))
         else:
-            click.echo(json_response(
-                "error", message=f"Task {task_id} not found"))
+            click.echo(format_output(output_format,
+                                     "error", message=f"Task {task_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
 
 @task.command("delete")
 @click.argument("task_id")
-def task_delete(task_id: str):
+@click.pass_context  # Need context to get format
+def task_delete(ctx, task_id: str):  # Add ctx
     """Delete a task."""
     conn = get_db_connection()
     try:
         success = delete_task(conn, task_id)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if success:
-            click.echo(json_response(
-                "success", message=f"Task {task_id} deleted"))
+            click.echo(format_output(output_format,
+                                     "success", message=f"Task {task_id} deleted"))
         else:
-            click.echo(json_response(
-                "error", message=f"Task {task_id} not found"))
+            click.echo(format_output(output_format,
+                                     "error", message=f"Task {task_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -141,19 +176,25 @@ def dependency():
 @dependency.command("add")
 @click.argument("task_id")
 @click.option("--depends-on", required=True, help="Dependency task ID")
-def dependency_add(task_id: str, depends_on: str):
+@click.pass_context  # Need context to get format
+def dependency_add(ctx, task_id: str, depends_on: str):  # Add ctx
     """Add a task dependency."""
     conn = get_db_connection()
     try:
         success = add_task_dependency(conn, task_id, depends_on)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if success:
-            click.echo(json_response(
-                "success", message=f"Dependency added: {task_id} depends on {depends_on}"))
+            click.echo(format_output(output_format,
+                                     "success", message=f"Dependency added: {task_id} depends on {depends_on}"))
         else:
-            click.echo(json_response(
-                "error", message="Failed to add dependency"))
+            click.echo(format_output(output_format,
+                                     "error", message="Failed to add dependency"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -161,32 +202,44 @@ def dependency_add(task_id: str, depends_on: str):
 @dependency.command("remove")
 @click.argument("task_id")
 @click.option("--depends-on", required=True, help="Dependency task ID")
-def dependency_remove(task_id: str, depends_on: str):
+@click.pass_context  # Need context to get format
+def dependency_remove(ctx, task_id: str, depends_on: str):  # Add ctx
     """Remove a task dependency."""
     conn = get_db_connection()
     try:
         success = remove_task_dependency(conn, task_id, depends_on)
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
         if success:
-            click.echo(json_response(
-                "success", message=f"Dependency removed: {task_id} no longer depends on {depends_on}"))
+            click.echo(format_output(output_format,
+                                     "success", message=f"Dependency removed: {task_id} no longer depends on {depends_on}"))
         else:
-            click.echo(json_response("error", message="Dependency not found"))
+            click.echo(format_output(output_format, "error",
+                       message="Dependency not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error", message=str(e)))
     finally:
         conn.close()
 
 
 @dependency.command("list")
 @click.argument("task_id")
-def dependency_list(task_id: str):
+@click.pass_context  # Need context to get format
+def dependency_list(ctx, task_id: str):  # Add ctx
     """List task dependencies."""
     conn = get_db_connection()
     try:
         dependencies = get_task_dependencies(conn, task_id)
-        click.echo(json_response(
-            "success", [d.__dict__ for d in dependencies]))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # Note: get_task_dependencies already returns Task objects
+        click.echo(format_output(output_format, "success", dependencies))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()

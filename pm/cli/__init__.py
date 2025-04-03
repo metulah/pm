@@ -1,6 +1,6 @@
 """Command-line interface for the PM tool."""
 
-from .base import cli, get_db_connection, json_response
+from .base import cli, get_db_connection, format_output  # Use format_output
 from .project import project
 from .task import task
 from .note import note
@@ -11,7 +11,7 @@ from .template import template
 __all__ = [
     'cli',
     'get_db_connection',
-    'json_response',
+    'format_output',  # Export format_output
     'project',
     'task',
     'note',
