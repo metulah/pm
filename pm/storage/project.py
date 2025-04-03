@@ -5,6 +5,12 @@ import datetime
 from typing import Optional, List
 
 from ..models import Project
+from .task import list_tasks  # Import list_tasks
+
+
+class ProjectNotEmptyError(Exception):
+    """Raised when attempting to delete a project that still contains tasks."""
+    pass
 
 
 def create_project(conn: sqlite3.Connection, project: Project) -> Project:
@@ -56,10 +62,19 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
 
 
 def delete_project(conn: sqlite3.Connection, project_id: str) -> bool:
-    """Delete a project by ID."""
+    """Delete a project by ID after checking for tasks."""
+    # Check for existing tasks in this project
+    tasks = list_tasks(conn, project_id=project_id)
+    if tasks:
+        raise ProjectNotEmptyError(
+            f"Cannot delete project '{project_id}' because it still contains {len(tasks)} task(s)."
+        )
+
+    # Proceed with deletion if no tasks found
     with conn:
         cursor = conn.execute(
-            "DELETE FROM projects WHERE id = ?", (project_id,))
+            "DELETE FROM projects WHERE id = ?", (project_id,)
+        )
     return cursor.rowcount > 0
 
 

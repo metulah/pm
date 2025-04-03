@@ -7,7 +7,7 @@ import click
 from ..models import Project
 from ..storage import (
     create_project, get_project, update_project,
-    delete_project, list_projects
+    delete_project, list_projects, ProjectNotEmptyError  # Import ProjectNotEmptyError
 )
 from .base import cli, get_db_connection, json_response
 
@@ -98,14 +98,18 @@ def project_delete(project_id: str):
     """Delete a project."""
     conn = get_db_connection()
     try:
+        # Call the modified storage function
         success = delete_project(conn, project_id)
         if success:
             click.echo(json_response(
                 "success", message=f"Project {project_id} deleted"))
         else:
+            # This case might be less likely now if ProjectNotEmptyError is raised first
             click.echo(json_response(
                 "error", message=f"Project {project_id} not found"))
-    except Exception as e:
+    except ProjectNotEmptyError as e:  # Catch the specific error
+        click.echo(json_response("error", message=str(e)))
+    except Exception as e:  # Keep generic error handling
         click.echo(json_response("error", message=str(e)))
     finally:
         conn.close()

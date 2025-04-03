@@ -3,7 +3,7 @@
 from .db import init_db
 from .project import (
     create_project, get_project, update_project,
-    delete_project, list_projects
+    delete_project, list_projects, ProjectNotEmptyError  # Import the exception
 )
 from .task import (
     create_task, get_task, update_task, delete_task,
@@ -36,7 +36,7 @@ __all__ = [
     'init_db',
     # Project operations
     'create_project', 'get_project', 'update_project',
-    'delete_project', 'list_projects',
+    'delete_project', 'list_projects', 'ProjectNotEmptyError',  # Add exception to __all__
     # Task operations
     'create_task', 'get_task', 'update_task', 'delete_task',
     'list_tasks', 'add_task_dependency', 'remove_task_dependency',

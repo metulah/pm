@@ -99,5 +99,45 @@ def test_cli_commands(tmp_path):  # Remove monkeypatch fixture
     projects = response["data"]
     assert len(projects) >= 1  # At least our new project should be there
     assert any(p["name"] == "CLI Project" for p in projects)
-    assert response["data"][0]["name"] == "CLI Project"
-    assert response["data"][0]["name"] == "CLI Project"
+    project_id = projects[0]["id"]  # Get the created project ID
+
+    # Test task creation via CLI
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_id, '--name', 'CLI Task'])
+    assert result.exit_code == 0
+    response = json.loads(result.output)
+    assert response["status"] == "success"
+    assert response["data"]["name"] == "CLI Task"
+    task_id = response["data"]["id"]  # Get the created task ID
+
+    # Test deleting project with task (should fail)
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'delete', project_id])
+    assert result.exit_code == 0  # Command handles error gracefully
+    response = json.loads(result.output)
+    assert response["status"] == "error"
+    assert "Cannot delete project" in response["message"]
+    assert "contains 1 task(s)" in response["message"]
+
+    # Test deleting the task
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'delete', task_id])
+    assert result.exit_code == 0
+    response = json.loads(result.output)
+    assert response["status"] == "success"
+
+    # Test deleting project without task (should succeed)
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'delete', project_id])
+    assert result.exit_code == 0
+    response = json.loads(result.output)
+    assert response["status"] == "success"
+    assert "deleted" in response["message"]
+
+    # Verify project is gone
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'show', project_id])
+    assert result.exit_code == 0
+    response = json.loads(result.output)
+    assert response["status"] == "error"
+    assert "not found" in response["message"]
