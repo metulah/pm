@@ -1,3 +1,5 @@
+PLEASE NOTE: These are just some ideas we were previously working with. Some of them might be still good, but in general this is just a historical document, and I'll get rid of it at some point. So just don't give it TOO much weight.
+
 # Next Steps for Project Management CLI
 
 This document outlines the planned future development for the Project Management CLI tool for AI assistants.

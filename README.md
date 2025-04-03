@@ -25,6 +25,22 @@ cd pm
 python3 -m pip install -e ".[dev]"
 ```
 
+## Documentation
+
+The PM tool comes with comprehensive documentation in the form of a man page. After installation, you can access it using:
+
+```bash
+man pm
+```
+
+For quick help on specific commands, you can also use the `--help` option:
+
+```bash
+pm --help
+pm project --help
+pm task --help
+```
+
 ## Usage
 
 ### Project Commands

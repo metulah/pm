@@ -1,0 +1,429 @@
+.TH PM 1 "April 2025" "PM 0.1.0" "User Commands"
+.SH NAME
+pm \- project management CLI for AI assistants
+.SH SYNOPSIS
+.B pm
+.I command_group
+.I command
+[
+.I options
+]
+.PP
+.B pm project
+{
+.B create
+|
+.B list
+|
+.B show
+|
+.B update
+|
+.B delete
+}
+[
+.I options
+]
+.PP
+.B pm task
+{
+.B create
+|
+.B list
+|
+.B show
+|
+.B update
+|
+.B delete
+}
+[
+.I options
+]
+.PP
+.B pm task dependency
+{
+.B add
+|
+.B remove
+|
+.B list
+}
+[
+.I options
+]
+.PP
+.B pm task metadata
+{
+.B set
+|
+.B get
+|
+.B delete
+|
+.B query
+}
+[
+.I options
+]
+.PP
+.B pm task subtask
+{
+.B create
+|
+.B list
+|
+.B show
+|
+.B update
+|
+.B delete
+}
+[
+.I options
+]
+.PP
+.B pm template
+{
+.B create
+|
+.B list
+|
+.B show
+|
+.B add-subtask
+|
+.B apply
+|
+.B delete
+}
+[
+.I options
+]
+.PP
+.B pm note
+{
+.B add
+|
+.B list
+|
+.B show
+|
+.B update
+|
+.B delete
+}
+[
+.I options
+]
+.SH DESCRIPTION
+.PP
+\fBpm\fR is a command-line project management tool specifically designed for AI assistants to track projects, tasks, and dependencies. It provides a structured way to manage work and track progress through a simple CLI interface with standardized JSON output for easy parsing.
+.PP
+The tool is built around the concept of projects containing tasks, which can have dependencies, metadata, subtasks, and notes. All data is stored in a SQLite database for lightweight, file-based storage that requires minimal setup.
+.PP
+\fBpm\fR is optimized for programmatic use by AI assistants with features that facilitate:
+.IP \(bu 4
+Structured project and task management
+.IP \(bu 4
+Dependency tracking between tasks with circular dependency prevention
+.IP \(bu 4
+Flexible metadata attachment to tasks for custom attributes
+.IP \(bu 4
+Subtask management for breaking down complex tasks
+.IP \(bu 4
+Task templates for standardizing common task patterns
+.IP \(bu 4
+Note-taking for projects and tasks to capture context
+.IP \(bu 4
+JSON-formatted responses for easy parsing and integration
+.PP
+The tool follows a consistent command structure with command groups and subcommands, making it intuitive to use and extend. All operations return standardized JSON responses with a consistent structure, allowing for reliable parsing and error handling.
+.PP
+\fBpm\fR is particularly valuable for AI assistants that need to:
+.IP \(bu 4
+Maintain context between different sessions
+.IP \(bu 4
+Track complex, multi-step tasks
+.IP \(bu 4
+Manage dependencies between related pieces of work
+.IP \(bu 4
+Store metadata about decisions and reasoning
+.IP \(bu 4
+Provide structured handoffs between different AI instances
+.PP
+The tool is designed to be lightweight and self-contained, requiring minimal setup and dependencies. It can be easily integrated into existing workflows and extended with additional functionality as needed.
+.SH OPTIONS
+.PP
+\fBpm\fR uses the Click command-line framework, which provides consistent option handling across all commands. Options can be specified using either short form (e.g., \fB-n\fR) or long form (e.g., \fB--name\fR).
+.PP
+Global options that apply to all commands:
+.TP
+.B --help
+Show help message and exit.
+.SH COMMANDS
+.SS PROJECT COMMANDS
+.PP
+Project commands manage the top-level organizational units in the system.
+.TP
+.B pm project create --name NAME [--description DESCRIPTION]
+Create a new project with the specified name and optional description.
+.TP
+.B pm project list
+List all projects in the system.
+.TP
+.B pm project show PROJECT_ID
+Show detailed information about a specific project.
+.TP
+.B pm project update PROJECT_ID [--name NAME] [--description DESCRIPTION]
+Update a project's name and/or description.
+.TP
+.B pm project delete PROJECT_ID
+Delete a project and all its associated tasks.
+.SS TASK COMMANDS
+.PP
+Task commands manage the individual work items within projects.
+.TP
+.B pm task create --project PROJECT_ID --name NAME [--description DESCRIPTION] [--status STATUS]
+Create a new task associated with the specified project. The status parameter is optional and defaults to NOT_STARTED. Valid status values are: NOT_STARTED, IN_PROGRESS, BLOCKED, PAUSED, COMPLETED.
+.TP
+.B pm task list [--project PROJECT_ID] [--status STATUS]
+List tasks, optionally filtered by project ID and/or status.
+.TP
+.B pm task show TASK_ID
+Show detailed information about a specific task.
+.TP
+.B pm task update TASK_ID [--name NAME] [--description DESCRIPTION] [--status STATUS]
+Update a task's name, description, and/or status.
+.TP
+.B pm task delete TASK_ID
+Delete a task.
+.SS DEPENDENCY COMMANDS
+.PP
+Dependency commands manage relationships between tasks, where one task must be completed before another can start.
+.TP
+.B pm task dependency add TASK_ID --depends-on DEPENDENCY_TASK_ID
+Add a dependency relationship, making TASK_ID depend on DEPENDENCY_TASK_ID.
+.TP
+.B pm task dependency remove TASK_ID --depends-on DEPENDENCY_TASK_ID
+Remove a dependency relationship.
+.TP
+.B pm task dependency list TASK_ID
+List all tasks that the specified task depends on.
+.SS METADATA COMMANDS
+.PP
+Metadata commands manage custom attributes attached to tasks.
+.TP
+.B pm task metadata set TASK_ID --key KEY --value VALUE [--type TYPE]
+Set metadata for a task. The type parameter is optional and will be auto-detected if not specified. Valid types are: string, int, float, datetime, bool, json.
+.TP
+.B pm task metadata get TASK_ID [--key KEY]
+Get metadata for a task, optionally filtered by key.
+.TP
+.B pm task metadata delete TASK_ID --key KEY
+Delete metadata for a task.
+.TP
+.B pm task metadata query --key KEY --value VALUE [--type TYPE]
+Query tasks by metadata.
+.SS SUBTASK COMMANDS
+.PP
+Subtask commands manage smaller components of tasks.
+.TP
+.B pm task subtask create TASK_ID --name NAME [--description DESCRIPTION] [--required/--optional] [--status STATUS]
+Create a new subtask for a task. The required parameter defaults to true and indicates whether this subtask must be completed for the parent task to be considered complete.
+.TP
+.B pm task subtask list TASK_ID [--status STATUS]
+List subtasks for a task, optionally filtered by status.
+.TP
+.B pm task subtask show SUBTASK_ID
+Show detailed information about a specific subtask.
+.TP
+.B pm task subtask update SUBTASK_ID [--name NAME] [--description DESCRIPTION] [--required/--optional] [--status STATUS]
+Update a subtask's name, description, required status, and/or completion status.
+.TP
+.B pm task subtask delete SUBTASK_ID
+Delete a subtask.
+.SS TEMPLATE COMMANDS
+.PP
+Template commands manage reusable task patterns.
+.TP
+.B pm template create --name NAME [--description DESCRIPTION]
+Create a new task template.
+.TP
+.B pm template list
+List all task templates.
+.TP
+.B pm template show TEMPLATE_ID
+Show detailed information about a specific template.
+.TP
+.B pm template add-subtask TEMPLATE_ID --name NAME [--description DESCRIPTION] [--required/--optional]
+Add a subtask to a template.
+.TP
+.B pm template apply TEMPLATE_ID --task TASK_ID
+Apply a template to a task, creating all the template's subtasks for the task.
+.TP
+.B pm template delete TEMPLATE_ID
+Delete a template.
+.SS NOTE COMMANDS
+.PP
+Note commands manage textual annotations for projects and tasks.
+.TP
+.B pm note add [--task TASK_ID] [--project PROJECT_ID] --content CONTENT [--author AUTHOR]
+Add a note to a task or project. Either task or project must be specified.
+.TP
+.B pm note list [--task TASK_ID] [--project PROJECT_ID]
+List notes for a task or project.
+.TP
+.B pm note show NOTE_ID
+Show detailed information about a specific note.
+.TP
+.B pm note update NOTE_ID --content CONTENT [--author AUTHOR]
+Update a note's content and/or author.
+.TP
+.B pm note delete NOTE_ID
+Delete a note.
+.SH EXAMPLES
+.PP
+Here are some examples of common workflows using the \fBpm\fR tool:
+.SS Creating and Managing a Project
+.PP
+.nf
+# Create a new project
+pm project create --name "Website Redesign" --description "Redesign the company website"
+
+# Get the project ID from the response
+PROJECT_ID="the_project_id_from_response"
+
+# List all projects to verify creation
+pm project list
+
+# Update the project description
+pm project update $PROJECT_ID --description "Redesign the company website with modern UI"
+
+# Show project details
+pm project show $PROJECT_ID
+.fi
+.SS Creating Tasks with Dependencies
+.PP
+.nf
+# Create tasks for the project
+pm task create --project $PROJECT_ID --name "Design mockups" --description "Create design mockups for key pages"
+pm task create --project $PROJECT_ID --name "Frontend implementation" --description "Implement the frontend based on mockups"
+
+# Get task IDs from responses
+DESIGN_TASK_ID="design_task_id_from_response"
+FRONTEND_TASK_ID="frontend_task_id_from_response"
+
+# Add dependency (Frontend depends on Design)
+pm task dependency add $FRONTEND_TASK_ID --depends-on $DESIGN_TASK_ID
+
+# List dependencies for the frontend task
+pm task dependency list $FRONTEND_TASK_ID
+
+# Update task statuses
+pm task update $DESIGN_TASK_ID --status "IN_PROGRESS"
+pm task update $DESIGN_TASK_ID --status "COMPLETED"
+pm task update $FRONTEND_TASK_ID --status "IN_PROGRESS"
+.fi
+.SS Using Metadata
+.PP
+.nf
+# Add metadata to a task
+pm task metadata set $DESIGN_TASK_ID --key "priority" --value "high"
+pm task metadata set $DESIGN_TASK_ID --key "estimated_hours" --value "8" --type "int"
+pm task metadata set $DESIGN_TASK_ID --key "due_date" --value "2025-05-01T12:00:00" --type "datetime"
+
+# Get all metadata for a task
+pm task metadata get $DESIGN_TASK_ID
+
+# Query tasks by metadata
+pm task metadata query --key "priority" --value "high"
+.fi
+.SS Working with Templates
+.PP
+.nf
+# Create a task template for code reviews
+pm template create --name "Code Review" --description "Standard code review process"
+
+# Get template ID from response
+TEMPLATE_ID="template_id_from_response"
+
+# Add subtasks to the template
+pm template add-subtask $TEMPLATE_ID --name "Review code for bugs" --required
+pm template add-subtask $TEMPLATE_ID --name "Check code style" --required
+pm template add-subtask $TEMPLATE_ID --name "Verify test coverage" --required
+pm template add-subtask $TEMPLATE_ID --name "Performance review" --optional
+
+# Create a task for code review
+pm task create --project $PROJECT_ID --name "Review frontend code" --description "Code review for frontend implementation"
+
+# Get task ID from response
+REVIEW_TASK_ID="review_task_id_from_response"
+
+# Apply the template to the task
+pm template apply $TEMPLATE_ID --task $REVIEW_TASK_ID
+
+# List subtasks for the review task
+pm task subtask list $REVIEW_TASK_ID
+.fi
+.SS Adding Notes
+.PP
+.nf
+# Add notes to a project
+pm note add --project $PROJECT_ID --content "Kickoff meeting scheduled for Monday" --author "AI Assistant"
+
+# Add notes to a task
+pm note add --task $DESIGN_TASK_ID --content "Client prefers blue color scheme" --author "AI Assistant"
+
+# List notes for a task
+pm note list --task $DESIGN_TASK_ID
+.fi
+.SH FILES
+.PP
+\fBpm\fR uses the following files:
+.TP
+.B pm.db
+SQLite database file that stores all project, task, and related data. This file is created in the current working directory when the tool is first used.
+.SH ENVIRONMENT
+.PP
+\fBpm\fR does not currently use any environment variables.
+.SH DIAGNOSTICS
+.PP
+All commands return JSON responses with the following structure:
+.PP
+.nf
+{
+  "status": "success|error",
+  "data": {...},  // For success responses
+  "message": "..." // For error responses
+}
+.fi
+.PP
+Common error messages include:
+.TP
+.B "Project X not found"
+The specified project ID does not exist in the database.
+.TP
+.B "Task X not found"
+The specified task ID does not exist in the database.
+.TP
+.B "Circular dependency detected"
+Adding the requested dependency would create a circular dependency chain.
+.TP
+.B "Project name cannot be empty"
+Project creation requires a non-empty name.
+.TP
+.B "Task must be associated with a project"
+Task creation requires a valid project ID.
+.SH BUGS
+.PP
+Please report bugs by opening an issue on the project's GitHub repository.
+.SH AUTHOR
+.PP
+The PM tool was created for AI assistants to manage projects and tasks effectively.
+.SH SEE ALSO
+.PP
+.BR jq (1),
+.BR sqlite3 (1)
+.PP
+For full documentation, refer to the project's GitHub repository.
