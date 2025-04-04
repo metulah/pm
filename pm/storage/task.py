@@ -157,23 +157,29 @@ def delete_task(conn: sqlite3.Connection, task_id: str) -> bool:
     return cursor.rowcount > 0
 
 
-def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, status: Optional[TaskStatus] = None) -> List[Task]:
-    """List tasks with optional filtering."""
+def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, status: Optional[TaskStatus] = None, include_completed: bool = False) -> List[Task]:
+    """List tasks with optional filtering, optionally including completed ones."""
     query = "SELECT * FROM tasks"
     params = []
-
-    if project_id or status:
-        query += " WHERE"
+    conditions = []
 
     if project_id:
-        query += " project_id = ?"
+        conditions.append("project_id = ?")
         params.append(project_id)
 
+    # Handle status filtering:
+    # - If a specific status is requested, use it.
+    # - Otherwise, if include_completed is False (default), exclude COMPLETED.
     if status:
-        if project_id:
-            query += " AND"
-        query += " status = ?"
+        conditions.append("status = ?")
         params.append(status.value)
+    elif not include_completed:
+        conditions.append("status != ?")
+        params.append(TaskStatus.COMPLETED.value)
+    # If status is None and include_completed is True, no status filter is added.
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
 
     query += " ORDER BY name"
 

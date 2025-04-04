@@ -55,13 +55,17 @@ def project_create(ctx, name: str, description: Optional[str], status: str):
 @project.command("list")
 # Add --id flag
 @click.option('--id', 'show_id', is_flag=True, default=False, help='Show the full ID column in text format.')
-@click.pass_context  # Need context to get format
-def project_list(ctx, show_id: bool):  # Add show_id to signature
+# Add --completed flag
+@click.option('--completed', 'include_completed', is_flag=True, default=False, help='Include completed projects in the list.')
+@click.pass_context
+# Add include_completed to signature
+def project_list(ctx, show_id: bool, include_completed: bool):
     """List all projects."""
     conn = get_db_connection()
     try:
         # print("DEBUG[project_list]: 1 - Getting projects", file=sys.stderr) # Removed debug
-        projects = list_projects(conn)
+        # Pass flag to storage function
+        projects = list_projects(conn, include_completed=include_completed)
         # print(f"DEBUG[project_list]: 2 - Got {len(projects)} projects", file=sys.stderr) # Removed debug
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')

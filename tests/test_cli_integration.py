@@ -185,85 +185,110 @@ def test_cli_output_format(cli_runner_env):
     """Test --format text vs json for list and show using slugs."""
     runner, db_path = cli_runner_env
 
-    # Setup: Create a project and a task
-    result_proj = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
-                                '--name', 'Format Test Proj', '--description', 'Format Desc'])
-    project_data = json.loads(result_proj.output)['data']
-    project_id = project_data['id']
-    project_slug = project_data['slug']
-    result_task = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', project_slug, '--name', 'Format Test Task'])  # Use slug
-    task_data = json.loads(result_task.output)['data']
-    task_id = task_data['id']
-    task_slug = task_data['slug']
+    # Setup: Create an active project/task and a completed project/task
+    result_proj_active = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+                                             '--name', 'Format Active Proj', '--description', 'Active Desc', '--status', 'ACTIVE'])
+    proj_active_data = json.loads(result_proj_active.output)['data']
+    proj_active_id = proj_active_data['id']
+    proj_active_slug = proj_active_data['slug']
 
-    # Test project list (Text format)
-    result_list_text = runner.invoke(
+    result_proj_completed = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+                                                '--name', 'Format Completed Proj', '--description', 'Completed Desc', '--status', 'COMPLETED'])
+    proj_completed_data = json.loads(result_proj_completed.output)['data']
+    proj_completed_id = proj_completed_data['id']
+    proj_completed_slug = proj_completed_data['slug']
+
+    result_task_active = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'create', '--project', proj_active_slug, '--name', 'Format Active Task', '--status', 'IN_PROGRESS'])
+    task_active_data = json.loads(result_task_active.output)['data']
+    task_active_id = task_active_data['id']
+    task_active_slug = task_active_data['slug']
+
+    result_task_completed = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'create', '--project', proj_active_slug, '--name', 'Format Completed Task', '--status', 'COMPLETED'])
+    task_completed_data = json.loads(result_task_completed.output)['data']
+    task_completed_id = task_completed_data['id']
+    task_completed_slug = task_completed_data['slug']
+
+    # Test project list (Text format - default, should hide completed)
+    result_list_text_default = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
-    assert result_list_text.exit_code == 0
-    # Check that ID is NOT present by default in text format
-    assert "ID" not in result_list_text.output
-    assert project_slug in result_list_text.output  # Check slug is present
+    assert result_list_text_default.exit_code == 0
+    assert "ID" not in result_list_text_default.output  # ID hidden
+    assert proj_active_slug in result_list_text_default.output  # Active project shown
+    # Completed project hidden
+    assert proj_completed_slug not in result_list_text_default.output
 
-    # Test project list with --id flag (Text format)
-    result_list_text_id = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id'])
-    assert result_list_text_id.exit_code == 0
-    # Check that ID IS present when --id flag is used
-    assert "ID" in result_list_text_id.output
-    assert project_slug in result_list_text_id.output
-    assert "NAME" in result_list_text.output
-    assert "SLUG" in result_list_text.output  # Check slug column
-    assert "STATUS" in result_list_text.output
-    assert "Format Test Proj" in result_list_text.output
-    assert project_slug in result_list_text.output  # Check slug value
-    # assert project_id in result_list_text.output # Removed: ID value is not shown by default
+    # Test project list (Text format - with --completed)
+    result_list_text_completed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--completed'])
+    assert result_list_text_completed.exit_code == 0
+    assert "ID" not in result_list_text_completed.output  # ID still hidden
+    assert proj_active_slug in result_list_text_completed.output  # Active project shown
+    # Completed project shown
+    assert proj_completed_slug in result_list_text_completed.output
 
-    # Test project show (Text format) using slug
-    result_show_text = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'show', project_slug])
-    assert result_show_text.exit_code == 0
-    assert f"Id:          {project_id}" in result_show_text.output
-    assert "Name:        Format Test Proj" in result_show_text.output
-    # Check slug field
-    assert f"Slug:        {project_slug}" in result_show_text.output
-    assert "Description: Format Desc" in result_show_text.output
-    assert "Status:      ACTIVE" in result_show_text.output
+    # Test project list with --id and --completed flags (Text format)
+    result_list_text_id_completed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed'])
+    assert result_list_text_id_completed.exit_code == 0
+    assert "ID" in result_list_text_id_completed.output  # ID shown
+    assert proj_active_slug in result_list_text_id_completed.output
+    assert proj_completed_slug in result_list_text_id_completed.output
+    # Check headers and content for the --id --completed case
+    assert "NAME" in result_list_text_id_completed.output
+    assert "SLUG" in result_list_text_id_completed.output
+    assert "STATUS" in result_list_text_id_completed.output
+    assert "Format Active Proj" in result_list_text_id_completed.output
+    assert "Format Completed Proj" in result_list_text_id_completed.output
 
-    # Test task list (Text format) using project slug
-    result_task_list_text = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', project_slug])  # Use slug
-    assert result_task_list_text.exit_code == 0
-    # Check that ID is NOT present by default in text format
-    assert "ID" not in result_task_list_text.output
-    assert "NAME" in result_task_list_text.output
-    assert "SLUG" in result_task_list_text.output  # Check task slug column
-    assert "PROJECT_SLUG" in result_task_list_text.output  # Check project slug column
-    assert "STATUS" in result_task_list_text.output
-    assert "Format Test Task" in result_task_list_text.output
-    # assert task_id in result_task_list_text.output # Removed: ID value not shown by default
-    assert task_slug in result_task_list_text.output  # Check task slug value
-    assert project_slug in result_task_list_text.output  # Check project slug value
+    # Test project show (Text format) using active slug
+    result_show_text_active = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'show', proj_active_slug])
+    assert result_show_text_active.exit_code == 0
+    assert f"Id:          {proj_active_id}" in result_show_text_active.output
+    assert "Name:        Format Active Proj" in result_show_text_active.output
+    assert f"Slug:        {proj_active_slug}" in result_show_text_active.output
+    assert "Description: Active Desc" in result_show_text_active.output
+    assert "Status:      ACTIVE" in result_show_text_active.output
 
-    # Test task list with --id flag (Text format)
-    result_task_list_text_id = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', project_slug, '--id'])
-    assert result_task_list_text_id.exit_code == 0
-    # Check that ID IS present when --id flag is used
-    assert "ID" in result_task_list_text_id.output
-    assert task_slug in result_task_list_text_id.output
-    assert project_slug in result_task_list_text_id.output
+    # Test task list (Text format - default, should hide completed task)
+    result_task_list_default = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug])
+    assert result_task_list_default.exit_code == 0
+    assert "ID" not in result_task_list_default.output  # ID hidden
+    assert task_active_slug in result_task_list_default.output  # Active task shown
+    # Completed task hidden
+    assert task_completed_slug not in result_task_list_default.output
 
-    # Test task show (Text format) using slugs
-    result_task_show_text = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'task', 'show', project_slug, task_slug])
-    assert result_task_show_text.exit_code == 0
-    assert f"Id:          {task_id}" in result_task_show_text.output
-    assert f"Project Id:  {project_id}" in result_task_show_text.output
-    assert "Name:        Format Test Task" in result_task_show_text.output
-    # Check slug field
-    assert f"Slug:        {task_slug}" in result_task_show_text.output
-    assert "Status:      NOT_STARTED" in result_task_show_text.output
+    # Test task list (Text format - with --completed)
+    result_task_list_completed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug, '--completed'])
+    assert result_task_list_completed.exit_code == 0
+    assert "ID" not in result_task_list_completed.output  # ID hidden
+    assert task_active_slug in result_task_list_completed.output  # Active task shown
+    assert task_completed_slug in result_task_list_completed.output  # Completed task shown
+
+    # Test task list with --id and --completed flags (Text format)
+    result_task_list_id_completed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug, '--id', '--completed'])
+    assert result_task_list_id_completed.exit_code == 0
+    assert "ID" in result_task_list_id_completed.output  # ID shown
+    assert task_active_slug in result_task_list_id_completed.output
+    assert task_completed_slug in result_task_list_id_completed.output
+    # Project slug still present
+    assert proj_active_slug in result_task_list_id_completed.output
+
+    # Test task show (Text format) using active slugs
+    result_task_show_active = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'show', proj_active_slug, task_active_slug])
+    assert result_task_show_active.exit_code == 0
+    assert f"Id:          {task_active_id}" in result_task_show_active.output
+    # Show still shows ID
+    assert f"Project Id:  {proj_active_id}" in result_task_show_active.output
+    assert "Name:        Format Active Task" in result_task_show_active.output
+    assert f"Slug:        {task_active_slug}" in result_task_show_active.output
+    assert "Status:      IN_PROGRESS" in result_task_show_active.output
 
 
 def test_cli_simple_messages(cli_runner_env):

@@ -142,9 +142,15 @@ def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = Fals
     return cursor.rowcount > 0
 
 
-def list_projects(conn: sqlite3.Connection) -> List[Project]:
-    """List all projects."""
-    rows = conn.execute("SELECT * FROM projects ORDER BY name").fetchall()
+def list_projects(conn: sqlite3.Connection, include_completed: bool = False) -> List[Project]:
+    """List projects, optionally including completed ones."""
+    query = "SELECT * FROM projects"
+    params = []
+    if not include_completed:
+        query += " WHERE status != ?"
+        params.append(ProjectStatus.COMPLETED.value)
+    query += " ORDER BY name"
+    rows = conn.execute(query, params).fetchall()
     projects = []
     for row in rows:
         try:
