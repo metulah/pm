@@ -217,8 +217,9 @@ def task_update(ctx, project_identifier: str, task_identifier: str, name: Option
 @task.command("delete")
 @click.argument("project_identifier")  # Add project identifier argument
 @click.argument("task_identifier")    # Rename task_id to task_identifier
+@click.option('--force', is_flag=True, default=False, help='REQUIRED: Confirm irreversible deletion of task and associated data.')
 @click.pass_context
-def task_delete(ctx, project_identifier: str, task_identifier: str):
+def task_delete(ctx, project_identifier: str, task_identifier: str, force: bool):  # Add force parameter
     """Delete a task."""
     conn = get_db_connection()
     try:
@@ -227,6 +228,13 @@ def task_delete(ctx, project_identifier: str, task_identifier: str):
         task_to_delete = resolve_task_identifier(
             conn, project_obj, task_identifier)
         task_id = task_to_delete.id
+
+        # Check for --force flag before proceeding
+        if not force:
+            raise click.UsageError(
+                "Deleting a task is irreversible and will remove all associated subtasks, notes, etc. "
+                "Use the --force flag to confirm."
+            )
 
         success = delete_task(conn, task_id)  # Call delete with resolved ID
         output_format = ctx.obj.get('FORMAT', 'json')
@@ -238,11 +246,13 @@ def task_delete(ctx, project_identifier: str, task_identifier: str):
             # Should not be reached if resolver works
             click.echo(format_output(output_format, "error",
                        message=f"Failed to delete task '{task_identifier}'"))
-    except Exception as e:
-        # Get format from context
+    except click.ClickException:
+        # Let Click handle its own exceptions (like UsageError)
+        raise
+    except Exception as e:  # Catch other unexpected errors
         output_format = ctx.obj.get('FORMAT', 'json')
         click.echo(format_output(output_format, "error",
-                   message=str(e)))  # Use format_output
+                   message=f"An unexpected error occurred: {e}"))
     finally:
         conn.close()
 

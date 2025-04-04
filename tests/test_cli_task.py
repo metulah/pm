@@ -192,3 +192,64 @@ def test_task_update_description_from_file_not_found(cli_runner_env):
     assert result_update.exit_code != 0  # Should fail
     assert "Error: File not found" in result_update.stderr  # Check stderr for UsageError
     assert filepath in result_update.stderr  # Check stderr for filename too
+
+
+# --- Deletion Tests ---
+
+def test_task_delete_requires_force(cli_runner_env):
+    """Test that 'task delete' fails without --force."""
+    runner, db_path = cli_runner_env
+    # Setup: Create project and task
+    result_proj = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Task Force Delete Project'])
+    project_slug = json.loads(result_proj.output)['data']['slug']
+    result_task = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                                      '--project', project_slug, '--name', 'Task Force Delete Test'])
+    task_slug = json.loads(result_task.output)['data']['slug']
+    task_id = json.loads(result_task.output)[
+        'data']['id']  # Need ID for verification
+
+    # Attempt delete without --force
+    result_delete = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'delete', project_slug, task_slug])
+
+    # Expect failure and specific error message
+    assert result_delete.exit_code != 0
+    assert "Error: Deleting a task is irreversible" in result_delete.stderr
+    assert "--force" in result_delete.stderr
+
+    # Verify task still exists
+    conn = init_db(db_path)
+    task = get_task(conn, task_id)
+    conn.close()
+    assert task is not None
+
+
+def test_task_delete_with_force(cli_runner_env):
+    """Test that 'task delete' succeeds with --force."""
+    runner, db_path = cli_runner_env
+    # Setup: Create project and task
+    result_proj = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Task Force Delete Success Project'])
+    project_slug = json.loads(result_proj.output)['data']['slug']
+    result_task = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                                      '--project', project_slug, '--name', 'Task Force Delete Success Test'])
+    task_slug = json.loads(result_task.output)['data']['slug']
+    task_id = json.loads(result_task.output)[
+        'data']['id']  # Need ID for verification
+
+    # Attempt delete with --force
+    result_delete = runner.invoke(
+        cli, ['--db-path', db_path, 'task', 'delete', project_slug, task_slug, '--force'])
+
+    # Expect success
+    assert result_delete.exit_code == 0
+    response = json.loads(result_delete.output)
+    assert response['status'] == 'success'
+    assert f"Task '{task_slug}' deleted" in response['message']
+
+    # Verify task is gone
+    conn = init_db(db_path)
+    task = get_task(conn, task_id)
+    conn.close()
+    assert task is None

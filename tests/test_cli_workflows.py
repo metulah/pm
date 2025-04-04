@@ -40,22 +40,25 @@ def test_cli_project_delete_standard(cli_runner_env):
     # Test deleting project (using slug) with task (should fail)
     result_del_fail = runner.invoke(
         cli, ['--db-path', db_path, 'project', 'delete', project_slug])
-    assert result_del_fail.exit_code == 0  # CLI handles error gracefully
-    response_del_fail = json.loads(result_del_fail.output)
-    assert response_del_fail["status"] == "error"
-    assert "Cannot delete project" in response_del_fail["message"]
-    assert "contains 1 task(s)" in response_del_fail["message"]
+    # Expect non-zero exit code because --force is missing
+    assert result_del_fail.exit_code != 0
+    # Check stderr for the specific error message
+    assert "Error: Deleting a project is irreversible" in result_del_fail.stderr
+    assert "--force" in result_del_fail.stderr
+    # Removed leftover assertion: assert "contains 1 task(s)" in response_del_fail["message"]
 
     # Test deleting the task (using project slug and task slug)
     result_del_task = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'delete', project_slug, task_slug])
+        # Add --force
+        cli, ['--db-path', db_path, 'task', 'delete', project_slug, task_slug, '--force'])
     assert result_del_task.exit_code == 0
     assert json.loads(result_del_task.output)["status"] == "success"
 
     # Test deleting project (using slug) without task (should succeed)
     result_del_ok = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'delete', project_slug])
-    assert result_del_ok.exit_code == 0
+        # Add --force
+        cli, ['--db-path', db_path, 'project', 'delete', project_slug, '--force'])
+    assert result_del_ok.exit_code == 0  # Should now succeed with --force
     response_del_ok = json.loads(result_del_ok.output)
     assert response_del_ok["status"] == "success"
     assert "deleted" in response_del_ok["message"]
@@ -147,11 +150,12 @@ def test_cli_project_delete_force(cli_runner_env):
     # Attempt delete without force (using slug) (should fail)
     result_del_noforce = runner.invoke(
         cli, ['--db-path', db_path, 'project', 'delete', project_c_slug])
-    assert result_del_noforce.exit_code == 0  # CLI handles error
-    response_del_noforce = json.loads(result_del_noforce.output)
-    assert response_del_noforce['status'] == 'error'
-    assert "Cannot delete project" in response_del_noforce['message']
-    assert "contains 2 task(s)" in response_del_noforce['message']
+    # Expect non-zero exit code because --force is missing
+    assert result_del_noforce.exit_code != 0
+    # Check stderr for the specific error message
+    assert "Error: Deleting a project is irreversible" in result_del_noforce.stderr
+    assert "--force" in result_del_noforce.stderr
+    # Removed leftover assertion: assert "contains 2 task(s)" in response_del_noforce['message']
 
     # Attempt delete with force (using slug) (should succeed)
     result_del_force = runner.invoke(
@@ -195,19 +199,22 @@ def test_cli_simple_messages(cli_runner_env):
     project_id = project_data['id']
     project_slug = project_data['slug']
 
-    # Test delete success message (Text format) using slug
+    # Test delete success message (Text format) using slug - REQUIRES --force now
     result_del_text = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'delete', project_slug])
+        # Add --force
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'delete', project_slug, '--force'])
     assert result_del_text.exit_code == 0
     # Check message uses identifier
+    # Check stdout for success message
     assert f"Success: Project '{project_slug}' deleted" in result_del_text.output
 
     # Test delete error message (Text format) using non-existent slug
     result_del_err_text = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'delete', 'non-existent-slug'])
-    assert result_del_err_text.exit_code == 0
-    # Check resolver error message
-    assert "Error: Project not found with identifier: 'non-existent-slug'" in result_del_err_text.output
+    # Expect non-zero exit because project resolver fails (UsageError)
+    assert result_del_err_text.exit_code != 0
+    # Check stderr for the "not found" message from the resolver
+    assert "Error: Project not found with identifier: 'non-existent-slug'" in result_del_err_text.stderr
 
 
 def test_project_status_transitions(cli_runner_env):
