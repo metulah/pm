@@ -13,7 +13,7 @@ from ..storage import (
 )
 from ..core.types import ProjectStatus  # Import ProjectStatus
 # Import resolver
-from .base import cli, get_db_connection, format_output, resolve_project_identifier
+from .base import cli, get_db_connection, format_output, resolve_project_identifier, read_content_from_argument
 
 
 @cli.group()
@@ -120,7 +120,7 @@ def project_show(ctx, identifier: str):
 @project.command("update")
 @click.argument("identifier")  # Changed name from project_id to identifier
 @click.option("--name", help="New project name")
-@click.option("--description", help="New project description")
+@click.option("--description", help="New project description (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),  # Updated choices
               help="New project status (ACTIVE, COMPLETED, ARCHIVED, CANCELLED)")
 @click.pass_context

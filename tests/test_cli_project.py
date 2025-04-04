@@ -2,8 +2,10 @@
 
 import pytest
 import json
-from pm.storage import init_db
-from pm.cli import cli  # Import the main cli entry point
+import os
+from pathlib import Path
+from pm.storage import init_db, get_project
+from pm.cli.__main__ import cli  # Import the main cli entry point
 from click.testing import CliRunner
 
 # --- Fixture for CLI Runner and DB Path ---
@@ -120,3 +122,42 @@ def test_cli_project_status(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--archived'])
     assert result_list_text.exit_code == 0
     assert "ARCHIVED" in result_list_text.output  # Check status in list output
+
+
+# Rename test
+def test_project_update_description_from_file_success(cli_runner_env, tmp_path):
+    """Test 'project update --description @filepath' successfully reads file."""
+    runner, db_path = cli_runner_env
+    # Setup: Create a project
+    result_create = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Desc File Test Proj'])
+    assert result_create.exit_code == 0
+    project_data = json.loads(result_create.output)['data']
+    project_slug = project_data['slug']
+    project_id = project_data['id']
+
+    desc_content = "Description for project update from file."
+    filepath = tmp_path / "proj_desc_update.txt"
+    filepath.write_text(desc_content, encoding='utf-8')
+
+    # Attempt to update using @filepath
+    result_update = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                  project_slug, '--description', f"@{filepath}"])
+
+    assert result_update.exit_code == 0, f"CLI Error: {result_update.output}"
+    response_update = json.loads(result_update.output)
+    assert response_update["status"] == "success"
+
+    # *** This assertion should now PASS ***
+    # Check that the description WAS correctly read from the file.
+    assert response_update["data"]["description"] == desc_content
+    # Ensure it's not the literal string
+    assert response_update["data"]["description"] != f"@{filepath}"
+
+    # Verify in DB as well
+    conn = init_db(db_path)
+    project = get_project(conn, project_id)
+    conn.close()
+    assert project is not None
+    assert project.description == desc_content
+    assert project.description != f"@{filepath}"
