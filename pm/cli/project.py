@@ -25,7 +25,7 @@ def project():
 
 @project.command("create")
 @click.option("--name", required=True, help="Project name")
-@click.option("--description", help="Project description")
+@click.option("--description", help="Project description (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
               # Changed default and simplified help
               default=ProjectStatus.PROSPECTIVE.value, help="Initial project status (defaults to PROSPECTIVE)")

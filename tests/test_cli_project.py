@@ -249,6 +249,37 @@ def test_project_update_description_from_file_success(cli_runner_env, tmp_path):
     assert project.description != f"@{filepath}"
 
 
+def test_project_create_description_from_file(cli_runner_env, tmp_path):
+    """Test 'project create --description @filepath' reads description from file."""
+    runner, db_path = cli_runner_env
+
+    desc_content = "Description for project create from file."
+    filepath = tmp_path / "proj_desc_create.txt"
+    filepath.write_text(desc_content, encoding='utf-8')
+
+    # Attempt to create using @filepath for description
+    result_create = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'project', 'create',
+                                  '--name', 'Create Desc File Test',
+                                        '--description', f"@{filepath}"])
+
+    # This test *should* fail initially because the callback isn't applied to create
+    assert result_create.exit_code == 0, f"CLI Error: {result_create.output}"
+    response_create = json.loads(result_create.output)
+    assert response_create["status"] == "success"
+
+    # Verify the description matches the file content, not the literal '@filepath'
+    assert response_create["data"]["description"] == desc_content, "Description should match file content"
+    assert response_create["data"]["description"] != f"@{filepath}", "Description should not be the literal filepath string"
+
+    # Optional: Verify in DB as well
+    project_id = response_create["data"]["id"]
+    conn = init_db(db_path)
+    project = get_project(conn, project_id)
+    conn.close()
+    assert project is not None
+    assert project.description == desc_content
+
+
 # --- Deletion Tests ---
 
 def test_project_delete_requires_force(cli_runner_env):
