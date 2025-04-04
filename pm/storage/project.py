@@ -4,8 +4,9 @@ import sqlite3
 import datetime
 from typing import Optional, List
 from ..models import Project
-from ..core.types import ProjectStatus  # Import ProjectStatus
-import sys  # Import sys for debug print
+from ..core.types import ProjectStatus
+from ..core.utils import generate_slug  # Import slug generator
+import sys
 # Removed top-level import: from .task import list_tasks
 
 
@@ -14,14 +15,31 @@ class ProjectNotEmptyError(Exception):
     pass
 
 
+def _find_unique_project_slug(conn: sqlite3.Connection, base_slug: str) -> str:
+    """Finds a unique slug, appending numbers if necessary."""
+    slug = base_slug
+    counter = 1
+    while True:
+        row = conn.execute(
+            "SELECT id FROM projects WHERE slug = ?", (slug,)).fetchone()
+        if not row:
+            return slug
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+
 def create_project(conn: sqlite3.Connection, project: Project) -> Project:
-    """Create a new project in the database."""
+    """Create a new project in the database, generating a unique slug."""
     project.validate()
+    base_slug = generate_slug(project.name)
+    project.slug = _find_unique_project_slug(
+        conn, base_slug)  # Assign unique slug
+
     with conn:
         conn.execute(
-            "INSERT INTO projects (id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO projects (id, name, description, status, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (project.id, project.name, project.description, project.status.value,
-             project.created_at, project.updated_at)
+             project.slug, project.created_at, project.updated_at)
         )
     return project
 
@@ -32,11 +50,32 @@ def get_project(conn: sqlite3.Connection, project_id: str) -> Optional[Project]:
                        (project_id,)).fetchone()
     if not row:
         return None
+    # Ensure all columns are present before creating the object
+    # This assumes the SELECT * includes the new 'slug' column
     return Project(
         id=row['id'],
         name=row['name'],
         description=row['description'],
-        status=ProjectStatus(row['status']),  # Add status
+        status=ProjectStatus(row['status']),
+        slug=row['slug'],  # Populate slug
+        created_at=row['created_at'],
+        updated_at=row['updated_at']
+    )
+
+
+def get_project_by_slug(conn: sqlite3.Connection, slug: str) -> Optional[Project]:
+    """Get a project by its unique slug."""
+    row = conn.execute(
+        "SELECT * FROM projects WHERE slug = ?", (slug,)).fetchone()
+    if not row:
+        return None
+    # Re-use the same instantiation logic as get_project
+    return Project(
+        id=row['id'],
+        name=row['name'],
+        description=row['description'],
+        status=ProjectStatus(row['status']),
+        slug=row['slug'],
         created_at=row['created_at'],
         updated_at=row['updated_at']
     )
@@ -60,6 +99,7 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
 
     with conn:
         conn.execute(
+            # Slug is immutable, so it's not included in the UPDATE statement
             "UPDATE projects SET name = ?, description = ?, status = ?, updated_at = ? WHERE id = ?",
             (project.name, project.description,
              project.status.value, project.updated_at, project.id)
@@ -108,15 +148,13 @@ def list_projects(conn: sqlite3.Connection) -> List[Project]:
     projects = []
     for row in rows:
         try:
-            # --- Add Debug Print ---
-            print(
-                f"DEBUG[list_projects]: Processing row with keys: {row.keys()}", file=sys.stderr)
-            # --- End Debug Print ---
+            # Debug print removed
             project = Project(
                 id=row['id'],
                 name=row['name'],
                 description=row['description'],
-                status=ProjectStatus(row['status']),  # Add status
+                status=ProjectStatus(row['status']),
+                slug=row['slug'],  # Populate slug
                 created_at=row['created_at'],
                 updated_at=row['updated_at']
             )

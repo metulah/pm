@@ -2,19 +2,40 @@
 
 import sqlite3
 from typing import Optional, List, Set
+import datetime  # Added for updated_at in update_task
 
 from ..models import Task, TaskStatus
+from ..core.utils import generate_slug  # Import slug generator
 # Removed top-level import: from .project import get_project
 
 
+def _find_unique_task_slug(conn: sqlite3.Connection, project_id: str, base_slug: str) -> str:
+    """Finds a unique task slug within a project, appending numbers if necessary."""
+    slug = base_slug
+    counter = 1
+    while True:
+        row = conn.execute(
+            "SELECT id FROM tasks WHERE project_id = ? AND slug = ?",
+            (project_id, slug)
+        ).fetchone()
+        if not row:
+            return slug
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+
 def create_task(conn: sqlite3.Connection, task: Task) -> Task:
-    """Create a new task in the database."""
+    """Create a new task in the database, generating a unique slug within the project."""
     task.validate()
+    base_slug = generate_slug(task.name)
+    task.slug = _find_unique_task_slug(
+        conn, task.project_id, base_slug)  # Assign unique slug
+
     with conn:
         conn.execute(
-            "INSERT INTO tasks (id, project_id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO tasks (id, project_id, name, description, status, slug, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (task.id, task.project_id, task.name, task.description,
-             task.status.value, task.created_at, task.updated_at)
+             task.status.value, task.slug, task.created_at, task.updated_at)
         )
     return task
 
@@ -25,12 +46,36 @@ def get_task(conn: sqlite3.Connection, task_id: str) -> Optional[Task]:
                        (task_id,)).fetchone()
     if not row:
         return None
+    # Ensure all columns are present before creating the object
+    # This assumes the SELECT * includes the new 'slug' column
     return Task(
         id=row['id'],
         project_id=row['project_id'],
         name=row['name'],
         description=row['description'],
         status=TaskStatus(row['status']),
+        slug=row['slug'],  # Populate slug
+        created_at=row['created_at'],
+        updated_at=row['updated_at']
+    )
+
+
+def get_task_by_slug(conn: sqlite3.Connection, project_id: str, slug: str) -> Optional[Task]:
+    """Get a task by its slug within a specific project."""
+    row = conn.execute(
+        "SELECT * FROM tasks WHERE project_id = ? AND slug = ?",
+        (project_id, slug)
+    ).fetchone()
+    if not row:
+        return None
+    # Re-use the same instantiation logic as get_task
+    return Task(
+        id=row['id'],
+        project_id=row['project_id'],
+        name=row['name'],
+        description=row['description'],
+        status=TaskStatus(row['status']),
+        slug=row['slug'],
         created_at=row['created_at'],
         updated_at=row['updated_at']
     )
@@ -90,15 +135,19 @@ def update_task(conn: sqlite3.Connection, task_id: str, **kwargs) -> Optional[Ta
             raise ValueError(
                 f"Invalid status transition: {original_status.value} -> {task.status.value}")
 
+    task.updated_at = datetime.datetime.now()  # Ensure updated_at is set
     task.validate()
 
     with conn:
+        # Slug is immutable, so it's not included in the UPDATE statement's SET clause
         conn.execute(
             "UPDATE tasks SET project_id = ?, name = ?, description = ?, status = ?, updated_at = ? WHERE id = ?",
             (task.project_id, task.name, task.description,
              task.status.value, task.updated_at, task.id)
         )
-    return task
+    # Re-fetch the task to ensure the returned object includes the slug
+    # (since the 'task' object in memory might not have had it if fetched before slug was added)
+    return get_task(conn, task_id)
 
 
 def delete_task(conn: sqlite3.Connection, task_id: str) -> bool:
@@ -129,17 +178,19 @@ def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, statu
     query += " ORDER BY name"
 
     rows = conn.execute(query, params).fetchall()
-    return [
-        Task(
+    tasks = []
+    for row in rows:
+        tasks.append(Task(
             id=row['id'],
             project_id=row['project_id'],
             name=row['name'],
             description=row['description'],
             status=TaskStatus(row['status']),
+            slug=row['slug'],  # Populate slug
             created_at=row['created_at'],
             updated_at=row['updated_at']
-        ) for row in rows
-    ]
+        ))
+    return tasks
 
 
 def add_task_dependency(conn: sqlite3.Connection, task_id: str, dependency_id: str) -> bool:
@@ -187,17 +238,19 @@ def get_task_dependencies(conn: sqlite3.Connection, task_id: str) -> List[Task]:
         "SELECT t.* FROM tasks t JOIN task_dependencies td ON t.id = td.dependency_id WHERE td.task_id = ?",
         (task_id,)
     ).fetchall()
-    return [
-        Task(
+    dependencies = []
+    for row in rows:
+        dependencies.append(Task(
             id=row['id'],
             project_id=row['project_id'],
             name=row['name'],
             description=row['description'],
             status=TaskStatus(row['status']),
+            slug=row['slug'],  # Populate slug
             created_at=row['created_at'],
             updated_at=row['updated_at']
-        ) for row in rows
-    ]
+        ))
+    return dependencies
 
 
 def has_circular_dependency(conn: sqlite3.Connection, task_id: str, potential_dependency_id: str, visited: Optional[Set[str]] = None) -> bool:

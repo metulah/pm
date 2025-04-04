@@ -24,6 +24,7 @@ python3 -m pm.cli note list       # List notes for current task/project
    ```
 2. Review the latest notes for context
 3. Confirm understanding of current objectives and constraints
+4. **Set the task status to `IN_PROGRESS`**: Use `python3 -m pm.cli task update <TASK_ID> --status IN_PROGRESS` before starting work.
 
 ### During Session Guidelines
 

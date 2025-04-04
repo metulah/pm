@@ -50,6 +50,8 @@ pm task --help
 
 These options should be placed _before_ the command group (e.g., `pm --format text project list`).
 
+**Note on Identifiers:** Commands that accept `<project_id>` or `<task_id>` now also accept the auto-generated **slug** for that project or task (e.g., `my-project-name`, `my-task-name`). Using slugs is often more convenient than using the full UUID.
+
 ### Project Commands
 
 ```bash
@@ -60,47 +62,47 @@ pm project create --name "My Project" --description "Project description" [--sta
 pm project list
 
 # Show project details
-pm project show <project_id>
+pm project show <project_id_or_slug>
 
 # Update a project
-pm project update <project_id> --name "New Name" --description "New description" [--status STATUS] # Prints reminder on status change
+pm project update <project_id_or_slug> --name "New Name" --description "New description" [--status STATUS] # Prints reminder on status change
 
 # Delete a project
-pm project delete <project_id> [--force] # Use --force to delete project and its tasks
+pm project delete <project_id_or_slug> [--force] # Use --force to delete project and its tasks
 ```
 
 ### Task Commands
 
 ```bash
 # Create a task
-pm task create --project <project_id> --name "My Task" --description "Task description" --status "NOT_STARTED"
+pm task create --project <project_id_or_slug> --name "My Task" --description "Task description" --status "NOT_STARTED"
 
 # List tasks (optionally filtered)
 pm task list
-pm task list --project <project_id>
+pm task list --project <project_id_or_slug>
 pm task list --status "IN_PROGRESS"
 
 # Show task details
-pm task show <task_id>
+pm task show <project_id_or_slug> <task_id_or_slug>
 
 # Update a task
-pm task update <task_id> --name "New Name" --status "COMPLETED" # Prints reminder checklist to stderr on status change
+pm task update <project_id_or_slug> <task_id_or_slug> --name "New Name" --status "COMPLETED" # Prints reminder checklist to stderr on status change
 
 # Delete a task
-pm task delete <task_id>
+pm task delete <project_id_or_slug> <task_id_or_slug>
 ```
 
 ### Dependency Commands
 
 ```bash
 # Add a dependency
-pm task dependency add <task_id> --depends-on <dependency_id>
+pm task dependency add <project_id_or_slug> <task_id_or_slug> --depends-on <dependency_id_or_slug>
 
 # Remove a dependency
-pm task dependency remove <task_id> --depends-on <dependency_id>
+pm task dependency remove <project_id_or_slug> <task_id_or_slug> --depends-on <dependency_id_or_slug>
 
 # List dependencies
-pm task dependency list <task_id>
+pm task dependency list <project_id_or_slug> <task_id_or_slug>
 ```
 
 ## Development

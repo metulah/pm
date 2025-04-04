@@ -6,9 +6,13 @@ import enum
 import datetime
 import click
 import textwrap
+import uuid  # For UUID validation
 from typing import Any, Optional, List, Dict
 
 from ..storage import init_db
+from ..storage.project import get_project, get_project_by_slug
+from ..storage.task import get_task, get_task_by_slug
+from ..models import Project, Task
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -18,6 +22,49 @@ def get_db_connection() -> sqlite3.Connection:
     # If db_path is not set in context, init_db will use its default "pm.db"
     conn = init_db(db_path) if db_path else init_db()
     return conn
+# --- Identifier Resolution Helpers ---
+
+
+def is_valid_uuid(identifier: str) -> bool:
+    """Check if a string is a valid UUID."""
+    try:
+        uuid.UUID(identifier, version=4)
+        return True
+    except ValueError:
+        return False
+
+
+def resolve_project_identifier(conn: sqlite3.Connection, identifier: str) -> Project:
+    """Resolve a project identifier (UUID or slug) to a Project object."""
+    project = None
+    if is_valid_uuid(identifier):
+        project = get_project(conn, identifier)
+
+    if project is None:
+        project = get_project_by_slug(conn, identifier)
+
+    if project is None:
+        raise click.UsageError(
+            f"Project not found with identifier: '{identifier}'")
+    return project
+
+
+def resolve_task_identifier(conn: sqlite3.Connection, project: Project, task_identifier: str) -> Task:
+    """Resolve a task identifier (UUID or slug) within a given project to a Task object."""
+    task = None
+    if is_valid_uuid(task_identifier):
+        task = get_task(conn, task_identifier)
+        # Verify the found task actually belongs to the specified project
+        if task and task.project_id != project.id:
+            task = None  # Treat as not found if it's in the wrong project
+
+    if task is None:
+        task = get_task_by_slug(conn, project.id, task_identifier)
+
+    if task is None:
+        raise click.UsageError(
+            f"Task not found with identifier '{task_identifier}' in project '{project.name}' (ID: {project.id})")
+    return task
 
 # --- Text Formatting Helpers ---
 
