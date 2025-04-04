@@ -5,10 +5,12 @@ from typing import Optional
 import click
 
 from ..models import Project
+# Removed sys import again if present
 from ..storage import (
     create_project, get_project, update_project,
-    delete_project, list_projects, ProjectNotEmptyError  # Import ProjectNotEmptyError
+    delete_project, list_projects, ProjectNotEmptyError
 )
+from ..core.types import ProjectStatus  # Import ProjectStatus
 from .base import cli, get_db_connection, format_output  # Use format_output
 
 
@@ -21,20 +23,27 @@ def project():
 @project.command("create")
 @click.option("--name", required=True, help="Project name")
 @click.option("--description", help="Project description")
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
+              default=ProjectStatus.ACTIVE.value, help="Initial project status")  # Add status option
 @click.pass_context  # Need context to get format
-def project_create(ctx, name: str, description: str):  # Add ctx
+# Add status to signature
+def project_create(ctx, name: str, description: Optional[str], status: str):
     """Create a new project."""
     conn = get_db_connection()
     try:
         project = Project(id=str(uuid.uuid4()), name=name,
-                          description=description)
+                          description=description,
+                          status=ProjectStatus(status))  # Set status from arg
         project = create_project(conn, project)
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
         # Pass format and object
         click.echo(format_output(output_format, "success", project))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -45,13 +54,23 @@ def project_list(ctx):  # Add ctx
     """List all projects."""
     conn = get_db_connection()
     try:
+        # print("DEBUG[project_list]: 1 - Getting projects", file=sys.stderr) # Removed debug
         projects = list_projects(conn)
+        # print(f"DEBUG[project_list]: 2 - Got {len(projects)} projects", file=sys.stderr) # Removed debug
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
+        # print(f"DEBUG[project_list]: 3 - Format is '{output_format}'", file=sys.stderr) # Removed debug
         # Pass format and list of objects
-        click.echo(format_output(output_format, "success", projects))
+        formatted_output = format_output(output_format, "success", projects)
+        # print("DEBUG[project_list]: 4 - Formatting successful", file=sys.stderr) # Removed debug
+        click.echo(formatted_output)
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # print(f"DEBUG[project_list]: 5 - Caught Exception: {repr(e)}", file=sys.stderr) # Removed debug
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # print(f"DEBUG[project_list]: 6 - Formatting error message", file=sys.stderr) # Removed debug
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -73,7 +92,11 @@ def project_show(ctx, project_id: str):  # Add ctx
             click.echo(format_output(output_format,
                                      "error", message=f"Project {project_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        # print(f"DEBUG[project_show_except]: Caught Exception: type={type(e)}, repr='{repr(e)}', str='{str(e)}'", file=sys.stderr) # Removed debug
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 
@@ -82,9 +105,11 @@ def project_show(ctx, project_id: str):  # Add ctx
 @click.argument("project_id")
 @click.option("--name", help="New project name")
 @click.option("--description", help="New project description")
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
+              help="New project status")  # Add status option
 @click.pass_context  # Need context to get format
-# Add ctx
-def project_update(ctx, project_id: str, name: Optional[str], description: Optional[str]):
+# Add status to signature
+def project_update(ctx, project_id: str, name: Optional[str], description: Optional[str], status: Optional[str]):
     """Update a project."""
     conn = get_db_connection()
     try:
@@ -93,6 +118,8 @@ def project_update(ctx, project_id: str, name: Optional[str], description: Optio
             kwargs["name"] = name
         if description is not None:
             kwargs["description"] = description
+        if status is not None:
+            kwargs["status"] = status  # Add status to kwargs
 
         project = update_project(conn, project_id, **kwargs)
         # Get format from context
@@ -104,7 +131,10 @@ def project_update(ctx, project_id: str, name: Optional[str], description: Optio
             click.echo(format_output(output_format,
                                      "error", message=f"Project {project_id} not found"))
     except Exception as e:
-        click.echo(json_response("error", message=str(e)))
+        # Get format from context
+        output_format = ctx.obj.get('FORMAT', 'json')
+        click.echo(format_output(output_format, "error",
+                   message=str(e)))  # Use format_output
     finally:
         conn.close()
 

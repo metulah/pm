@@ -2,6 +2,7 @@
 
 import sqlite3
 import datetime
+import sys
 
 
 def adapt_datetime(dt):
@@ -24,13 +25,32 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
     conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
 
-    # Create tables if they don't exist
+    # --- Schema Creation / Migration ---
     with conn:
+        # Check if projects table exists and if status column is missing
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='projects';")
+        table_exists = cursor.fetchone()
+        status_column_exists = False
+        if table_exists:
+            cursor = conn.execute("PRAGMA table_info(projects);")
+            columns = [row['name'] for row in cursor.fetchall()]
+            status_column_exists = 'status' in columns
+
+        # Add 'status' column to 'projects' if table exists but column doesn't
+        if table_exists and not status_column_exists:
+            print("INFO: Adding 'status' column to existing 'projects' table.",
+                  file=sys.stderr)  # Optional info message
+            conn.execute(
+                "ALTER TABLE projects ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVE';")
+
+        # Create tables if they don't exist (original logic)
         conn.execute("""
         CREATE TABLE IF NOT EXISTS projects (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             description TEXT,
+            status TEXT NOT NULL DEFAULT 'ACTIVE', -- Add status column
             created_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP NOT NULL
         )
@@ -126,5 +146,7 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
             CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'PAUSED', 'COMPLETED'))
         )
         """)
+
+        # Redundant migration check removed (already handled earlier)
 
     return conn

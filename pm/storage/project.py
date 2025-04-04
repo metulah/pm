@@ -4,6 +4,8 @@ import sqlite3
 import datetime
 from typing import Optional, List
 from ..models import Project
+from ..core.types import ProjectStatus  # Import ProjectStatus
+import sys  # Import sys for debug print
 # Removed top-level import: from .task import list_tasks
 
 
@@ -17,8 +19,8 @@ def create_project(conn: sqlite3.Connection, project: Project) -> Project:
     project.validate()
     with conn:
         conn.execute(
-            "INSERT INTO projects (id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-            (project.id, project.name, project.description,
+            "INSERT INTO projects (id, name, description, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (project.id, project.name, project.description, project.status.value,
              project.created_at, project.updated_at)
         )
     return project
@@ -34,6 +36,7 @@ def get_project(conn: sqlite3.Connection, project_id: str) -> Optional[Project]:
         id=row['id'],
         name=row['name'],
         description=row['description'],
+        status=ProjectStatus(row['status']),  # Add status
         created_at=row['created_at'],
         updated_at=row['updated_at']
     )
@@ -47,6 +50,9 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
 
     for key, value in kwargs.items():
         if hasattr(project, key):
+            # Handle enum conversion for status
+            if key == 'status' and not isinstance(value, ProjectStatus):
+                value = ProjectStatus(value)
             setattr(project, key, value)
 
     project.updated_at = datetime.datetime.now()
@@ -54,8 +60,9 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
 
     with conn:
         conn.execute(
-            "UPDATE projects SET name = ?, description = ?, updated_at = ? WHERE id = ?",
-            (project.name, project.description, project.updated_at, project.id)
+            "UPDATE projects SET name = ?, description = ?, status = ?, updated_at = ? WHERE id = ?",
+            (project.name, project.description,
+             project.status.value, project.updated_at, project.id)
         )
     return project
 
@@ -98,12 +105,25 @@ def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = Fals
 def list_projects(conn: sqlite3.Connection) -> List[Project]:
     """List all projects."""
     rows = conn.execute("SELECT * FROM projects ORDER BY name").fetchall()
-    return [
-        Project(
-            id=row['id'],
-            name=row['name'],
-            description=row['description'],
-            created_at=row['created_at'],
-            updated_at=row['updated_at']
-        ) for row in rows
-    ]
+    projects = []
+    for row in rows:
+        try:
+            # --- Add Debug Print ---
+            print(
+                f"DEBUG[list_projects]: Processing row with keys: {row.keys()}", file=sys.stderr)
+            # --- End Debug Print ---
+            project = Project(
+                id=row['id'],
+                name=row['name'],
+                description=row['description'],
+                status=ProjectStatus(row['status']),  # Add status
+                created_at=row['created_at'],
+                updated_at=row['updated_at']
+            )
+            projects.append(project)
+        except IndexError as e:
+            print(
+                f"DEBUG[list_projects]: IndexError creating Project from row: {dict(row)}. Error: {e}", file=sys.stderr)
+            # Optionally re-raise or handle differently
+            raise
+    return projects

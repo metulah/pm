@@ -2,10 +2,10 @@
 
 import json
 import sqlite3
-import enum  # Import enum
-import datetime  # Import datetime
+import enum
+import datetime
 import click
-import textwrap  # Import textwrap
+import textwrap
 from typing import Any, Optional, List, Dict
 
 from ..storage import init_db
@@ -100,15 +100,16 @@ def _format_dict_as_text(data: Dict[str, Any]) -> str:
     if not data:
         return "No data found."
 
-    # Generate labels and find the maximum length for alignment
-    labels = {key: key.replace('_', ' ').title() + ':' for key in data.keys()}
+    # Calculate labels and max length first
+    temp_labels = [key.replace('_', ' ').title() + ':' for key in data.keys()]
     max_label_len = max(len(label)
-                        for label in labels.values()) if labels else 0
+                        for label in temp_labels) if temp_labels else 0
 
     output = []
     for key, value in data.items():
-        label_with_colon = labels[key]
-        # Pad based on the longest label+colon length, add one space after
+        # Regenerate the label for the current key
+        label_with_colon = key.replace('_', ' ').title() + ':'
+        # Pad based on the calculated max length
         output.append(f"{label_with_colon:<{max_label_len}} {value}")
 
     return "\n".join(output)
