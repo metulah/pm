@@ -2,6 +2,8 @@
 
 import json
 import sqlite3
+import enum  # Import enum
+import datetime  # Import datetime
 import click
 import textwrap  # Import textwrap
 from typing import Any, Optional, List, Dict
@@ -117,16 +119,42 @@ def _format_dict_as_text(data: Dict[str, Any]) -> str:
 def format_output(format: str, status: str, data: Optional[Any] = None, message: Optional[str] = None) -> str:
     """Create a standardized response in the specified format (json or text)."""
 
-    # Prepare data for JSON (convert objects to dicts)
-    # This processing is needed for both JSON and the text formatters
+    # Prepare data for JSON/Text (convert objects/enums/datetimes to serializable types)
     processed_data = None
     if data is not None:
-        if hasattr(data, '__dict__'):
-            processed_data = data.__dict__
-        elif isinstance(data, list) and data and hasattr(data[0], '__dict__'):
-            processed_data = [item.__dict__ for item in data]
+        items_to_process = []
+        is_list = isinstance(data, list)
+
+        if is_list:
+            items_to_process = data
         else:
-            processed_data = data  # Assume already serializable if not object/list of objects
+            items_to_process = [data]  # Treat single item as a list of one
+
+        processed_list = []
+        for item in items_to_process:
+            if hasattr(item, '__dict__'):
+                # Convert object to dict and process specific types
+                item_dict = item.__dict__.copy()  # Work on a copy
+                for key, value in item_dict.items():
+                    if isinstance(value, enum.Enum):
+                        item_dict[key] = value.value
+                    elif isinstance(value, datetime.datetime):
+                        item_dict[key] = value.isoformat()
+                    # Assume other types are handled by json.dumps or are simple
+                processed_list.append(item_dict)
+            else:
+                # If item is not an object (e.g., a dict from metadata get), pass through
+                # We assume basic types like str, int, float, bool, None are fine
+                processed_list.append(item)
+
+        # Assign back to processed_data, maintaining original structure (list or single item)
+        if is_list:
+            processed_data = processed_list
+        elif processed_list:  # Single item was processed
+            processed_data = processed_list[0]
+        # Input data was not a list and not processable (e.g., None, simple type)
+        else:
+            processed_data = data
 
     if format == 'json':
         response = {"status": status}
@@ -147,9 +175,10 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
                 if isinstance(processed_data, list):
                     return _format_list_as_text(processed_data)
                 elif isinstance(processed_data, dict):
+                    # Pass the processed dict (enums already converted)
                     return _format_dict_as_text(processed_data)
                 else:
-                    # Fallback for unexpected data types
+                    # Fallback for unexpected data types (already processed)
                     return str(processed_data)
             else:
                 # Generic success if no message or data
