@@ -53,8 +53,10 @@ def project_create(ctx, name: str, description: Optional[str], status: str):
 
 
 @project.command("list")
+# Add --id flag
+@click.option('--id', 'show_id', is_flag=True, default=False, help='Show the full ID column in text format.')
 @click.pass_context  # Need context to get format
-def project_list(ctx):  # Add ctx
+def project_list(ctx, show_id: bool):  # Add show_id to signature
     """List all projects."""
     conn = get_db_connection()
     try:
@@ -63,6 +65,8 @@ def project_list(ctx):  # Add ctx
         # print(f"DEBUG[project_list]: 2 - Got {len(projects)} projects", file=sys.stderr) # Removed debug
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
+        # Pass the show_id flag to the context for the formatter
+        ctx.obj['SHOW_ID'] = show_id
         # print(f"DEBUG[project_list]: 3 - Format is '{output_format}'", file=sys.stderr) # Removed debug
         # Pass format and list of objects
         formatted_output = format_output(output_format, "success", projects)

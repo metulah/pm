@@ -10,6 +10,7 @@ from ..storage import (
     create_task, get_task, update_task, delete_task, list_tasks,
     add_task_dependency, remove_task_dependency, get_task_dependencies
 )
+from ..storage.project import get_project  # Import get_project (Fixed syntax)
 from .base import cli, get_db_connection, format_output, resolve_project_identifier, resolve_task_identifier  # Import resolvers
 
 
@@ -60,8 +61,11 @@ def task_create(ctx, project: str, name: str, description: Optional[str], status
 @click.option("--project", help="Filter by project identifier (ID or slug)")
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               help="Filter by task status")
+# Add --id flag
+@click.option('--id', 'show_id', is_flag=True, default=False, help='Show the full ID column in text format.')
 @click.pass_context
-def task_list(ctx, project: Optional[str], status: Optional[str]):
+# Add show_id to signature
+def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool):
     """List tasks with optional filters."""
     conn = get_db_connection()
     try:
@@ -73,9 +77,33 @@ def task_list(ctx, project: Optional[str], status: Optional[str]):
 
         status_enum = TaskStatus(status) if status else None
         tasks = list_tasks(conn, project_id=project_id, status=status_enum)
-        # Get format from context
+
         output_format = ctx.obj.get('FORMAT', 'json')
-        # Pass format and list of objects
+        ctx.obj['SHOW_ID'] = show_id  # Ensure show_id is in context
+
+        # If text format, add project_slug attribute to each task object
+        # This allows format_output to handle datetime conversion correctly
+        if output_format == 'text' and tasks:
+            project_cache = {}
+            for task in tasks:
+                project_slug = "UNKNOWN_PROJECT"  # Default value
+                if task.project_id:
+                    if task.project_id not in project_cache:
+                        # Fetch project if not already cached
+                        try:
+                            project_obj = get_project(conn, task.project_id)
+                            project_cache[task.project_id] = project_obj.slug if project_obj else "UNKNOWN_PROJECT"
+                        except Exception:
+                            project_cache[task.project_id] = "ERROR_FETCHING_PROJECT"
+                    project_slug = project_cache[task.project_id]
+                # Dynamically add the attribute to the object itself
+                setattr(task, 'project_slug', project_slug)
+                # Explicitly remove project_id if it exists, so it doesn't get added back by the formatter
+                if hasattr(task, 'project_id'):
+                    delattr(task, 'project_id')
+
+        # Pass the (potentially modified) list of Task objects to the formatter
+        # format_output will handle converting objects to dicts and formatting dates
         click.echo(format_output(output_format, "success", tasks))
     except Exception as e:
         # Get format from context

@@ -201,13 +201,23 @@ def test_cli_output_format(cli_runner_env):
     result_list_text = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
     assert result_list_text.exit_code == 0
-    assert "ID" in result_list_text.output
+    # Check that ID is NOT present by default in text format
+    assert "ID" not in result_list_text.output
+    assert project_slug in result_list_text.output  # Check slug is present
+
+    # Test project list with --id flag (Text format)
+    result_list_text_id = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id'])
+    assert result_list_text_id.exit_code == 0
+    # Check that ID IS present when --id flag is used
+    assert "ID" in result_list_text_id.output
+    assert project_slug in result_list_text_id.output
     assert "NAME" in result_list_text.output
     assert "SLUG" in result_list_text.output  # Check slug column
     assert "STATUS" in result_list_text.output
     assert "Format Test Proj" in result_list_text.output
     assert project_slug in result_list_text.output  # Check slug value
-    assert project_id in result_list_text.output
+    # assert project_id in result_list_text.output # Removed: ID value is not shown by default
 
     # Test project show (Text format) using slug
     result_show_text = runner.invoke(
@@ -224,13 +234,25 @@ def test_cli_output_format(cli_runner_env):
     result_task_list_text = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', project_slug])  # Use slug
     assert result_task_list_text.exit_code == 0
-    assert "ID" in result_task_list_text.output
+    # Check that ID is NOT present by default in text format
+    assert "ID" not in result_task_list_text.output
     assert "NAME" in result_task_list_text.output
-    assert "SLUG" in result_task_list_text.output  # Check slug column
+    assert "SLUG" in result_task_list_text.output  # Check task slug column
+    assert "PROJECT_SLUG" in result_task_list_text.output  # Check project slug column
     assert "STATUS" in result_task_list_text.output
     assert "Format Test Task" in result_task_list_text.output
-    assert task_id in result_task_list_text.output
-    assert task_slug in result_task_list_text.output  # Check slug value
+    # assert task_id in result_task_list_text.output # Removed: ID value not shown by default
+    assert task_slug in result_task_list_text.output  # Check task slug value
+    assert project_slug in result_task_list_text.output  # Check project slug value
+
+    # Test task list with --id flag (Text format)
+    result_task_list_text_id = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', project_slug, '--id'])
+    assert result_task_list_text_id.exit_code == 0
+    # Check that ID IS present when --id flag is used
+    assert "ID" in result_task_list_text_id.output
+    assert task_slug in result_task_list_text_id.output
+    assert project_slug in result_task_list_text_id.output
 
     # Test task show (Text format) using slugs
     result_task_show_text = runner.invoke(

@@ -25,6 +25,77 @@ def get_db_connection() -> sqlite3.Connection:
 # --- Identifier Resolution Helpers ---
 
 
+def _format_relative_time(dt_input: Any) -> str:
+    """Formats a datetime object or ISO string into a relative time string."""
+    if isinstance(dt_input, str):
+        try:
+            dt = datetime.datetime.fromisoformat(
+                dt_input.replace('Z', '+00:00'))  # Handle Z for UTC
+        except ValueError:
+            return dt_input  # Return original string if parsing fails
+    elif isinstance(dt_input, datetime.datetime):
+        dt = dt_input
+    else:
+        return str(dt_input)  # Return string representation for other types
+
+    # Ensure 'now' is timezone-aware if 'dt' is, otherwise use naive
+    if dt.tzinfo:
+        now = datetime.datetime.now(dt.tzinfo)
+    else:
+        # If dt is naive, compare with naive now.
+        # Consider potential issues if naive dt represents UTC but now() is local.
+        # A robust solution might involve assuming UTC for naive or converting based on context.
+        now = datetime.datetime.now()
+
+    try:
+        # Add timezone awareness to naive datetime objects before subtraction if possible
+        # This is a complex topic; assuming consistency for now.
+        # If one is aware and the other naive, subtraction will raise TypeError.
+        diff = now - dt
+    except TypeError:
+        # Fallback for timezone mismatch (aware vs naive)
+        return dt.isoformat() + " (Timezone Mismatch)"
+
+    seconds = diff.total_seconds()
+
+    if seconds < 0:
+        # Handle future dates gracefully
+        return f"in the future ({dt.strftime('%Y-%m-%d %H:%M')})"
+    elif seconds < 2:
+        return "just now"
+    elif seconds < 60:
+        return f"{int(seconds)} seconds ago"
+    elif seconds < 120:
+        return "a minute ago"
+    elif seconds < 3600:
+        minutes = int(seconds / 60)
+        return f"{minutes} minutes ago"
+    elif seconds < 7200:
+        return "an hour ago"
+    elif seconds < 86400:
+        hours = int(seconds / 3600)
+        return f"{hours} hours ago"
+    elif seconds < 172800:  # Approx 48 hours
+        return "Yesterday"  # Capitalized
+    elif seconds < 2592000:  # Approx 30 days
+        days = int(seconds / 86400)
+        return f"{days} days ago"
+    elif seconds < 5184000:  # Approx 60 days
+        return "last month"
+    elif seconds < 31536000:  # Approx 365 days
+        # Use round for better month approximation
+        months = round(seconds / 2592000)
+        if months <= 1:
+            return "last month"
+        else:
+            return f"{months} months ago"
+    elif seconds < 63072000:  # Approx 2 years
+        return "last year"
+    else:
+        years = int(seconds / 31536000)
+        return f"{years} years ago"
+
+
 def is_valid_uuid(identifier: str) -> bool:
     """Check if a string is a valid UUID."""
     try:
@@ -69,18 +140,70 @@ def resolve_task_identifier(conn: sqlite3.Connection, project: Project, task_ide
 # --- Text Formatting Helpers ---
 
 
-def _format_list_as_text(data: List[Dict[str, Any]]) -> str:
-    """Formats a list of dictionaries (representing objects) as a text table with wrapping."""
+# Add data_type parameter
+def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = None) -> str:
+    """Formats a list of dictionaries (representing objects) as a text table with wrapping, respecting context flags."""
     if not data:
         return "No items found."
 
-    headers = list(data[0].keys())
+    # Define preferred column orders - adjust as needed for other types (slug before name)
+    # Define preferred column orders - status after description, project_slug for tasks
+    PREFERRED_ORDERS = {
+        'project': ['id', 'slug', 'name', 'description', 'status', 'created_at', 'updated_at'],
+        # Status should be after description
+        # project_slug after description, status after project_slug
+        # project_slug first
+        'task': ['project_slug', 'id', 'slug', 'name', 'description', 'status', 'created_at', 'updated_at'],
+        # Status not typical for notes
+        'note': ['id', 'project_id', 'task_id', 'content', 'created_at', 'updated_at'],
+        # Added slug assumption, status after desc
+        'subtask': ['id', 'slug', 'name', 'task_id', 'parent_subtask_id', 'description', 'status', 'created_at', 'updated_at'],
+        # No status for templates
+        'template': ['id', 'name', 'template_type', 'content', 'created_at', 'updated_at']
+        # Add more types if needed
+    }
+
+    # Get context to check for flags like SHOW_ID
+    ctx = click.get_current_context(silent=True)
+    # Default to False if context or flag isn't available
+    show_id = ctx.obj.get('SHOW_ID', False) if ctx and ctx.obj else False
+
+    # Type detection is now done in format_output and passed in
+
+    # Get the actual keys present in the data (using the first item as representative)
+    actual_keys = list(data[0].keys())
+
+    if data_type and data_type in PREFERRED_ORDERS:
+        preferred_order = PREFERRED_ORDERS[data_type]
+        # Start with preferred order, filtering for keys present in the actual data
+        potential_headers = [h for h in preferred_order if h in actual_keys]
+        # Add any remaining actual keys that weren't in the preferred order (sorted for consistency)
+        potential_headers.extend(
+            sorted([h for h in actual_keys if h not in potential_headers]))
+    else:
+        # Fallback to using the actual keys if type unknown
+        potential_headers = actual_keys
+        # Alternatively, sort for consistency: potential_headers = sorted(actual_keys)
+
+    # Filter headers based on context flags (e.g., show_id)
+    headers = []
+    for h in potential_headers:
+        # Conditionally skip the 'id' column if show_id is False
+        if h == 'id' and not show_id:
+            continue
+        headers.append(h)
+
+    # If headers list ended up empty (e.g., only ID was present and show_id=False), handle gracefully
+    if not headers:
+        return "No columns to display based on current flags."
+
     # Define max widths for specific columns that tend to be long
     MAX_WIDTHS = {'name': 40, 'description': 60}
     # Define minimum widths to prevent excessive squashing
-    MIN_WIDTHS = {'id': 36, 'project_id': 36, 'task_id': 36, 'template_id': 36}
+    MIN_WIDTHS = {'id': 36, 'project_id': 36, 'project_slug': 20,
+                  'task_id': 36, 'template_id': 36}  # Added project_slug min width
 
-    # Calculate initial widths based on headers
+    # Calculate initial widths based on the final `headers` list
     col_widths = {h: len(h) for h in headers}
 
     # Calculate max content width for each column, respecting MAX/MIN_WIDTHS
@@ -186,8 +309,17 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
                 for key, value in item_dict.items():
                     if isinstance(value, enum.Enum):
                         item_dict[key] = value.value
-                    elif isinstance(value, datetime.datetime):
-                        item_dict[key] = value.isoformat()
+                    elif isinstance(value, datetime.datetime) or (isinstance(value, str) and key in ('created_at', 'updated_at')):
+                        # Process datetimes or potential datetime strings for specific keys
+                        if format == 'text' and key in ('created_at', 'updated_at'):
+                            # Pass the original value (datetime or string) to the helper
+                            item_dict[key] = _format_relative_time(value)
+                        elif isinstance(value, datetime.datetime):
+                            # Keep ISO format for JSON or other date fields in text
+                            item_dict[key] = value.isoformat()
+                        else:
+                            # If it was a string but not for relative time formatting, keep it as is
+                            item_dict[key] = value
                     # Assume other types are handled by json.dumps or are simple
                 processed_list.append(item_dict)
             else:
@@ -221,7 +353,26 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
             elif processed_data is not None:
                 # Format data based on whether it's a list or single item (dict)
                 if isinstance(processed_data, list):
-                    return _format_list_as_text(processed_data)
+                    # --- Start Type Detection (Moved Here) ---
+                    data_type = None
+                    if processed_data:  # Check if list is not empty
+                        keys_sample = set(processed_data[0].keys())
+                        # Heuristics for type detection - might need refinement based on actual models
+                        # Note: project_id should have been removed from task data by now if text format
+                        if 'project_slug' not in keys_sample and 'slug' in keys_sample and 'status' in keys_sample and 'description' in keys_sample:
+                            data_type = 'project'
+                        # Adjusted task detection to look for project_slug and other characteristic task keys
+                        elif 'project_slug' in keys_sample and 'slug' in keys_sample and 'status' in keys_sample and 'description' in keys_sample:
+                            data_type = 'task'
+                        elif 'content' in keys_sample and ('task_id' in keys_sample or 'project_id' in keys_sample):
+                            data_type = 'note'  # Assuming project_id might still exist if note is directly on project
+                        elif 'task_id' in keys_sample and 'parent_subtask_id' in keys_sample:
+                            data_type = 'subtask'
+                        elif 'template_type' in keys_sample:
+                            data_type = 'template'
+                    # --- End Type Detection ---
+                    # Pass detected type
+                    return _format_list_as_text(processed_data, data_type=data_type)
                 elif isinstance(processed_data, dict):
                     # Pass the processed dict (enums already converted)
                     return _format_dict_as_text(processed_data)
