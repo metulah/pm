@@ -165,9 +165,10 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
 
     # Get context to check for flags like SHOW_ID
     ctx = click.get_current_context(silent=True)
-    # Default to False if context or flag isn't available
+    # Default flags to False if context or flag isn't available
     show_id = ctx.obj.get('SHOW_ID', False) if ctx and ctx.obj else False
-
+    show_description = ctx.obj.get(
+        'SHOW_DESCRIPTION', False) if ctx and ctx.obj else False
     # Type detection is now done in format_output and passed in
 
     # Get the actual keys present in the data (using the first item as representative)
@@ -188,8 +189,10 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
     # Filter headers based on context flags (e.g., show_id)
     headers = []
     for h in potential_headers:
-        # Conditionally skip the 'id' column if show_id is False
+        # Conditionally skip columns based on flags
         if h == 'id' and not show_id:
+            continue
+        if h == 'description' and not show_description:
             continue
         headers.append(h)
 

@@ -57,9 +57,11 @@ def project_create(ctx, name: str, description: Optional[str], status: str):
 @click.option('--id', 'show_id', is_flag=True, default=False, help='Show the full ID column in text format.')
 # Add --completed flag
 @click.option('--completed', 'include_completed', is_flag=True, default=False, help='Include completed projects in the list.')
+# Add --description flag
+@click.option('--description', 'show_description', is_flag=True, default=False, help='Show the full description column in text format.')
 @click.pass_context
-# Add include_completed to signature
-def project_list(ctx, show_id: bool, include_completed: bool):
+# Add show_description to signature
+def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool):
     """List all projects."""
     conn = get_db_connection()
     try:
@@ -71,6 +73,7 @@ def project_list(ctx, show_id: bool, include_completed: bool):
         output_format = ctx.obj.get('FORMAT', 'json')
         # Pass the show_id flag to the context for the formatter
         ctx.obj['SHOW_ID'] = show_id
+        ctx.obj['SHOW_DESCRIPTION'] = show_description  # Pass flag to context
         # print(f"DEBUG[project_list]: 3 - Format is '{output_format}'", file=sys.stderr) # Removed debug
         # Pass format and list of objects
         formatted_output = format_output(output_format, "success", projects)

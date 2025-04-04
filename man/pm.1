@@ -172,8 +172,8 @@ Project commands manage the top-level organizational units in the system.
 .B pm project create --name NAME [--description DESCRIPTION] [--status STATUS]
 Create a new project with the specified name and optional description. Status defaults to ACTIVE if not provided. Valid statuses: ACTIVE, COMPLETED, ARCHIVED.
 .TP
-.B pm project list [--id] [--completed]
-List projects. By default, COMPLETED projects are hidden. Use \fB--completed\fR to include them. Use \fB--id\fR to include the full ID column in text format (hidden by default).
+.B pm project list [--id] [--completed] [--description]
+List projects. By default, COMPLETED projects and the DESCRIPTION column are hidden. Use \fB--completed\fR to include completed projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
 .TP
 .B pm project show PROJECT_ID
 Show detailed information about a specific project.
@@ -190,8 +190,8 @@ Task commands manage the individual work items within projects.
 .B pm task create --project PROJECT_ID --name NAME [--description DESCRIPTION] [--status STATUS]
 Create a new task associated with the specified project. The status parameter is optional and defaults to NOT_STARTED. Valid status values are: NOT_STARTED, IN_PROGRESS, BLOCKED, PAUSED, COMPLETED.
 .TP
-.B pm task list [--project PROJECT_ID] [--status STATUS] [--id] [--completed]
-List tasks, optionally filtered by project ID and/or status. By default, COMPLETED tasks are hidden unless \fB--status COMPLETED\fR is specified. Use \fB--completed\fR to include completed tasks even when not filtering by status. Use \fB--id\fR to include the full ID column in text format (hidden by default).
+.B pm task list [--project PROJECT_ID] [--status STATUS] [--id] [--completed] [--description]
+List tasks, optionally filtered by project ID and/or status. By default, COMPLETED tasks and the DESCRIPTION column are hidden (unless \fB--status COMPLETED\fR is specified). Use \fB--completed\fR to include completed tasks. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
 .TP
 .B pm task show TASK_ID
 Show detailed information about a specific task.

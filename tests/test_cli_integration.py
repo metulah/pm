@@ -215,6 +215,9 @@ def test_cli_output_format(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
     assert result_list_text_default.exit_code == 0
     assert "ID" not in result_list_text_default.output  # ID hidden
+    # Description hidden by default
+    assert "DESCRIPTION" not in result_list_text_default.output
+    assert "Active Desc" not in result_list_text_default.output
     assert proj_active_slug in result_list_text_default.output  # Active project shown
     # Completed project hidden
     assert proj_completed_slug not in result_list_text_default.output
@@ -224,6 +227,8 @@ def test_cli_output_format(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--completed'])
     assert result_list_text_completed.exit_code == 0
     assert "ID" not in result_list_text_completed.output  # ID still hidden
+    # Description still hidden
+    assert "DESCRIPTION" not in result_list_text_completed.output
     assert proj_active_slug in result_list_text_completed.output  # Active project shown
     # Completed project shown
     assert proj_completed_slug in result_list_text_completed.output
@@ -233,8 +238,32 @@ def test_cli_output_format(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed'])
     assert result_list_text_id_completed.exit_code == 0
     assert "ID" in result_list_text_id_completed.output  # ID shown
+    # Description still hidden
+    assert "DESCRIPTION" not in result_list_text_id_completed.output
     assert proj_active_slug in result_list_text_id_completed.output
     assert proj_completed_slug in result_list_text_id_completed.output
+
+    # Test project list with --description flag (Text format)
+    result_list_text_desc = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--description'])
+    assert result_list_text_desc.exit_code == 0
+    assert "ID" not in result_list_text_desc.output  # ID hidden
+    assert "DESCRIPTION" in result_list_text_desc.output  # Description shown
+    assert "Active Desc" in result_list_text_desc.output
+    assert proj_active_slug in result_list_text_desc.output
+    # Completed still hidden by default
+    assert proj_completed_slug not in result_list_text_desc.output
+
+    # Test project list with --id, --completed, and --description flags (Text format)
+    result_list_text_all_flags = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed', '--description'])
+    assert result_list_text_all_flags.exit_code == 0
+    assert "ID" in result_list_text_all_flags.output  # ID shown
+    assert "DESCRIPTION" in result_list_text_all_flags.output  # Description shown
+    assert "Active Desc" in result_list_text_all_flags.output
+    assert "Completed Desc" in result_list_text_all_flags.output
+    assert proj_active_slug in result_list_text_all_flags.output
+    assert proj_completed_slug in result_list_text_all_flags.output
     # Check headers and content for the --id --completed case
     assert "NAME" in result_list_text_id_completed.output
     assert "SLUG" in result_list_text_id_completed.output
@@ -257,6 +286,7 @@ def test_cli_output_format(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug])
     assert result_task_list_default.exit_code == 0
     assert "ID" not in result_task_list_default.output  # ID hidden
+    assert "DESCRIPTION" not in result_task_list_default.output  # Description hidden
     assert task_active_slug in result_task_list_default.output  # Active task shown
     # Completed task hidden
     assert task_completed_slug not in result_task_list_default.output
@@ -266,6 +296,7 @@ def test_cli_output_format(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug, '--completed'])
     assert result_task_list_completed.exit_code == 0
     assert "ID" not in result_task_list_completed.output  # ID hidden
+    assert "DESCRIPTION" not in result_task_list_completed.output  # Description hidden
     assert task_active_slug in result_task_list_completed.output  # Active task shown
     assert task_completed_slug in result_task_list_completed.output  # Completed task shown
 
@@ -274,10 +305,30 @@ def test_cli_output_format(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug, '--id', '--completed'])
     assert result_task_list_id_completed.exit_code == 0
     assert "ID" in result_task_list_id_completed.output  # ID shown
+    assert "DESCRIPTION" not in result_task_list_id_completed.output  # Description hidden
     assert task_active_slug in result_task_list_id_completed.output
     assert task_completed_slug in result_task_list_id_completed.output
     # Project slug still present
     assert proj_active_slug in result_task_list_id_completed.output
+
+    # Test task list with --description flag (Text format)
+    result_task_list_desc = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug, '--description'])
+    assert result_task_list_desc.exit_code == 0
+    assert "ID" not in result_task_list_desc.output  # ID hidden
+    assert "DESCRIPTION" in result_task_list_desc.output  # Description shown
+    assert task_active_slug in result_task_list_desc.output
+    assert task_completed_slug not in result_task_list_desc.output  # Completed hidden
+
+    # Test task list with all flags (Text format)
+    result_task_list_all = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'task', 'list', '--project', proj_active_slug, '--id', '--completed', '--description'])
+    assert result_task_list_all.exit_code == 0
+    assert "ID" in result_task_list_all.output  # ID shown
+    assert "DESCRIPTION" in result_task_list_all.output  # Description shown
+    assert task_active_slug in result_task_list_all.output
+    assert task_completed_slug in result_task_list_all.output
+    assert proj_active_slug in result_task_list_all.output
 
     # Test task show (Text format) using active slugs
     result_task_show_active = runner.invoke(
