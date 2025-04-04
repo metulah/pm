@@ -36,12 +36,13 @@ python3 -m pm.cli note list       # List notes for current task/project
    ```
 4. Use the PM tool to track progress and state changes
 5. If scope changes are needed, they must be explicitly discussed with the user
+6. Re-evaluate the plan if significant unexpected issues or new insights emerge during the session.
 
 ### Session End Requirements (CRITICAL)
 
-1. Create a session handoff note using the PM tool:
+1. Create a session handoff note **attached to the specific task worked on** using the PM tool:
    ```bash
-   python3 -m pm.cli note add     # Add session handoff note
+   python3 -m pm.cli note add --task <TASK_ID> # Add session handoff note to task
    ```
    Include in the note:
    - Summary of work completed
@@ -61,6 +62,7 @@ python3 -m pm.cli note list       # List notes for current task/project
 2. Follow project's coding standards
 3. No scope changes without explicit user approval
 4. Document decisions and assumptions using the note system
+5. Use the `--force` flag convention for destructive operations (e.g., `delete`) to prevent accidental data loss. The command should fail if `--force` is omitted.
 
 ### Testing Requirements
 
@@ -68,6 +70,8 @@ python3 -m pm.cli note list       # List notes for current task/project
 2. Update existing tests as needed
 3. Verify all tests pass before completing task
 4. Document test coverage and gaps using notes
+5. Prefer creating **new, focused test files** (e.g., `test_cli_<feature>.py`) for distinct features or command groups rather than excessively expanding existing files.
+6. Keep tests focused on their layer (e.g., storage tests in `test_<storage_module>.py`, CLI tests in `test_cli_<command_group>.py`).
 
 ### Documentation Requirements
 
@@ -109,6 +113,7 @@ python3 -m pm.cli note update           # Update existing note
 2. Verify working directory when running commands
 3. Review latest notes if unsure of state
 4. Ensure the tool is up to date
+5. If database errors occur after code changes (especially related to constraints like `CHECK` or `FOREIGN KEY`), consider if a schema migration might be needed.
 
 ## Verification Checklist
 
@@ -119,3 +124,9 @@ Before completing any session, verify:
 - [ ] Tests written and passing
 - [ ] Task status updated in PM tool
 - [ ] No unaddressed scope changes
+
+## Database Schema Changes
+
+1.  **Caution:** Exercise caution when modifying the database schema (`pm/storage/db.py`). Changes can be hard to revert and may affect existing data.
+2.  **Backups:** Before attempting any schema migration or potentially destructive schema change, ensure a reliable **backup strategy** is in place or that the current data is expendable.
+3.  **Migrations:** SQLite has limited support for altering existing constraints. Migrations often involve renaming the old table, creating a new table with the correct schema, copying data, and dropping the old table. Plan these steps carefully.
