@@ -129,7 +129,8 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
             status TEXT NOT NULL DEFAULT 'ACTIVE',
             slug TEXT NOT NULL UNIQUE, -- Add unique slug column
             created_at TIMESTAMP NOT NULL,
-            updated_at TIMESTAMP NOT NULL
+            updated_at TIMESTAMP NOT NULL,
+            CHECK (status IN ('ACTIVE', 'PROSPECTIVE', 'COMPLETED', 'ARCHIVED', 'CANCELLED'))
         )
         """)
 

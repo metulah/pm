@@ -440,7 +440,7 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
 @click.group()
 @click.option('--db-path', type=click.Path(dir_okay=False, writable=True),
               help='Path to the SQLite database file.')
-@click.option('--format', type=click.Choice(['json', 'text']), default='json',
+@click.option('--format', type=click.Choice(['json', 'text']), default='text',
               help='Output format.')  # Add format option
 @click.pass_context
 def cli(ctx, db_path, format):  # Add format to signature

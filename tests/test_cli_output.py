@@ -25,14 +25,14 @@ def output_test_setup(cli_runner_env):
     setup_data = {}
 
     # Create ACTIVE project
-    result_proj_active = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+    result_proj_active = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'project', 'create',
                                              '--name', 'Format Active Proj', '--description', 'Active Desc', '--status', 'ACTIVE'])
     proj_active_data = json.loads(result_proj_active.output)['data']
     setup_data['proj_active_id'] = proj_active_data['id']
     setup_data['proj_active_slug'] = proj_active_data['slug']
 
     # Create COMPLETED project (will be updated to ARCHIVED)
-    result_proj_completed = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+    result_proj_completed = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'project', 'create',
                                                 '--name', 'Format Completed Proj', '--description', 'Completed Desc', '--status', 'COMPLETED'])
     proj_completed_data = json.loads(result_proj_completed.output)['data']
     # Store ID before update
@@ -41,7 +41,7 @@ def output_test_setup(cli_runner_env):
     setup_data['proj_archived_slug'] = proj_completed_data['slug']
 
     # Create CANCELLED project
-    result_proj_cancelled = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+    result_proj_cancelled = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'project', 'create',
                                                 '--name', 'Format Cancelled Proj', '--description', 'Cancelled Desc', '--status', 'CANCELLED'])
     proj_cancelled_data = json.loads(result_proj_cancelled.output)['data']
     setup_data['proj_cancelled_id'] = proj_cancelled_data['id']
@@ -53,21 +53,21 @@ def output_test_setup(cli_runner_env):
 
     # Create ACTIVE task in ACTIVE project
     result_task_active = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', setup_data['proj_active_slug'], '--name', 'Format Active Task', '--status', 'IN_PROGRESS'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', setup_data['proj_active_slug'], '--name', 'Format Active Task', '--status', 'IN_PROGRESS'])
     task_active_data = json.loads(result_task_active.output)['data']
     setup_data['task_active_id'] = task_active_data['id']
     setup_data['task_active_slug'] = task_active_data['slug']
 
     # Create COMPLETED task in ACTIVE project
     result_task_completed = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', setup_data['proj_active_slug'], '--name', 'Format Completed Task', '--status', 'COMPLETED'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', setup_data['proj_active_slug'], '--name', 'Format Completed Task', '--status', 'COMPLETED'])
     task_completed_data = json.loads(result_task_completed.output)['data']
     setup_data['task_completed_id'] = task_completed_data['id']
     setup_data['task_completed_slug'] = task_completed_data['slug']
 
     # Create task in CANCELLED project
     result_task_cancelled = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', setup_data['proj_cancelled_slug'], '--name', 'Cancelled Task'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', setup_data['proj_cancelled_slug'], '--name', 'Cancelled Task'])
     task_cancelled_data = json.loads(result_task_cancelled.output)['data']
     setup_data['task_cancelled_id'] = task_cancelled_data['id']
     setup_data['task_cancelled_slug'] = task_cancelled_data['slug']
@@ -345,3 +345,22 @@ def test_task_show_json(output_test_setup):
     assert output_data['name'] == 'Format Active Task'
     assert output_data['status'] == 'IN_PROGRESS'
     assert output_data['project_id'] == data['proj_active_id']
+
+
+def test_default_output_is_text(output_test_setup):
+    """Test that the default output format is text when --format is omitted."""
+    runner, db_path, data = output_test_setup
+    # Invoke 'project show' without specifying --format
+    result = runner.invoke(
+        cli, ['--db-path', db_path, 'project', 'show', data['proj_active_slug']])
+    assert result.exit_code == 0
+    output = result.output.strip()  # Strip leading/trailing whitespace
+
+    # Basic check: Should not look like JSON
+    assert not output.startswith('{')
+    assert not output.endswith('}')
+
+    # Check for text formatting characteristics (key-value pairs from _format_dict_as_text)
+    assert "Name:        Format Active Proj" in output
+    assert f"Slug:        {data['proj_active_slug']}" in output
+    assert "Status:      ACTIVE" in output

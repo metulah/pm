@@ -25,8 +25,9 @@ def project():
 @project.command("create")
 @click.option("--name", required=True, help="Project name")
 @click.option("--description", help="Project description")
-@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),  # Updated choices
-              default=ProjectStatus.ACTIVE.value, help="Initial project status (ACTIVE, COMPLETED, ARCHIVED, CANCELLED)")
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
+              # Changed default and simplified help
+              default=ProjectStatus.PROSPECTIVE.value, help="Initial project status (defaults to PROSPECTIVE)")
 @click.pass_context  # Need context to get format
 # Add status to signature
 def project_create(ctx, name: str, description: Optional[str], status: str):
@@ -122,7 +123,7 @@ def project_show(ctx, identifier: str):
 @click.option("--name", help="New project name")
 @click.option("--description", help="New project description (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),  # Updated choices
-              help="New project status (ACTIVE, COMPLETED, ARCHIVED, CANCELLED)")
+              help="New project status (ACTIVE, PROSPECTIVE, COMPLETED, ARCHIVED, CANCELLED)")
 @click.pass_context
 def project_update(ctx, identifier: str, name: Optional[str], description: Optional[str], status: Optional[str]):
     """Update a project."""
@@ -157,7 +158,10 @@ def project_update(ctx, identifier: str, name: Optional[str], description: Optio
                - Consider archiving related artifacts if project is COMPLETED/ARCHIVED.
             """)
             click.echo(reminder, err=True)
-    except Exception as e:
+    except ValueError as e:  # Catch specific validation errors
+        click.echo(f"Error: {e}", err=True)
+        ctx.exit(1)  # Exit with non-zero status
+    except Exception as e:  # Keep generic handler for other errors
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
         click.echo(format_output(output_format, "error",

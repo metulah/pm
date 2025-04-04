@@ -94,11 +94,13 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
     # --- Status Transition Validation ---
     if new_status and new_status != original_status:
         valid_transitions = {
+            # Removed PROSPECTIVE target
             ProjectStatus.ACTIVE: {ProjectStatus.COMPLETED, ProjectStatus.CANCELLED},
+            # Correct transitions FROM PROSPECTIVE
+            ProjectStatus.PROSPECTIVE: {ProjectStatus.ACTIVE, ProjectStatus.CANCELLED},
             ProjectStatus.COMPLETED: {ProjectStatus.ARCHIVED},
             ProjectStatus.CANCELLED: {ProjectStatus.ARCHIVED},
-            # Cannot transition from ARCHIVED (maybe to ACTIVE later?)
-            ProjectStatus.ARCHIVED: set()
+            ProjectStatus.ARCHIVED: set()  # No transitions from ARCHIVED
         }
         allowed_transitions = valid_transitions.get(original_status, set())
         if new_status not in allowed_transitions:
@@ -182,7 +184,8 @@ def list_projects(conn: sqlite3.Connection, include_completed: bool = False, inc
 
     # Determine which statuses to include based on flags
     # Always include ACTIVE by default
-    included_statuses = {ProjectStatus.ACTIVE}
+    # Include PROSPECTIVE by default
+    included_statuses = {ProjectStatus.ACTIVE, ProjectStatus.PROSPECTIVE}
     if include_completed:
         included_statuses.add(ProjectStatus.COMPLETED)
     if include_archived:

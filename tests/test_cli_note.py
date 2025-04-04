@@ -48,7 +48,7 @@ def test_note_add_inline_content(cli_runner_env):
     task_slug = ids['task_slug']
     note_content = "This is an inline note."
 
-    result = runner.invoke(cli, ['--db-path', db_path, 'note', 'add',
+    result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'note', 'add',
                                  '--project', project_slug, '--task', task_slug,
                                  '--content', note_content])
 
@@ -75,7 +75,7 @@ def test_note_add_content_from_file(cli_runner_env, tmp_path):
     filepath = tmp_path / "note_content.txt"
     filepath.write_text(note_content, encoding='utf-8')
 
-    result = runner.invoke(cli, ['--db-path', db_path, 'note', 'add',
+    result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'note', 'add',
                                  '--project', project_slug, '--task', task_slug,
                                  '--content', f"@{filepath}"])  # Use @ prefix
 
@@ -141,7 +141,7 @@ def test_note_add_content_from_file_empty_file(cli_runner_env, tmp_path):
     filepath = tmp_path / "empty_note.txt"
     filepath.touch()  # Create empty file
 
-    result = runner.invoke(cli, ['--db-path', db_path, 'note', 'add',
+    result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'note', 'add',
                                  '--project', project_slug, '--task', task_slug,
                                  '--content', f"@{filepath}"])
 

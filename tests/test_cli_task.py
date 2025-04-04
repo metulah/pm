@@ -29,14 +29,14 @@ def test_cli_task_crud(cli_runner_env):
 
     # Setup: Create a project first
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Task Test Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Task Test Project'])
     project_data = json.loads(result_proj.output)['data']
     project_id = project_data['id']
     project_slug = project_data['slug']  # Get project slug
     assert project_slug == "task-test-project"
 
     # Test task creation using project slug
-    result_create = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+    result_create = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                   # Use project slug
                                         '--project', project_slug, '--name', 'CLI Task 1', '--description', 'Task Desc 1'])
     assert result_create.exit_code == 0, f"Output: {result_create.output}"
@@ -50,7 +50,7 @@ def test_cli_task_crud(cli_runner_env):
     # Test task listing using project slug
     result_list = runner.invoke(
         # Use project slug
-        cli, ['--db-path', db_path, 'task', 'list', '--project', project_slug])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'list', '--project', project_slug])
     assert result_list.exit_code == 0
     response_list = json.loads(result_list.output)
     assert response_list["status"] == "success"
@@ -61,7 +61,7 @@ def test_cli_task_crud(cli_runner_env):
 
     # Test task show using project slug and task slug
     result_show = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'show', project_slug, task_slug_1])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'show', project_slug, task_slug_1])
     assert result_show.exit_code == 0
     response_show = json.loads(result_show.output)
     assert response_show["status"] == "success"
@@ -69,7 +69,7 @@ def test_cli_task_crud(cli_runner_env):
     assert response_show["data"]["slug"] == task_slug_1  # Verify slug in show
 
     # Test task update using project slug and task slug
-    result_update = runner.invoke(cli, ['--db-path', db_path, 'task', 'update',
+    result_update = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'update',
                                   project_slug, task_slug_1, '--name', 'Updated Task 1', '--status', 'IN_PROGRESS'])
     assert result_update.exit_code == 0
     response_update = json.loads(result_update.output)
@@ -87,7 +87,7 @@ def test_task_create_description_from_file(cli_runner_env, tmp_path):
     runner, db_path = cli_runner_env
     # Setup: Create a project first
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'File Desc Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'File Desc Project'])
     project_data = json.loads(result_proj.output)['data']
     project_slug = project_data['slug']
 
@@ -95,7 +95,7 @@ def test_task_create_description_from_file(cli_runner_env, tmp_path):
     filepath = tmp_path / "task_desc.txt"
     filepath.write_text(desc_content, encoding='utf-8')
 
-    result_create = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+    result_create = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                   '--project', project_slug,
                                         '--name', 'Task With File Desc',
                                         '--description', f"@{filepath}"])
@@ -119,10 +119,10 @@ def test_task_update_description_from_file(cli_runner_env, tmp_path):
     runner, db_path = cli_runner_env
     # Setup: Create a project and task
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Update File Desc Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Update File Desc Project'])
     project_data = json.loads(result_proj.output)['data']
     project_slug = project_data['slug']
-    result_task = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+    result_task = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                       '--project', project_slug, '--name', 'Task To Update Desc'])
     task_data = json.loads(result_task.output)['data']
     task_slug = task_data['slug']
@@ -132,7 +132,7 @@ def test_task_update_description_from_file(cli_runner_env, tmp_path):
     filepath = tmp_path / "updated_task_desc.txt"
     filepath.write_text(desc_content, encoding='utf-8')
 
-    result_update = runner.invoke(cli, ['--db-path', db_path, 'task', 'update',
+    result_update = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'update',
                                   project_slug, task_slug,
                                   '--description', f"@{filepath}"])
 
@@ -154,7 +154,7 @@ def test_task_create_description_from_file_not_found(cli_runner_env):
     runner, db_path = cli_runner_env
     # Setup: Create a project first
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'File Not Found Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'File Not Found Project'])
     project_data = json.loads(result_proj.output)['data']
     project_slug = project_data['slug']
 
@@ -175,10 +175,10 @@ def test_task_update_description_from_file_not_found(cli_runner_env):
     runner, db_path = cli_runner_env
     # Setup: Create a project and task
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Update File Not Found Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Update File Not Found Project'])
     project_data = json.loads(result_proj.output)['data']
     project_slug = project_data['slug']
-    result_task = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+    result_task = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                       '--project', project_slug, '--name', 'Update Task File Not Found'])
     task_data = json.loads(result_task.output)['data']
     task_slug = task_data['slug']
@@ -201,9 +201,9 @@ def test_task_delete_requires_force(cli_runner_env):
     runner, db_path = cli_runner_env
     # Setup: Create project and task
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Task Force Delete Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Task Force Delete Project'])
     project_slug = json.loads(result_proj.output)['data']['slug']
-    result_task = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+    result_task = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                       '--project', project_slug, '--name', 'Task Force Delete Test'])
     task_slug = json.loads(result_task.output)['data']['slug']
     task_id = json.loads(result_task.output)[
@@ -230,9 +230,9 @@ def test_task_delete_with_force(cli_runner_env):
     runner, db_path = cli_runner_env
     # Setup: Create project and task
     result_proj = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'create', '--name', 'Task Force Delete Success Project'])
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Task Force Delete Success Project'])
     project_slug = json.loads(result_proj.output)['data']['slug']
-    result_task = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+    result_task = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                       '--project', project_slug, '--name', 'Task Force Delete Success Test'])
     task_slug = json.loads(result_task.output)['data']['slug']
     task_id = json.loads(result_task.output)[
@@ -240,7 +240,7 @@ def test_task_delete_with_force(cli_runner_env):
 
     # Attempt delete with --force
     result_delete = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'delete', project_slug, task_slug, '--force'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'delete', project_slug, task_slug, '--force'])
 
     # Expect success
     assert result_delete.exit_code == 0

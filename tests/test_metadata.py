@@ -191,7 +191,7 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # Test setting metadata
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'metadata', 'set', 'cli-task', '--key', 'status', '--value', 'in-progress'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'set', 'cli-task', '--key', 'status', '--value', 'in-progress'])
     assert result.exit_code == 0
     response = json.loads(result.output)
     assert response["status"] == "success"
@@ -201,7 +201,7 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # Test getting specific metadata
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'metadata', 'get', 'cli-task', '--key', 'status'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'get', 'cli-task', '--key', 'status'])
     assert result.exit_code == 0
     response = json.loads(result.output)
     assert response["status"] == "success"
@@ -218,7 +218,7 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # Test getting all metadata
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'metadata', 'get', 'cli-task'])
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'get', 'cli-task'])
     assert result.exit_code == 0
     response = json.loads(result.output)
     assert response["status"] == "success"
