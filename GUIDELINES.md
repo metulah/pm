@@ -72,6 +72,7 @@ python3 -m pm.cli note list       # List notes for current task/project
 4. Document test coverage and gaps using notes
 5. Prefer creating **new, focused test files** (e.g., `test_cli_<feature>.py`) for distinct features or command groups rather than excessively expanding existing files.
 6. Keep tests focused on their layer (e.g., storage tests in `test_<storage_module>.py`, CLI tests in `test_cli_<command_group>.py`).
+7. **Review existing test files** (e.g., `tests/test_cli_*.py`, `tests/test_storage_*.py`) to understand established patterns (like fixture usage, test data setup, assertion styles) and conform to them where appropriate. This promotes consistency and leverages prior experience embedded in the codebase.
 
 ### Documentation Requirements
 
