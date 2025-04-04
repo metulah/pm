@@ -3,6 +3,7 @@
 import uuid
 from typing import Optional
 import click
+import textwrap  # Import textwrap
 
 from ..models import Task, TaskStatus
 from ..storage import (
@@ -132,20 +133,23 @@ def task_update(ctx, task_id: str, name: Optional[str], description: Optional[st
             click.echo(format_output(output_format, "success", task))
             # If status was explicitly updated, show reminder
             if status is not None:
-                 reminder = """
-Reminder: Task status updated.
+                # Use textwrap.dedent to handle potential whitespace issues in the multi-line string
+                reminder = textwrap.dedent("""
+                    Reminder: Task status updated.
 
-**Before ending this session, please ensure:**
-- Session handoff note created (pm note add ...)
-- Changes committed to git
-- Tests pass
-- Documentation is current
-(See GUIDELINES.md for details)
+                    **Before ending this session, please ensure:**
+                    - Session handoff note created (pm note add ...)
+                    - Changes committed to git
+                    - Tests pass
+                    - Documentation is current
+                    (See GUIDELINES.md for details)
 
-**When starting the next task/session:**
-- Remember to set the task status to IN_PROGRESS!
-"""
-                click.echo(reminder, err=True)
+                    **When starting the next task/session:**
+                    - Remember to set the task status to IN_PROGRESS!
+                 """)
+                # Ensure this line has the correct indentation (relative to the 'if' block)
+                # Use strip() to remove leading/trailing whitespace from dedent
+                click.echo(reminder.strip(), err=True)
         else:
             click.echo(format_output(output_format,
                                      "error", message=f"Task {task_id} not found"))

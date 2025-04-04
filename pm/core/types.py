@@ -10,3 +10,10 @@ class TaskStatus(enum.Enum):
     BLOCKED = "BLOCKED"
     PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
+
+
+class ProjectStatus(enum.Enum):
+    """Status values for projects."""
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    ARCHIVED = "ARCHIVED"

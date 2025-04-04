@@ -179,7 +179,7 @@ List all projects in the system.
 Show detailed information about a specific project.
 .TP
 .B pm project update PROJECT_ID [--name NAME] [--description DESCRIPTION] [--status STATUS]
-Update a project's name, description, and/or status. Valid statuses: ACTIVE, COMPLETED, ARCHIVED.
+Update a project's name, description, and/or status. A reminder is printed to stderr upon successful status update. Valid statuses: ACTIVE, COMPLETED, ARCHIVED.
 .TP
 .B pm project delete PROJECT_ID [--force]
 Delete a project. By default, fails if the project contains tasks. Use \fB--force\fR to delete the project and all its associated tasks.

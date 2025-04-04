@@ -3,6 +3,7 @@
 import uuid
 from typing import Optional
 import click
+import textwrap  # Import textwrap
 
 from ..models import Project
 # Removed sys import again if present
@@ -127,6 +128,15 @@ def project_update(ctx, project_id: str, name: Optional[str], description: Optio
         if project:
             # Pass format and object
             click.echo(format_output(output_format, "success", project))
+            # If status was explicitly updated, show reminder
+            if status is not None:
+                reminder = textwrap.dedent("""
+                    Reminder: Project status updated. Consider the following:
+                    - Ensure all related tasks are appropriately status'd (e.g., COMPLETED).
+                    - Update overall project documentation/notes if needed.
+                    - Consider archiving related artifacts if project is COMPLETED/ARCHIVED.
+                 """)
+                click.echo(reminder.strip(), err=True)
         else:
             click.echo(format_output(output_format,
                                      "error", message=f"Project {project_id} not found"))

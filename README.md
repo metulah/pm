@@ -63,7 +63,7 @@ pm project list
 pm project show <project_id>
 
 # Update a project
-pm project update <project_id> --name "New Name" --description "New description" [--status STATUS]
+pm project update <project_id> --name "New Name" --description "New description" [--status STATUS] # Prints reminder on status change
 
 # Delete a project
 pm project delete <project_id> [--force] # Use --force to delete project and its tasks

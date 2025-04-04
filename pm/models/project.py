@@ -3,6 +3,7 @@
 import datetime
 from dataclasses import dataclass
 from typing import Optional
+from ..core.types import ProjectStatus  # Import the new enum
 
 
 @dataclass
@@ -11,6 +12,7 @@ class Project:
     id: str
     name: str
     description: Optional[str] = None
+    status: ProjectStatus = ProjectStatus.ACTIVE  # Add status field with default
     created_at: datetime.datetime = datetime.datetime.now()
     updated_at: datetime.datetime = datetime.datetime.now()
 
