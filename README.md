@@ -8,7 +8,7 @@ This tool provides a standardized way for AI assistants to manage projects, task
 
 ## Features
 
-- **Project Management**: Create, read, update, and delete projects
+- **Project Management**: Create, read, update (including status: ACTIVE, COMPLETED, ARCHIVED), and delete projects
 - **Task Management**: Create, read, update, and delete tasks with status tracking
 - **Dependency Tracking**: Manage dependencies between tasks with circular dependency prevention
 - **Structured Output**: JSON-formatted responses (default) or human-readable text (`--format text`)
@@ -54,7 +54,7 @@ These options should be placed _before_ the command group (e.g., `pm --format te
 
 ```bash
 # Create a project
-pm project create --name "My Project" --description "Project description"
+pm project create --name "My Project" --description "Project description" [--status STATUS]
 
 # List all projects
 pm project list
@@ -63,7 +63,7 @@ pm project list
 pm project show <project_id>
 
 # Update a project
-pm project update <project_id> --name "New Name" --description "New description"
+pm project update <project_id> --name "New Name" --description "New description" [--status STATUS]
 
 # Delete a project
 pm project delete <project_id> [--force] # Use --force to delete project and its tasks
