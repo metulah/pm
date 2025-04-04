@@ -87,13 +87,31 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
     if not project:
         return None
 
+    original_status = project.status  # Store original status
+    new_status_str = kwargs.get('status')
+    new_status = ProjectStatus(new_status_str) if new_status_str else None
+
+    # --- Status Transition Validation ---
+    if new_status and new_status != original_status:
+        valid_transitions = {
+            ProjectStatus.ACTIVE: {ProjectStatus.COMPLETED, ProjectStatus.CANCELLED},
+            ProjectStatus.COMPLETED: {ProjectStatus.ARCHIVED},
+            ProjectStatus.CANCELLED: {ProjectStatus.ARCHIVED},
+            # Cannot transition from ARCHIVED (maybe to ACTIVE later?)
+            ProjectStatus.ARCHIVED: set()
+        }
+        allowed_transitions = valid_transitions.get(original_status, set())
+        if new_status not in allowed_transitions:
+            raise ValueError(
+                f"Invalid project status transition: {original_status.value} -> {new_status.value}")
+        # If transition is valid, update the status in kwargs for application below
+        kwargs['status'] = new_status  # Ensure it's the Enum type
+
+    # --- Apply Updates ---
     for key, value in kwargs.items():
         if hasattr(project, key):
-            # Handle enum conversion for status
-            if key == 'status' and not isinstance(value, ProjectStatus):
-                value = ProjectStatus(value)
+            # Status enum conversion already handled above if present
             setattr(project, key, value)
-
     project.updated_at = datetime.datetime.now()
     project.validate()
 
@@ -142,14 +160,34 @@ def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = Fals
     return cursor.rowcount > 0
 
 
-def list_projects(conn: sqlite3.Connection, include_completed: bool = False) -> List[Project]:
-    """List projects, optionally including completed ones."""
+def list_projects(conn: sqlite3.Connection, include_completed: bool = False, include_archived: bool = False) -> List[Project]:
+    """List projects, filtering by status based on flags."""
     query = "SELECT * FROM projects"
     params = []
-    if not include_completed:
-        query += " WHERE status != ?"
-        params.append(ProjectStatus.COMPLETED.value)
-    query += " ORDER BY name"
+    conditions = []
+
+    # Determine which statuses to include based on flags
+    # Always include ACTIVE by default
+    included_statuses = {ProjectStatus.ACTIVE}
+    if include_completed:
+        included_statuses.add(ProjectStatus.COMPLETED)
+    if include_archived:
+        included_statuses.add(ProjectStatus.ARCHIVED)
+        # Include CANCELLED when showing ARCHIVED
+        included_statuses.add(ProjectStatus.CANCELLED)
+
+    # Build the WHERE clause using IN operator
+    if len(included_statuses) < len(ProjectStatus):  # Only add WHERE if not showing all
+        # Create placeholders for each status value
+        placeholders = ', '.join('?' for _ in included_statuses)
+        conditions.append(f"status IN ({placeholders})")
+        params.extend([s.value for s in included_statuses])
+
+    if conditions:
+        # Though only one condition here
+        query += " WHERE " + " AND ".join(conditions)
+
+    query += " ORDER BY name"  # Keep sorting by name
     rows = conn.execute(query, params).fetchall()
     projects = []
     for row in rows:

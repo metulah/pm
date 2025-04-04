@@ -170,16 +170,16 @@ Specify the output format. Defaults to \fBjson\fR.
 Project commands manage the top-level organizational units in the system.
 .TP
 .B pm project create --name NAME [--description DESCRIPTION] [--status STATUS]
-Create a new project with the specified name and optional description. Status defaults to ACTIVE if not provided. Valid statuses: ACTIVE, COMPLETED, ARCHIVED.
+Create a new project with the specified name and optional description. Status defaults to ACTIVE if not provided. Valid statuses: ACTIVE, COMPLETED, ARCHIVED, CANCELLED.
 .TP
-.B pm project list [--id] [--completed] [--description]
-List projects. By default, COMPLETED projects and the DESCRIPTION column are hidden. Use \fB--completed\fR to include completed projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
+.B pm project list [--id] [--completed] [--archived] [--description]
+List projects. By default, COMPLETED, ARCHIVED, and CANCELLED projects, and the DESCRIPTION column are hidden. Use \fB--completed\fR to include completed projects. Use \fB--archived\fR to include archived and cancelled projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
 .TP
 .B pm project show PROJECT_ID
 Show detailed information about a specific project.
 .TP
 .B pm project update PROJECT_ID [--name NAME] [--description DESCRIPTION] [--status STATUS]
-Update a project's name, description, and/or status. A reminder is printed to stderr upon successful status update. Valid statuses: ACTIVE, COMPLETED, ARCHIVED.
+Update a project's name, description, and/or status. Status changes are restricted (e.g., ACTIVE can become COMPLETED or CANCELLED; COMPLETED/CANCELLED can become ARCHIVED). A reminder is printed to stderr upon successful status update. Valid statuses: ACTIVE, COMPLETED, ARCHIVED, CANCELLED.
 .TP
 .B pm project delete PROJECT_ID [--force]
 Delete a project. By default, fails if the project contains tasks. Use \fB--force\fR to delete the project and all its associated tasks.

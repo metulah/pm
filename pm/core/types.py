@@ -17,3 +17,4 @@ class ProjectStatus(enum.Enum):
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
     ARCHIVED = "ARCHIVED"
+    CANCELLED = "CANCELLED"  # Added CANCELLED status

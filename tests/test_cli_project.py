@@ -116,6 +116,7 @@ def test_cli_project_status(cli_runner_env):
 
     # List (Text) and verify status
     result_list_text = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
+        # Add --archived flag
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--archived'])
     assert result_list_text.exit_code == 0
     assert "ARCHIVED" in result_list_text.output  # Check status in list output

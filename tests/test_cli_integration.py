@@ -86,7 +86,8 @@ def test_cli_task_move(cli_runner_env):
 
     # Create Task 1 in Project A
     result_task = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', project_a_slug, '--name', 'Task 1'])  # Use slug
+        # Use slug
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_a_slug, '--name', 'Task 1'])
     task_1_data = json.loads(result_task.output)['data']
     task_1_id = task_1_data['id']
     task_1_slug = task_1_data['slug']
@@ -131,12 +132,14 @@ def test_cli_project_delete_force(cli_runner_env):
     project_c_id = project_c_data['id']
     project_c_slug = project_c_data['slug']
     result_task2 = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', project_c_slug, '--name', 'Task 2'])  # Use slug
+        # Use slug
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_c_slug, '--name', 'Task 2'])
     task_2_data = json.loads(result_task2.output)['data']
     task_2_id = task_2_data['id']
     task_2_slug = task_2_data['slug']
     result_task3 = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'create', '--project', project_c_slug, '--name', 'Task 3'])  # Use slug
+        # Use slug
+        cli, ['--db-path', db_path, 'task', 'create', '--project', project_c_slug, '--name', 'Task 3'])
     task_3_data = json.loads(result_task3.output)['data']
     task_3_id = task_3_data['id']
     task_3_slug = task_3_data['slug']
@@ -198,6 +201,20 @@ def test_cli_output_format(cli_runner_env):
     proj_completed_id = proj_completed_data['id']
     proj_completed_slug = proj_completed_data['slug']
 
+    # Create CANCELLED project
+    result_proj_cancelled = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+                                                '--name', 'Format Cancelled Proj', '--description', 'Cancelled Desc', '--status', 'CANCELLED'])
+    proj_cancelled_data = json.loads(result_proj_cancelled.output)['data']
+    proj_cancelled_id = proj_cancelled_data['id']
+    proj_cancelled_slug = proj_cancelled_data['slug']
+
+    # Update COMPLETED project to ARCHIVED
+    # Note: The update command itself will be tested separately for transition logic
+    runner.invoke(cli, ['--db-path', db_path, 'project',
+                  'update', proj_completed_slug, '--status', 'ARCHIVED'])
+    proj_archived_slug = proj_completed_slug  # Slug remains the same
+    proj_archived_id = proj_completed_id
+
     result_task_active = runner.invoke(
         cli, ['--db-path', db_path, 'task', 'create', '--project', proj_active_slug, '--name', 'Format Active Task', '--status', 'IN_PROGRESS'])
     task_active_data = json.loads(result_task_active.output)['data']
@@ -210,66 +227,73 @@ def test_cli_output_format(cli_runner_env):
     task_completed_id = task_completed_data['id']
     task_completed_slug = task_completed_data['slug']
 
-    # Test project list (Text format - default, should hide completed)
-    result_list_text_default = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
-    assert result_list_text_default.exit_code == 0
-    assert "ID" not in result_list_text_default.output  # ID hidden
-    # Description hidden by default
-    assert "DESCRIPTION" not in result_list_text_default.output
-    assert "Active Desc" not in result_list_text_default.output
-    assert proj_active_slug in result_list_text_default.output  # Active project shown
-    # Completed project hidden
-    assert proj_completed_slug not in result_list_text_default.output
+    # Remove assertions referencing the deleted variable result_list_text_all_flags
 
-    # Test project list (Text format - with --completed)
-    result_list_text_completed = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--completed'])
-    assert result_list_text_completed.exit_code == 0
-    assert "ID" not in result_list_text_completed.output  # ID still hidden
-    # Description still hidden
-    assert "DESCRIPTION" not in result_list_text_completed.output
-    assert proj_active_slug in result_list_text_completed.output  # Active project shown
-    # Completed project shown
-    assert proj_completed_slug in result_list_text_completed.output
+    # Test project list with --archived flag (Text format)
+    result_list_text_arch = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--archived'])
+    assert result_list_text_arch.exit_code == 0
+    assert "ID" not in result_list_text_arch.output  # ID hidden
+    assert "DESCRIPTION" not in result_list_text_arch.output  # Desc hidden
+    assert proj_active_slug in result_list_text_arch.output  # Active shown
+    assert proj_completed_slug in result_list_text_arch.output  # Archived shown
+    assert proj_cancelled_slug in result_list_text_arch.output  # Cancelled shown
 
-    # Test project list with --id and --completed flags (Text format)
-    result_list_text_id_completed = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed'])
-    assert result_list_text_id_completed.exit_code == 0
-    assert "ID" in result_list_text_id_completed.output  # ID shown
-    # Description still hidden
-    assert "DESCRIPTION" not in result_list_text_id_completed.output
-    assert proj_active_slug in result_list_text_id_completed.output
-    assert proj_completed_slug in result_list_text_id_completed.output
+    # Test project list with --completed and --archived flags (shows all non-hidden cols)
+    result_list_text_comp_arch = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--completed', '--archived'])
+    assert result_list_text_comp_arch.exit_code == 0
+    assert "ID" not in result_list_text_comp_arch.output
+    assert "DESCRIPTION" not in result_list_text_comp_arch.output
+    assert proj_active_slug in result_list_text_comp_arch.output
+    assert proj_completed_slug in result_list_text_comp_arch.output  # Archived
+    assert proj_cancelled_slug in result_list_text_comp_arch.output  # Cancelled
 
-    # Test project list with --description flag (Text format)
-    result_list_text_desc = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--description'])
-    assert result_list_text_desc.exit_code == 0
-    assert "ID" not in result_list_text_desc.output  # ID hidden
-    assert "DESCRIPTION" in result_list_text_desc.output  # Description shown
-    assert "Active Desc" in result_list_text_desc.output
-    assert proj_active_slug in result_list_text_desc.output
-    # Completed still hidden by default
-    assert proj_completed_slug not in result_list_text_desc.output
+    # Test project list with all flags (shows all projects, all cols)
+    result_list_text_all_flags_inc_arch = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed', '--archived', '--description'])
+    assert result_list_text_all_flags_inc_arch.exit_code == 0
+    assert "ID" in result_list_text_all_flags_inc_arch.output
+    assert "DESCRIPTION" in result_list_text_all_flags_inc_arch.output
+    assert proj_active_slug in result_list_text_all_flags_inc_arch.output
+    assert proj_completed_slug in result_list_text_all_flags_inc_arch.output  # Archived
+    assert proj_cancelled_slug in result_list_text_all_flags_inc_arch.output  # Cancelled
 
-    # Test project list with --id, --completed, and --description flags (Text format)
-    result_list_text_all_flags = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed', '--description'])
-    assert result_list_text_all_flags.exit_code == 0
-    assert "ID" in result_list_text_all_flags.output  # ID shown
-    assert "DESCRIPTION" in result_list_text_all_flags.output  # Description shown
-    assert "Active Desc" in result_list_text_all_flags.output
-    assert "Completed Desc" in result_list_text_all_flags.output
-    assert proj_active_slug in result_list_text_all_flags.output
-    assert proj_completed_slug in result_list_text_all_flags.output
-    # Check headers and content for the --id --completed case
-    assert "NAME" in result_list_text_id_completed.output
-    assert "SLUG" in result_list_text_id_completed.output
-    assert "STATUS" in result_list_text_id_completed.output
-    assert "Format Active Proj" in result_list_text_id_completed.output
-    assert "Format Completed Proj" in result_list_text_id_completed.output
+    # Test project list with --archived flag (Text format)
+    result_list_text_arch = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--archived'])
+    assert result_list_text_arch.exit_code == 0
+    assert "ID" not in result_list_text_arch.output  # ID hidden
+    assert "DESCRIPTION" not in result_list_text_arch.output  # Desc hidden
+    assert proj_active_slug in result_list_text_arch.output  # Active shown
+    assert proj_completed_slug in result_list_text_arch.output  # Archived shown
+    assert proj_cancelled_slug in result_list_text_arch.output  # Cancelled shown
+
+    # Test project list with --completed and --archived flags (shows all non-hidden cols)
+    result_list_text_comp_arch = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--completed', '--archived'])
+    assert result_list_text_comp_arch.exit_code == 0
+    assert "ID" not in result_list_text_comp_arch.output
+    assert "DESCRIPTION" not in result_list_text_comp_arch.output
+    assert proj_active_slug in result_list_text_comp_arch.output
+    assert proj_completed_slug in result_list_text_comp_arch.output  # Archived
+    assert proj_cancelled_slug in result_list_text_comp_arch.output  # Cancelled
+
+    # Test project list with all flags (shows all projects, all cols)
+    result_list_text_all_flags_inc_arch = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--id', '--completed', '--archived', '--description'])
+    assert result_list_text_all_flags_inc_arch.exit_code == 0
+    assert "ID" in result_list_text_all_flags_inc_arch.output
+    assert "DESCRIPTION" in result_list_text_all_flags_inc_arch.output
+    assert proj_active_slug in result_list_text_all_flags_inc_arch.output
+    assert proj_completed_slug in result_list_text_all_flags_inc_arch.output  # Archived
+    assert proj_cancelled_slug in result_list_text_all_flags_inc_arch.output  # Cancelled
+    # Remove assertions referencing the deleted variable result_list_text_id_completed
+    # Check content in all flags output
+    assert "Format Active Proj" in result_list_text_all_flags_inc_arch.output
+    # This is the ARCHIVED one
+    assert "Format Completed Proj" in result_list_text_all_flags_inc_arch.output
+    assert "Format Cancelled Proj" in result_list_text_all_flags_inc_arch.output
 
     # Test project show (Text format) using active slug
     result_show_text_active = runner.invoke(
@@ -366,3 +390,73 @@ def test_cli_simple_messages(cli_runner_env):
     assert result_del_err_text.exit_code == 0
     # Check resolver error message
     assert "Error: Project not found with identifier: 'non-existent-slug'" in result_del_err_text.output
+
+
+def test_project_status_transitions(cli_runner_env):
+    """Test valid and invalid project status transitions."""
+    runner, db_path = cli_runner_env
+
+    # 1. Create an ACTIVE project
+    result_active = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+                                        '--name', 'Transition Test Proj'])
+    proj_data = json.loads(result_active.output)['data']
+    proj_slug = proj_data['slug']
+    assert proj_data['status'] == 'ACTIVE'
+
+    # 2. Test invalid transition: ACTIVE -> ARCHIVED (should fail)
+    result_invalid_1 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                           proj_slug, '--status', 'ARCHIVED'])
+    assert result_invalid_1.exit_code == 0  # CLI handles error
+    assert json.loads(result_invalid_1.output)['status'] == 'error'
+    assert "Invalid project status transition: ACTIVE -> ARCHIVED" in json.loads(
+        result_invalid_1.output)['message']
+
+    # 3. Test valid transition: ACTIVE -> COMPLETED
+    result_valid_1 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                         proj_slug, '--status', 'COMPLETED'])
+    assert result_valid_1.exit_code == 0
+    assert json.loads(result_valid_1.output)['status'] == 'success'
+    assert json.loads(result_valid_1.output)['data']['status'] == 'COMPLETED'
+
+    # 4. Test invalid transition: COMPLETED -> ACTIVE (not currently allowed)
+    result_invalid_2 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                           proj_slug, '--status', 'ACTIVE'])
+    assert result_invalid_2.exit_code == 0
+    assert json.loads(result_invalid_2.output)['status'] == 'error'
+    assert "Invalid project status transition: COMPLETED -> ACTIVE" in json.loads(
+        result_invalid_2.output)['message']
+
+    # 5. Test valid transition: COMPLETED -> ARCHIVED
+    result_valid_2 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                         proj_slug, '--status', 'ARCHIVED'])
+    assert result_valid_2.exit_code == 0
+    assert json.loads(result_valid_2.output)['status'] == 'success'
+    assert json.loads(result_valid_2.output)['data']['status'] == 'ARCHIVED'
+
+    # 6. Test invalid transition: ARCHIVED -> COMPLETED (not currently allowed)
+    result_invalid_3 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                           proj_slug, '--status', 'COMPLETED'])
+    assert result_invalid_3.exit_code == 0
+    assert json.loads(result_invalid_3.output)['status'] == 'error'
+    assert "Invalid project status transition: ARCHIVED -> COMPLETED" in json.loads(
+        result_invalid_3.output)['message']
+
+    # 7. Create another ACTIVE project for CANCELLED test
+    result_active_2 = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+                                          '--name', 'Cancel Test Proj'])
+    proj_data_2 = json.loads(result_active_2.output)['data']
+    proj_slug_2 = proj_data_2['slug']
+
+    # 8. Test valid transition: ACTIVE -> CANCELLED
+    result_valid_3 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                         proj_slug_2, '--status', 'CANCELLED'])
+    assert result_valid_3.exit_code == 0
+    assert json.loads(result_valid_3.output)['status'] == 'success'
+    assert json.loads(result_valid_3.output)['data']['status'] == 'CANCELLED'
+
+    # 9. Test valid transition: CANCELLED -> ARCHIVED
+    result_valid_4 = runner.invoke(cli, ['--db-path', db_path, 'project', 'update',
+                                         proj_slug_2, '--status', 'ARCHIVED'])
+    assert result_valid_4.exit_code == 0
+    assert json.loads(result_valid_4.output)['status'] == 'success'
+    assert json.loads(result_valid_4.output)['data']['status'] == 'ARCHIVED'

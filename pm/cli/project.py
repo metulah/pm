@@ -25,8 +25,8 @@ def project():
 @project.command("create")
 @click.option("--name", required=True, help="Project name")
 @click.option("--description", help="Project description")
-@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
-              default=ProjectStatus.ACTIVE.value, help="Initial project status")  # Add status option
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),  # Updated choices
+              default=ProjectStatus.ACTIVE.value, help="Initial project status (ACTIVE, COMPLETED, ARCHIVED, CANCELLED)")
 @click.pass_context  # Need context to get format
 # Add status to signature
 def project_create(ctx, name: str, description: Optional[str], status: str):
@@ -59,15 +59,18 @@ def project_create(ctx, name: str, description: Optional[str], status: str):
 @click.option('--completed', 'include_completed', is_flag=True, default=False, help='Include completed projects in the list.')
 # Add --description flag
 @click.option('--description', 'show_description', is_flag=True, default=False, help='Show the full description column in text format.')
+# Add --archived flag
+@click.option('--archived', 'include_archived', is_flag=True, default=False, help='Include archived and cancelled projects in the list.')
 @click.pass_context
-# Add show_description to signature
-def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool):
+# Add include_archived to signature
+def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool, include_archived: bool):
     """List all projects."""
     conn = get_db_connection()
     try:
         # print("DEBUG[project_list]: 1 - Getting projects", file=sys.stderr) # Removed debug
         # Pass flag to storage function
-        projects = list_projects(conn, include_completed=include_completed)
+        projects = list_projects(conn, include_completed=include_completed,
+                                 include_archived=include_archived)  # Pass flags to storage function
         # print(f"DEBUG[project_list]: 2 - Got {len(projects)} projects", file=sys.stderr) # Removed debug
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
@@ -115,8 +118,8 @@ def project_show(ctx, identifier: str):
 @click.argument("identifier")  # Changed name from project_id to identifier
 @click.option("--name", help="New project name")
 @click.option("--description", help="New project description")
-@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
-              help="New project status")
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),  # Updated choices
+              help="New project status (ACTIVE, COMPLETED, ARCHIVED, CANCELLED)")
 @click.pass_context
 def project_update(ctx, identifier: str, name: Optional[str], description: Optional[str], status: Optional[str]):
     """Update a project."""
