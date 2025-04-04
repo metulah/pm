@@ -11,7 +11,8 @@ from ..storage import (
     add_task_dependency, remove_task_dependency, get_task_dependencies
 )
 from ..storage.project import get_project  # Import get_project (Fixed syntax)
-from .base import cli, get_db_connection, format_output, resolve_project_identifier, resolve_task_identifier  # Import resolvers
+# Import resolvers and helper
+from .base import cli, get_db_connection, format_output, resolve_project_identifier, resolve_task_identifier, read_content_from_argument
 
 
 @cli.group()
@@ -23,7 +24,7 @@ def task():
 @task.command("create")
 @click.option("--project", required=True, help="Project identifier (ID or slug)")
 @click.option("--name", required=True, help="Task name")
-@click.option("--description", help="Task description")
+@click.option("--description", help="Task description (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               default=TaskStatus.NOT_STARTED.value, help="Task status")
 @click.pass_context
@@ -152,7 +153,7 @@ def task_show(ctx, project_identifier: str, task_identifier: str):
 @click.argument("project_identifier")  # Add project identifier argument
 @click.argument("task_identifier")    # Rename task_id to task_identifier
 @click.option("--name", help="New task name")
-@click.option("--description", help="New task description")
+@click.option("--description", help="New task description (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               help="New task status")
 # Clarify help text

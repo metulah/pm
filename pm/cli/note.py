@@ -10,7 +10,7 @@ from ..storage import (
     delete_note, list_notes
 )
 # Import resolvers
-from .base import cli, get_db_connection, format_output, resolve_project_identifier, resolve_task_identifier
+from .base import cli, get_db_connection, format_output, resolve_project_identifier, resolve_task_identifier, read_content_from_argument
 
 
 @cli.group()
@@ -22,7 +22,7 @@ def note():
 @note.command("add")
 @click.option("--project", 'project_identifier', help="Target Project identifier (ID or slug). Required.")
 @click.option("--task", 'task_identifier', help="Target Task identifier (ID or slug). If provided, note is attached to the task within the specified project.")
-@click.option("--content", required=True, help="Note content")
+@click.option("--content", required=True, help="Note content (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--author", help="Note author")
 @click.pass_context
 def note_add(ctx, project_identifier: Optional[str], task_identifier: Optional[str], content: str, author: Optional[str]):

@@ -7,6 +7,8 @@ import datetime
 import click
 import textwrap
 import uuid  # For UUID validation
+import os
+import io
 from typing import Any, Optional, List, Dict
 
 from ..storage import init_db
@@ -136,6 +138,48 @@ def resolve_task_identifier(conn: sqlite3.Connection, project: Project, task_ide
         raise click.UsageError(
             f"Task not found with identifier '{task_identifier}' in project '{project.name}' (ID: {project.id})")
     return task
+
+
+# --- Argument Processing Helpers ---
+
+
+def read_content_from_argument(ctx: click.Context, param: click.Parameter, value: Optional[str]) -> Optional[str]:
+    """
+    Click callback to read argument content from a file if prefixed with '@'.
+    Handles file reading errors and returns original value if not prefixed.
+    """
+    if value and value.startswith('@'):
+        filepath = value[1:]
+        if not filepath:
+            raise click.UsageError(
+                f"File path cannot be empty when using '@' prefix for option '{param.name}'.")
+
+        # Try to resolve relative paths based on CWD
+        # Note: Consider security implications if paths could be malicious
+        abs_filepath = os.path.abspath(filepath)
+
+        try:
+            with io.open(abs_filepath, 'r', encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError:
+            raise click.UsageError(
+                f"File not found for option '{param.name}': {filepath} (Resolved: {abs_filepath})")
+        except PermissionError:
+            raise click.UsageError(
+                f"Permission denied for option '{param.name}': {filepath} (Resolved: {abs_filepath})")
+        except IsADirectoryError:
+            raise click.UsageError(
+                f"Path is a directory, not a file, for option '{param.name}': {filepath} (Resolved: {abs_filepath})")
+        except UnicodeDecodeError as e:
+            raise click.UsageError(
+                f"Error decoding file for option '{param.name}' (expected UTF-8): {filepath} (Resolved: {abs_filepath}) - {e}")
+        except Exception as e:
+            # Catch other potential OS errors during file access
+            raise click.UsageError(
+                f"Could not read file for option '{param.name}': {filepath} (Resolved: {abs_filepath}) - {e}")
+    else:
+        # Return the original value if it doesn't start with '@' or is None
+        return value
 
 # --- Text Formatting Helpers ---
 

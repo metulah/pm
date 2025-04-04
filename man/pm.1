@@ -188,7 +188,7 @@ Delete a project. By default, fails if the project contains tasks. Use \fB--forc
 Task commands manage the individual work items within projects.
 .TP
 .B pm task create --project PROJECT_ID --name NAME [--description DESCRIPTION] [--status STATUS]
-Create a new task associated with the specified project. The status parameter is optional and defaults to NOT_STARTED. Valid status values are: NOT_STARTED, IN_PROGRESS, BLOCKED, PAUSED, COMPLETED.
+Create a new task associated with the specified project. The \fB--description\fR option can accept a file path prefixed with '@' (e.g., \fB--description @path/to/desc.txt\fR) to read the description from the file. The status parameter is optional and defaults to NOT_STARTED. Valid status values are: NOT_STARTED, IN_PROGRESS, BLOCKED, PAUSED, COMPLETED.
 .TP
 .B pm task list [--project PROJECT_ID] [--status STATUS] [--id] [--completed] [--inactive] [--description]
 List tasks, optionally filtered by project ID and/or status. Tasks are sorted by project slug, then task slug. By default, COMPLETED tasks, tasks belonging to non-ACTIVE projects (COMPLETED, ARCHIVED, CANCELLED), and the DESCRIPTION column are hidden (unless \fB--status COMPLETED\fR is specified). Use \fB--completed\fR to include completed tasks. Use \fB--inactive\fR to include tasks from non-ACTIVE projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
@@ -197,7 +197,7 @@ List tasks, optionally filtered by project ID and/or status. Tasks are sorted by
 Show detailed information about a specific task.
 .TP
 .B pm task update TASK_ID [--name NAME] [--description DESCRIPTION] [--status STATUS]
-Update a task's name, description, and/or status. A reminder checklist based on GUIDELINES.md is printed to stderr upon successful status update.
+Update a task's name, description, and/or status. The \fB--description\fR option can accept a file path prefixed with '@' (e.g., \fB--description @path/to/desc.txt\fR) to read the description from the file. A reminder checklist based on GUIDELINES.md is printed to stderr upon successful status update.
 .TP
 .B pm task delete TASK_ID
 Delete a task.
@@ -272,7 +272,7 @@ Delete a template.
 Note commands manage textual annotations for projects and tasks.
 .TP
 .B pm note add [--task TASK_ID] [--project PROJECT_ID] --content CONTENT [--author AUTHOR]
-Add a note to a task or project. Either task or project must be specified.
+Add a note to a task or project. Either task or project must be specified. The \fB--content\fR option can accept a file path prefixed with '@' (e.g., \fB--content @path/to/note.txt\fR) to read the content from the file.
 .TP
 .B pm note list [--task TASK_ID] [--project PROJECT_ID]
 List notes for a task or project.
