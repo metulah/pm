@@ -51,10 +51,19 @@ def test_cli_project_crud(cli_runner_env):
     assert result_list.exit_code == 0
     response_list = json.loads(result_list.output)
     assert response_list["status"] == "success"
-    assert len(response_list["data"]) == 1
-    assert response_list["data"][0]["id"] == project_id_1
-    # Verify slug in list
-    assert response_list["data"][0]["slug"] == project_slug_1
+    # Default list should be empty now (only ACTIVE shown, and project_1 is PROSPECTIVE)
+    assert len(response_list["data"]) == 0
+
+    # Test listing WITH --prospective flag
+    result_list_prospective = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'list', '--prospective'])
+    assert result_list_prospective.exit_code == 0
+    response_list_prospective = json.loads(result_list_prospective.output)
+    assert response_list_prospective["status"] == "success"
+    # Should show the prospective project
+    assert len(response_list_prospective["data"]) == 1
+    assert response_list_prospective["data"][0]["id"] == project_id_1
+    assert response_list_prospective["data"][0]["slug"] == project_slug_1
 
     # Test project show using ID
     result_show_id = runner.invoke(
@@ -173,20 +182,32 @@ def test_cli_project_status(cli_runner_env):
     assert json.loads(result_create_3.output)[
         'data']['status'] == 'PROSPECTIVE'
 
-    result_list_final = runner.invoke(
+    # Default list should only show ACTIVE project now
+    result_list_default = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
-    assert result_list_final.exit_code == 0
-    # Check the new prospective one is listed
-    assert project_slug_3 in result_list_final.output
-    # Check the status column header/value exists
-    assert "PROSPECTIVE" in result_list_final.output
-    # Active should also be listed by default
-    assert active_slug in result_list_final.output
-    assert "ACTIVE" in result_list_final.output
-    # Archived should NOT be listed by default
-    assert project_slug_1 not in result_list_final.output
-    # Cancelled should NOT be listed by default
-    assert project_slug_2 not in result_list_final.output
+    assert result_list_default.exit_code == 0
+    assert active_slug in result_list_default.output  # Active should be listed
+    assert "ACTIVE" in result_list_default.output
+    # Prospective should NOT be listed
+    assert project_slug_3 not in result_list_default.output
+    assert "PROSPECTIVE" not in result_list_default.output
+    # Archived should NOT be listed
+    assert project_slug_1 not in result_list_default.output
+    # Cancelled should NOT be listed
+    assert project_slug_2 not in result_list_default.output
+
+    # List WITH --prospective flag should show the prospective project
+    result_list_prospective_flag = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'text', 'project', 'list', '--prospective'])
+    assert result_list_prospective_flag.exit_code == 0
+    assert active_slug in result_list_prospective_flag.output  # Active still listed
+    # Prospective IS listed now
+    assert project_slug_3 in result_list_prospective_flag.output
+    assert "PROSPECTIVE" in result_list_prospective_flag.output
+    # Archived still NOT listed
+    assert project_slug_1 not in result_list_prospective_flag.output
+    # Cancelled still NOT listed
+    assert project_slug_2 not in result_list_prospective_flag.output
 # Rename test
 
 

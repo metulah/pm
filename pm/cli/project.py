@@ -63,18 +63,20 @@ def project_create(ctx, name: str, description: Optional[str], status: str):
 # Add --archived flag
 # Corrected help text
 @click.option('--archived', 'include_archived', is_flag=True, default=False, help='Include archived projects in the list.')
+@click.option('--prospective', 'include_prospective', is_flag=True, default=False, help='Include prospective projects in the list.')
 # Add --cancelled flag
 @click.option('--cancelled', 'include_cancelled', is_flag=True, default=False, help='Include cancelled projects in the list.')
 @click.pass_context
 # Add include_cancelled to signature
-def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool, include_archived: bool, include_cancelled: bool):
+def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool, include_archived: bool, include_cancelled: bool, include_prospective: bool):  # Added include_prospective
     """List all projects."""
     conn = get_db_connection()
     try:
         # print("DEBUG[project_list]: 1 - Getting projects", file=sys.stderr) # Removed debug
         # Pass flag to storage function
         projects = list_projects(conn, include_completed=include_completed,
-                                 include_archived=include_archived, include_cancelled=include_cancelled)  # Pass all flags
+                                 # Pass include_prospective
+                                 include_archived=include_archived, include_cancelled=include_cancelled, include_prospective=include_prospective)
         # print(f"DEBUG[project_list]: 2 - Got {len(projects)} projects", file=sys.stderr) # Removed debug
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')

@@ -176,7 +176,7 @@ def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = Fals
     return cursor.rowcount > 0
 
 
-def list_projects(conn: sqlite3.Connection, include_completed: bool = False, include_archived: bool = False, include_cancelled: bool = False) -> List[Project]:
+def list_projects(conn: sqlite3.Connection, include_completed: bool = False, include_archived: bool = False, include_cancelled: bool = False, include_prospective: bool = False) -> List[Project]:
     """List projects, filtering by status based on flags."""
     query = "SELECT * FROM projects"
     params = []
@@ -185,13 +185,16 @@ def list_projects(conn: sqlite3.Connection, include_completed: bool = False, inc
     # Determine which statuses to include based on flags
     # Always include ACTIVE by default
     # Include PROSPECTIVE by default
-    included_statuses = {ProjectStatus.ACTIVE, ProjectStatus.PROSPECTIVE}
+    # Only ACTIVE is shown by default now
+    included_statuses = {ProjectStatus.ACTIVE}
     if include_completed:
         included_statuses.add(ProjectStatus.COMPLETED)
     if include_archived:
         included_statuses.add(ProjectStatus.ARCHIVED)
     if include_cancelled:  # Handle cancelled flag independently
         included_statuses.add(ProjectStatus.CANCELLED)
+    if include_prospective:  # Handle prospective flag
+        included_statuses.add(ProjectStatus.PROSPECTIVE)
 
     # Build the WHERE clause using IN operator
     if len(included_statuses) < len(ProjectStatus):  # Only add WHERE if not showing all
