@@ -67,9 +67,12 @@ def task_create(ctx, project: str, name: str, description: Optional[str], status
 @click.option('--completed', 'include_completed', is_flag=True, default=False, help='Include completed tasks in the list (unless --status is used).')
 # Add --description flag
 @click.option('--description', 'show_description', is_flag=True, default=False, help='Show the full description column in text format.')
+# Add --inactive flag
+@click.option('--inactive', 'include_inactive_project_tasks', is_flag=True, default=False, help='Include tasks from non-ACTIVE projects.')
 @click.pass_context
-# Add show_description to signature
-def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool, include_completed: bool, show_description: bool):
+# Add include_inactive_project_tasks to signature
+# Signature already correct
+def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool, include_completed: bool, show_description: bool, include_inactive_project_tasks: bool):
     """List tasks with optional filters."""
     conn = get_db_connection()
     try:
@@ -81,7 +84,7 @@ def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool,
 
         status_enum = TaskStatus(status) if status else None
         tasks = list_tasks(conn, project_id=project_id, status=status_enum,
-                           include_completed=include_completed)  # Pass flag to storage function
+                           include_completed=include_completed, include_inactive_project_tasks=include_inactive_project_tasks)  # Pass flags
 
         output_format = ctx.obj.get('FORMAT', 'json')
         ctx.obj['SHOW_ID'] = show_id

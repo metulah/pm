@@ -172,14 +172,14 @@ Project commands manage the top-level organizational units in the system.
 .B pm project create --name NAME [--description DESCRIPTION] [--status STATUS]
 Create a new project with the specified name and optional description. Status defaults to ACTIVE if not provided. Valid statuses: ACTIVE, COMPLETED, ARCHIVED, CANCELLED.
 .TP
-.B pm project list [--id] [--completed] [--archived] [--description]
-List projects. By default, COMPLETED, ARCHIVED, and CANCELLED projects, and the DESCRIPTION column are hidden. Use \fB--completed\fR to include completed projects. Use \fB--archived\fR to include archived and cancelled projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
+.B pm project list [--id] [--completed] [--archived] [--cancelled] [--description]
+List projects. By default, COMPLETED, ARCHIVED, and CANCELLED projects, and the DESCRIPTION column are hidden. Use \fB--completed\fR to include completed projects. Use \fB--archived\fR to include archived projects. Use \fB--cancelled\fR to include cancelled projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
 .TP
 .B pm project show PROJECT_ID
 Show detailed information about a specific project.
 .TP
 .B pm project update PROJECT_ID [--name NAME] [--description DESCRIPTION] [--status STATUS]
-Update a project's name, description, and/or status. Status changes are restricted (e.g., ACTIVE can become COMPLETED or CANCELLED; COMPLETED/CANCELLED can become ARCHIVED). A reminder is printed to stderr upon successful status update. Valid statuses: ACTIVE, COMPLETED, ARCHIVED, CANCELLED.
+Update a project's name, description, and/or status. Status changes are restricted (e.g., ACTIVE can become COMPLETED or CANCELLED; COMPLETED/CANCELLED can become ARCHIVED). A project cannot be marked COMPLETED if it has any tasks that are not in COMPLETED status. A reminder is printed to stderr upon successful status update. Valid statuses: ACTIVE, COMPLETED, ARCHIVED, CANCELLED.
 .TP
 .B pm project delete PROJECT_ID [--force]
 Delete a project. By default, fails if the project contains tasks. Use \fB--force\fR to delete the project and all its associated tasks.
@@ -190,8 +190,8 @@ Task commands manage the individual work items within projects.
 .B pm task create --project PROJECT_ID --name NAME [--description DESCRIPTION] [--status STATUS]
 Create a new task associated with the specified project. The status parameter is optional and defaults to NOT_STARTED. Valid status values are: NOT_STARTED, IN_PROGRESS, BLOCKED, PAUSED, COMPLETED.
 .TP
-.B pm task list [--project PROJECT_ID] [--status STATUS] [--id] [--completed] [--description]
-List tasks, optionally filtered by project ID and/or status. Tasks are sorted by project slug, then task slug. By default, COMPLETED tasks and the DESCRIPTION column are hidden (unless \fB--status COMPLETED\fR is specified). Use \fB--completed\fR to include completed tasks. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
+.B pm task list [--project PROJECT_ID] [--status STATUS] [--id] [--completed] [--inactive] [--description]
+List tasks, optionally filtered by project ID and/or status. Tasks are sorted by project slug, then task slug. By default, COMPLETED tasks, tasks belonging to non-ACTIVE projects (COMPLETED, ARCHIVED, CANCELLED), and the DESCRIPTION column are hidden (unless \fB--status COMPLETED\fR is specified). Use \fB--completed\fR to include completed tasks. Use \fB--inactive\fR to include tasks from non-ACTIVE projects. Use \fB--description\fR to show the description column. Use \fB--id\fR to include the full ID column.
 .TP
 .B pm task show TASK_ID
 Show detailed information about a specific task.

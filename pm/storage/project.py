@@ -104,7 +104,21 @@ def update_project(conn: sqlite3.Connection, project_id: str, **kwargs) -> Optio
         if new_status not in allowed_transitions:
             raise ValueError(
                 f"Invalid project status transition: {original_status.value} -> {new_status.value}")
-        # If transition is valid, update the status in kwargs for application below
+
+        # --- Additional Constraint: Check tasks before completing project ---
+        if new_status == ProjectStatus.COMPLETED:
+            from .task import list_tasks  # Import locally to avoid circular dependency
+            from ..models import TaskStatus  # Import TaskStatus
+            tasks = list_tasks(conn, project_id=project_id)
+            non_completed_tasks = [
+                t for t in tasks if t.status != TaskStatus.COMPLETED]
+            if non_completed_tasks:
+                task_names = ", ".join(
+                    f"'{t.name}' ({t.status.value})" for t in non_completed_tasks)
+                raise ValueError(
+                    f"Cannot mark project as COMPLETED. The following tasks are not completed: {task_names}")
+
+        # If transition is valid and constraints met, update the status in kwargs
         kwargs['status'] = new_status  # Ensure it's the Enum type
 
     # --- Apply Updates ---
@@ -160,7 +174,7 @@ def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = Fals
     return cursor.rowcount > 0
 
 
-def list_projects(conn: sqlite3.Connection, include_completed: bool = False, include_archived: bool = False) -> List[Project]:
+def list_projects(conn: sqlite3.Connection, include_completed: bool = False, include_archived: bool = False, include_cancelled: bool = False) -> List[Project]:
     """List projects, filtering by status based on flags."""
     query = "SELECT * FROM projects"
     params = []
@@ -173,7 +187,7 @@ def list_projects(conn: sqlite3.Connection, include_completed: bool = False, inc
         included_statuses.add(ProjectStatus.COMPLETED)
     if include_archived:
         included_statuses.add(ProjectStatus.ARCHIVED)
-        # Include CANCELLED when showing ARCHIVED
+    if include_cancelled:  # Handle cancelled flag independently
         included_statuses.add(ProjectStatus.CANCELLED)
 
     # Build the WHERE clause using IN operator

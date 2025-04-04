@@ -5,6 +5,7 @@ from typing import Optional, List, Set
 import datetime  # Added for updated_at in update_task
 
 from ..models import Task, TaskStatus
+from ..core.types import ProjectStatus  # Moved import here
 from ..core.utils import generate_slug  # Import slug generator
 # Removed top-level import: from .project import get_project
 
@@ -157,29 +158,37 @@ def delete_task(conn: sqlite3.Connection, task_id: str) -> bool:
     return cursor.rowcount > 0
 
 
-def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, status: Optional[TaskStatus] = None, include_completed: bool = False) -> List[Task]:
-    """List tasks with optional filtering, optionally including completed ones."""
+def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, status: Optional[TaskStatus] = None, include_completed: bool = False, include_inactive_project_tasks: bool = False) -> List[Task]:
+    """List tasks with optional filtering, optionally including completed tasks and tasks from inactive projects."""
     # Select all columns from tasks table (aliased as t)
     query = "SELECT t.* FROM tasks t"
     params = []
     conditions = []
 
+    # ProjectStatus import moved to top
+
+    # --- Project Filtering ---
     if project_id:
-        # Qualify project_id with table alias 't'
+        # Filter by specific project ID
         conditions.append("t.project_id = ?")
         params.append(project_id)
+    elif not include_inactive_project_tasks:
+        # If no specific project requested and not including inactive,
+        # filter to only show tasks from ACTIVE projects.
+        conditions.append("p.status = ?")
+        params.append(ProjectStatus.ACTIVE.value)
+    # If project_id is None and include_inactive_project_tasks is True, no project filter is added.
 
-    # Handle status filtering:
-    # - If a specific status is requested, use it.
-    # - Otherwise, if include_completed is False (default), exclude COMPLETED.
+    # --- Task Status Filtering (applied independently) ---
     if status:
-        # Qualify status with table alias 't'
+        # Filter by specific task status if provided
         conditions.append("t.status = ?")
         params.append(status.value)
     elif not include_completed:
-        # Qualify status with table alias 't'
+        # Otherwise, if not including completed, filter them out
         conditions.append("t.status != ?")
         params.append(TaskStatus.COMPLETED.value)
+    # If status is None and include_completed is True, no task status filter is added.
     # If status is None and include_completed is True, no status filter is added.
 
     # Join with projects table (aliased as p) to sort by project slug
