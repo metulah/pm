@@ -369,6 +369,8 @@ def test_cli_project_status(cli_runner_env):
     result_update = runner.invoke(
         cli, ['--db-path', db_path, 'project', 'update', project_id, '--status', 'ARCHIVED'])
     assert result_update.exit_code == 0
+    # Check stderr for the reminder
+    assert "Reminder: Project status updated." in result_update.stderr
     response_update = json.loads(result_update.output)
     assert response_update['status'] == 'success'
     assert response_update['data']['status'] == 'ARCHIVED'

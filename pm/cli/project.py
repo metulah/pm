@@ -130,13 +130,15 @@ def project_update(ctx, project_id: str, name: Optional[str], description: Optio
             click.echo(format_output(output_format, "success", project))
             # If status was explicitly updated, show reminder
             if status is not None:
+                # Add leading newline for separation
                 reminder = textwrap.dedent("""
-                    Reminder: Project status updated. Consider the following:
-                    - Ensure all related tasks are appropriately status'd (e.g., COMPLETED).
-                    - Update overall project documentation/notes if needed.
-                    - Consider archiving related artifacts if project is COMPLETED/ARCHIVED.
-                 """)
-                click.echo(reminder.strip(), err=True)
+                   Reminder: Project status updated. Consider the following:
+                   - Ensure all related tasks are appropriately status'd (e.g., COMPLETED).
+                   - Update overall project documentation/notes if needed.
+                   - Consider archiving related artifacts if project is COMPLETED/ARCHIVED.
+                """)  # Removed extra blank line at start
+                click.echo(
+                    reminder, err=True)  # Removed .strip() to keep leading newline
         else:
             click.echo(format_output(output_format,
                                      "error", message=f"Project {project_id} not found"))
