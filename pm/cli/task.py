@@ -132,13 +132,18 @@ def task_update(ctx, task_id: str, name: Optional[str], description: Optional[st
             click.echo(format_output(output_format, "success", task))
             # If status was explicitly updated, show reminder
             if status is not None:
-                reminder = """
-Reminder: Task status updated. Before ending your session, please ensure:
+                 reminder = """
+Reminder: Task status updated.
+
+**Before ending this session, please ensure:**
 - Session handoff note created (pm note add ...)
 - Changes committed to git
 - Tests pass
 - Documentation is current
 (See GUIDELINES.md for details)
+
+**When starting the next task/session:**
+- Remember to set the task status to IN_PROGRESS!
 """
                 click.echo(reminder, err=True)
         else:
