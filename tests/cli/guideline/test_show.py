@@ -1,4 +1,4 @@
-# tests/test_cli_guideline_show_custom.py
+# tests/cli/guideline/test_show.py
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
@@ -6,6 +6,10 @@ import frontmatter
 
 # Import the main cli entry point
 from pm.cli import cli
+
+# Define resources path relative to this test file
+# tests/cli/guideline/ -> ../../ -> pm/ -> pm/resources/
+RESOURCES_DIR = Path(__file__).parent.parent.parent / 'pm' / 'resources'
 
 
 @pytest.fixture
@@ -24,6 +28,37 @@ def _create_guideline_file(fs_path, name, content, metadata=None):
         f.write(frontmatter.dumps(post))  # Use dumps to get string, then write
     return file_path
 
+
+# --- Built-in Guideline Show Tests ---
+
+def test_guideline_show_success(runner):
+    """Test `pm guideline show <name>` successfully displays a built-in guideline."""
+    # Use isolated filesystem to ensure no custom guidelines interfere
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ['guideline', 'show', 'default'])
+
+        assert result.exit_code == 0
+        # Check for key content expected from welcome_guidelines_default.md
+        # Note: Output is rendered by rich.markdown, not raw Markdown.
+        assert "Displaying Built-in Guideline: default" in result.output  # Check header
+        assert "Welcome to the PM Tool!" in result.output
+        assert "Core Commands" in result.output
+        assert "Session Workflow" in result.output
+        # Check it doesn't include frontmatter
+        assert "description:" not in result.output
+
+
+def test_guideline_show_not_found(runner):
+    """Test `pm guideline show <name>` when the guideline does not exist (built-in)."""
+    # Use isolated filesystem to ensure no custom guidelines interfere
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli, ['guideline', 'show', 'nonexistent'])
+
+        assert result.exit_code != 0  # Expect non-zero exit code for error
+        assert "Error: Guideline 'nonexistent' not found." in result.output  # Added period
+
+
+# --- Custom Guideline Show Tests ---
 
 def test_guideline_show_custom(runner):
     """Test `pm guideline show` displays a custom guideline."""
