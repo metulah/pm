@@ -1,5 +1,11 @@
 """Base CLI functionality and utilities."""
 
+from .guideline import guideline
+from .welcome import welcome
+from ..models import Project, Task
+from ..storage.task import get_task, get_task_by_slug
+from ..storage.project import get_project, get_project_by_slug
+from ..storage import init_db
 import json
 import sqlite3
 import enum
@@ -11,11 +17,8 @@ import os
 import io
 from typing import Any, Optional, List, Dict
 
-from ..storage import init_db
-from ..storage.project import get_project, get_project_by_slug
-from ..storage.task import get_task, get_task_by_slug
-from ..models import Project, Task
-from .welcome import welcome  # Add import for the welcome command
+# RESOURCES_DIR is now defined in pm/cli/constants.py
+# Command group imports are handled near the top (lines 3-4)
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -473,3 +476,4 @@ def cli(ctx, db_path, format):  # Add format to signature
 
 # Register commands from other modules
 cli.add_command(welcome)
+cli.add_command(guideline)  # Register the guideline command group

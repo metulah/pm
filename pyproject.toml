@@ -9,7 +9,11 @@ description = "Project management CLI for AI assistants"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-dependencies = ["click>=8.0.0", "sqlalchemy>=2.0.0"]
+dependencies = [
+    "click>=8.0.0",
+    "python-frontmatter>=1.0.0",
+    "sqlalchemy>=2.0.0",
+]
 
 [project.scripts]
 pm = "pm.cli:cli"
@@ -21,7 +25,7 @@ dev = ["pytest>=7.0.0", "black>=23.0.0", "isort>=5.0.0"]
 packages = ["pm"]
 
 [tool.setuptools.package-data]
-"" = ["man/pm.1"]
+"pm" = ["man/pm.1"]
 
 [tool.setuptools.data-files]
 "share/man/man1" = ["man/pm.1"]

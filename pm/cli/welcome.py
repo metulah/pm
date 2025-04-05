@@ -3,13 +3,7 @@ import click
 import os
 import io
 from pathlib import Path
-
-# Determine the base path to the resources directory relative to this file
-# Path(__file__) -> pm/cli/welcome.py
-# .parent -> pm/cli/
-# .parent -> pm/
-# / 'resources' -> pm/resources/
-RESOURCES_DIR = Path(__file__).parent.parent / 'resources'
+from .constants import RESOURCES_DIR  # Import from the new constants file
 DEFAULT_GUIDELINE_NAME = 'default'
 SEPARATOR = "\n\n<<<--- GUIDELINE SEPARATOR --->>>\n\n"  # Use a unique separator
 # SEPARATOR = "\n---\n" # REMOVE incorrect redefinition

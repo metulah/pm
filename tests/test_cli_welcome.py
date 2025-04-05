@@ -37,13 +37,15 @@ try:
         # Get the first bullet point (line index 2)
         vcs_lines = VCS_GUIDELINE_PATH.read_text(encoding='utf-8').splitlines()
         if len(vcs_lines) > 2:
-            VCS_CONTENT_SNIPPET = vcs_lines[2].strip()
+            # Use line index 6 for a more specific snippet
+            VCS_CONTENT_SNIPPET = vcs_lines[6].strip()
     if TESTING_GUIDELINE_PATH.is_file():
         # Get the first bullet point (line index 2)
         testing_lines = TESTING_GUIDELINE_PATH.read_text(
             encoding='utf-8').splitlines()
         if len(testing_lines) > 2:
-            TESTING_CONTENT_SNIPPET = testing_lines[2].strip()
+            # Use line index 6 for a more specific snippet
+            TESTING_CONTENT_SNIPPET = testing_lines[6].strip()
 except Exception:
     print("Warning: Could not read guideline files for test snippets. Using fallbacks.")
     pass  # Keep fallback if reading fails during test setup

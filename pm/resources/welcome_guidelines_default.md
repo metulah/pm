@@ -1,3 +1,7 @@
+---
+description: "General usage guidelines, core commands, and session workflow for the PM tool."
+---
+
 # Welcome to the PM Tool!
 
 This tool helps manage your projects and tasks effectively through its CLI interface.
