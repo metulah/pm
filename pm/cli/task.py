@@ -249,7 +249,7 @@ def task_update(ctx, project_identifier: str, task_identifier: str, name: Option
                 - Changes committed to git
                 - Tests pass
                 - Documentation is current
-                (See GUIDELINES.md for details)
+                (Run 'pm welcome' for details)
 
                 **When starting the next task/session:**
                 - Remember to set the task status to IN_PROGRESS!
