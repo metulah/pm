@@ -368,7 +368,14 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
                 item_dict = item.__dict__.copy()  # Work on a copy
                 for key, value in item_dict.items():
                     if isinstance(value, enum.Enum):
-                        item_dict[key] = value.value
+                        # Special handling for status in text format
+                        if format == 'text' and key == 'status':
+                            # Replace underscore with space and capitalize first letter
+                            item_dict[key] = value.value.replace(
+                                '_', ' ').capitalize()
+                        else:
+                            # Otherwise, just use the raw value (for JSON or other enums)
+                            item_dict[key] = value.value
                     elif isinstance(value, datetime.datetime) or (isinstance(value, str) and key in ('created_at', 'updated_at')):
                         # Process datetimes or potential datetime strings for specific keys
                         if format == 'text' and key in ('created_at', 'updated_at'):
