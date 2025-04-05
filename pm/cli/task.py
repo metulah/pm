@@ -27,8 +27,10 @@ def task():
 @click.option("--description", help="Task description (or @filepath to read from file).", callback=read_content_from_argument)
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               default=TaskStatus.NOT_STARTED.value, help="Task status")
+# Add depends-on option
+@click.option("--depends-on", multiple=True, help="Dependency task identifier (ID or slug) within the same project.")
 @click.pass_context
-def task_create(ctx, project: str, name: str, description: Optional[str], status: str):
+def task_create(ctx, project: str, name: str, description: Optional[str], status: str, depends_on: tuple):
     """Create a new task."""
     conn = get_db_connection()
     try:
@@ -45,10 +47,40 @@ def task_create(ctx, project: str, name: str, description: Optional[str], status
         )
         # create_task returns full object with slug
         task = create_task(conn, task_data)
+
+        # Add dependencies if specified
+        added_deps = []
+        failed_deps = []
+        if depends_on:
+            for dep_identifier in depends_on:
+                try:
+                    # Assume dependency is in the same project
+                    dependency_obj = resolve_task_identifier(
+                        conn, project_obj, dep_identifier)
+                    add_task_dependency(conn, task.id, dependency_obj.id)
+                    added_deps.append(dep_identifier)
+                except Exception as dep_e:
+                    # Capture identifier and error message for reporting
+                    failed_deps.append(
+                        f"'{dep_identifier}' ({type(dep_e).__name__}: {dep_e})")
+
+        # Prepare output message and status
+        output_status = "success"
+        output_message = f"Task '{task.slug}' created successfully."
+        if added_deps:
+            output_message += f" Dependencies added: {', '.join(added_deps)}."
+        if failed_deps:
+            # If some dependencies failed, maybe consider it a partial success or warning
+            output_message += f" Warning: Failed to add dependencies: {', '.join(failed_deps)}."
+            # Optionally change status or just report via message/stderr
+            click.echo(
+                f"Warning: Failed to add some dependencies: {', '.join(failed_deps)}", err=True)
+
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
-        # Pass format and object
-        click.echo(format_output(output_format, "success", task))
+        # Pass format and object, using the potentially modified message
+        click.echo(format_output(output_format, output_status,
+                   task, message=output_message))
     except Exception as e:
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
