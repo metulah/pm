@@ -1,0 +1,77 @@
+# tests/test_cli_guideline_show_custom.py
+import pytest
+from click.testing import CliRunner
+from pathlib import Path
+import frontmatter
+
+# Import the main cli entry point
+from pm.cli import cli
+
+
+@pytest.fixture
+def runner():
+    return CliRunner()
+
+
+# Helper to create a dummy guideline file (can be moved to conftest.py later if needed)
+def _create_guideline_file(fs_path, name, content, metadata=None):
+    guideline_dir = fs_path / ".pm" / "guidelines"
+    guideline_dir.mkdir(parents=True, exist_ok=True)
+    file_path = guideline_dir / f"{name}.md"
+    # Use the provided metadata dict directly
+    post = frontmatter.Post(content=content, metadata=metadata or {})
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(frontmatter.dumps(post))  # Use dumps to get string, then write
+    return file_path
+
+
+def test_guideline_show_custom(runner):
+    """Test `pm guideline show` displays a custom guideline."""
+    with runner.isolated_filesystem() as fs:
+        fs_path = Path(fs)
+        _create_guideline_file(
+            fs_path, "show-custom", "Custom **Show** Content", {'description': 'Show Desc'})
+        result = runner.invoke(cli, ['guideline', 'show', 'show-custom'])
+        assert result.exit_code == 0
+        assert "Displaying Custom Guideline: show-custom" in result.output
+        # Check for rendered content (rich might alter exact markdown)
+        assert "Custom Show Content" in result.output
+        # Ensure frontmatter isn't shown in content
+        assert "description:" not in result.output
+        assert "Show Desc" not in result.output
+
+
+def test_guideline_show_prefers_custom_over_builtin(runner):
+    """Test `pm guideline show` displays custom version when name conflicts with built-in."""
+    with runner.isolated_filesystem() as fs:
+        fs_path = Path(fs)
+        # Override 'default' built-in guideline
+        _create_guideline_file(
+            fs_path, "default", "My **Local** Default Content")
+        result = runner.invoke(cli, ['guideline', 'show', 'default'])
+        assert result.exit_code == 0
+        assert "Displaying Custom Guideline: default" in result.output
+        assert "My Local Default Content" in result.output
+        # Ensure built-in content isn't shown
+        assert "Welcome to the PM Tool!" not in result.output
+
+
+def test_guideline_show_builtin_when_no_custom(runner):
+    """Test `pm guideline show` displays built-in when no custom version exists."""
+    with runner.isolated_filesystem():  # No custom files created
+        # Use a known built-in
+        result = runner.invoke(cli, ['guideline', 'show', 'coding'])
+        assert result.exit_code == 0
+        assert "Displaying Built-in Guideline: coding" in result.output
+        # Check for content from actual built-in coding.md
+        assert "Coding Practices" in result.output
+        assert "Follow the project's coding standards." in result.output
+
+
+def test_guideline_show_error_not_found_anywhere(runner):
+    """Test `pm guideline show` when guideline exists neither as custom nor built-in."""
+    with runner.isolated_filesystem():
+        result = runner.invoke(
+            cli, ['guideline', 'show', 'completely-nonexistent'])
+        assert result.exit_code != 0
+        assert "Error: Guideline 'completely-nonexistent' not found." in result.output

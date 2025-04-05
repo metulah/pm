@@ -16,3 +16,6 @@ pm.db
 # IDE
 .vscode/
 .idea/
+
+# PM Tool Specific
+.pm/
