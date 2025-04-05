@@ -3,6 +3,7 @@ import click
 import os
 import io
 from pathlib import Path
+import frontmatter  # Add import
 from rich.console import Console
 from rich.markdown import Markdown
 from .constants import RESOURCES_DIR  # Import from the new constants file
@@ -62,9 +63,9 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
 
             # Read content if path was found
             if guideline_path and not error_occurred:
-                with io.open(guideline_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-
+                # Use frontmatter to load and extract only the content
+                post = frontmatter.load(guideline_path)
+                content = post.content
         except Exception as e:
             click.echo(
                 f"Warning: Could not find or read guideline source '{source}' (Error: {e}).", err=True)

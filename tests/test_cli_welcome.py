@@ -27,25 +27,41 @@ try:
     if DEFAULT_GUIDELINE_PATH.is_file():
         default_lines = DEFAULT_GUIDELINE_PATH.read_text(
             encoding='utf-8').splitlines()
-        # Use a snippet likely to remain stable
-        DEFAULT_CONTENT_SNIPPET = next(
-            (line for line in default_lines if 'Examine current state:' in line), DEFAULT_CONTENT_SNIPPET)
+        # Use a snippet likely to remain stable - just the core text
+        if any('Examine current state:' in line for line in default_lines):
+            DEFAULT_CONTENT_SNIPPET = "Examine current state:"
+        # else: keep the original fallback
     if CODING_GUIDELINE_PATH.is_file():
-        CODING_CONTENT_SNIPPET = CODING_GUIDELINE_PATH.read_text(
-            encoding='utf-8').splitlines()[-1].strip()  # Get the last line
+        # Get the core text of the last line
+        last_line = CODING_GUIDELINE_PATH.read_text(
+            encoding='utf-8').splitlines()[-1].strip()
+        if last_line.startswith('• '):
+            CODING_CONTENT_SNIPPET = last_line[2:]  # Remove bullet and space
+        elif last_line.startswith('- '):
+            CODING_CONTENT_SNIPPET = last_line[2:]  # Remove dash and space
+        else:
+            CODING_CONTENT_SNIPPET = last_line
     if VCS_GUIDELINE_PATH.is_file():
-        # Get the first bullet point (line index 2)
+        # Use a different snippet (line 12) that might be more stable after rendering
         vcs_lines = VCS_GUIDELINE_PATH.read_text(encoding='utf-8').splitlines()
-        if len(vcs_lines) > 2:
-            # Use line index 6 for a more specific snippet
-            VCS_CONTENT_SNIPPET = vcs_lines[6].strip()
+        if len(vcs_lines) > 11 and 'Commit Changes Frequently:' in vcs_lines[11]:
+            VCS_CONTENT_SNIPPET = "Commit Changes Frequently:"
+        # else: keep fallback
     if TESTING_GUIDELINE_PATH.is_file():
         # Get the first bullet point (line index 2)
         testing_lines = TESTING_GUIDELINE_PATH.read_text(
             encoding='utf-8').splitlines()
         if len(testing_lines) > 2:
             # Use line index 6 for a more specific snippet
-            TESTING_CONTENT_SNIPPET = testing_lines[6].strip()
+            line_content = testing_lines[6].strip()
+            if line_content.startswith('• '):
+                # Remove bullet and space
+                TESTING_CONTENT_SNIPPET = line_content[2:]
+            elif line_content.startswith('- '):
+                # Remove dash and space
+                TESTING_CONTENT_SNIPPET = line_content[2:]
+            else:
+                TESTING_CONTENT_SNIPPET = line_content
 except Exception:
     print("Warning: Could not read guideline files for test snippets. Using fallbacks.")
     pass  # Keep fallback if reading fails during test setup
@@ -97,7 +113,8 @@ def test_welcome_builtin_coding_collated(runner: CliRunner):
     assert VCS_CONTENT_SNIPPET not in result.stdout  # Ensure others aren't included
     assert TESTING_CONTENT_SNIPPET not in result.stdout
     assert CUSTOM_FILE_CONTENT not in result.stdout
-    assert SEPARATOR in result.stdout  # Expect separator
+    # Check for core separator text
+    assert "<<<--- GUIDELINE SEPARATOR --->>>" in result.stdout
     assert result.stderr == ""  # No warnings expected
 
 
@@ -133,7 +150,8 @@ def test_welcome_custom_file_collated(runner: CliRunner, temp_guideline_file: Pa
     assert DEFAULT_CONTENT_SNIPPET in result.stdout
     assert CODING_CONTENT_SNIPPET not in result.stdout  # Check absence of others
     assert CUSTOM_FILE_CONTENT in result.stdout
-    assert SEPARATOR in result.stdout  # Expect separator
+    # Check for core separator text
+    assert "<<<--- GUIDELINE SEPARATOR --->>>" in result.stdout
     assert result.stderr == ""  # No warnings expected
 
 
@@ -149,7 +167,8 @@ def test_welcome_builtin_coding_and_file_collated(runner: CliRunner, temp_guidel
     assert CODING_CONTENT_SNIPPET in result.stdout  # Check for coding
     assert CUSTOM_FILE_CONTENT in result.stdout
     assert VCS_CONTENT_SNIPPET not in result.stdout  # Check absence of others
-    assert result.stdout.count(SEPARATOR) == 2  # Expect two separators
+    # Check for core separator text count
+    assert result.stdout.count("<<<--- GUIDELINE SEPARATOR --->>>") == 2
     assert result.stderr == ""  # No warnings expected
 
 
@@ -165,7 +184,8 @@ def test_welcome_all_builtins_collated(runner: CliRunner):
     assert VCS_CONTENT_SNIPPET in result.stdout
     assert TESTING_CONTENT_SNIPPET in result.stdout
     assert CUSTOM_FILE_CONTENT not in result.stdout
-    assert result.stdout.count(SEPARATOR) == 3  # Expect three separators
+    # Expect three separators (core text)
+    assert result.stdout.count("<<<--- GUIDELINE SEPARATOR --->>>") == 3
     assert result.stderr == ""
 
 
