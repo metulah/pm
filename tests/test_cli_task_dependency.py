@@ -145,3 +145,179 @@ def test_cli_task_create_with_dependencies(cli_runner_env):
     response_circ = json.loads(result_circ.output)
     assert response_circ["status"] == "error"  # But reports an error
     assert "circular reference" in response_circ["message"]
+
+
+def test_cli_task_dependency_remove(cli_runner_env):
+    """Test 'task dependency remove' functionality."""
+    runner, db_path = cli_runner_env
+    project_slug = "dep-remove-proj"
+    task_a_slug = "task-a"
+    task_b_slug = "task-b"
+
+    # Setup
+    runner.invoke(cli, ['--db-path', db_path, 'project',
+                  'create', '--name', 'Dep Remove Proj'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                  '--project', project_slug, '--name', 'Task A'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                  '--project', project_slug, '--name', 'Task B'])
+    # Add dependency A -> B
+    add_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'add',
+                                     project_slug, task_a_slug, '--depends-on', task_b_slug])
+    assert add_result.exit_code == 0
+    assert json.loads(add_result.output)['status'] == 'success'
+
+    # Verify dependency exists
+    list_result_before = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'list',
+                                             project_slug, task_a_slug])
+    assert len(json.loads(list_result_before.output)['data']) == 1
+    assert json.loads(list_result_before.output)[
+        'data'][0]['slug'] == task_b_slug
+
+    # Remove the dependency
+    remove_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'remove',
+                                        project_slug, task_a_slug, '--depends-on', task_b_slug])
+    assert remove_result.exit_code == 0, f"Output: {remove_result.output}"
+    assert json.loads(remove_result.output)['status'] == 'success'
+    assert "Dependency removed" in json.loads(remove_result.output)['message']
+
+    # Verify dependency is gone
+    list_result_after = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'list',
+                                            project_slug, task_a_slug])
+    assert list_result_after.exit_code == 0
+    assert len(json.loads(list_result_after.output)['data']) == 0
+
+    # Try removing non-existent dependency
+    remove_again_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'remove',
+                                              project_slug, task_a_slug, '--depends-on', task_b_slug])
+    assert remove_again_result.exit_code == 0  # Command runs
+    assert json.loads(remove_again_result.output)[
+        'status'] == 'error'  # But reports error
+    assert "not found" in json.loads(remove_again_result.output)['message']
+
+
+def test_cli_task_self_dependency_prevention(cli_runner_env):
+    """Test prevention of self-dependencies via CLI."""
+    runner, db_path = cli_runner_env
+    project_slug = "self-dep-proj"
+    task_a_slug = "task-a"
+
+    # Setup
+    runner.invoke(cli, ['--db-path', db_path, 'project',
+                  'create', '--name', 'Self Dep Proj'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                  '--project', project_slug, '--name', 'Task A'])
+
+    # Attempt self-dependency during creation
+    create_self_dep = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
+                                          '--project', project_slug, '--name', 'Task Self',
+                                          '--depends-on', 'task-self'])  # Try depending on its own future slug
+    # This should fail because 'task-self' doesn't exist yet to be resolved
+    assert create_self_dep.exit_code == 0  # Command runs but fails dependency add
+    create_response = json.loads(create_self_dep.output)
+    assert create_response['status'] == 'success'  # Task created
+    assert "Warning: Failed to add dependencies:" in create_response['message']
+    assert "'task-self'" in create_response['message']
+    # Check stderr for correct error
+    assert "cannot depend on itself" in create_self_dep.stderr
+
+    # Attempt self-dependency via 'dependency add'
+    add_self_dep = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'add',
+                                       project_slug, task_a_slug, '--depends-on', task_a_slug])
+    assert add_self_dep.exit_code == 0  # Command runs
+    add_response = json.loads(add_self_dep.output)
+    assert add_response['status'] == 'error'
+    assert "cannot depend on itself" in add_response['message']
+
+
+def test_cli_task_show_displays_dependencies(cli_runner_env):
+    """Test that 'task show' includes dependencies in output."""
+    runner, db_path = cli_runner_env
+    project_slug = "show-dep-proj"
+    task_a_slug = "task-a"
+    task_b_slug = "task-b"
+    task_c_slug = "task-c"
+
+    # Setup
+    runner.invoke(cli, ['--db-path', db_path, 'project',
+                  'create', '--name', 'Show Dep Proj'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                  '--project', project_slug, '--name', 'Task A'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                  '--project', project_slug, '--name', 'Task B'])
+    # Create Task C depending on A and B
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create', '--project', project_slug, '--name', 'Task C',
+                        '--depends-on', task_a_slug, '--depends-on', task_b_slug])
+
+    # Show Task C
+    show_c_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'show',
+                                        project_slug, task_c_slug])
+    assert show_c_result.exit_code == 0
+    show_c_data = json.loads(show_c_result.output)['data']
+    assert 'dependencies' in show_c_data
+    assert isinstance(show_c_data['dependencies'], list)
+    assert len(show_c_data['dependencies']) == 2
+    assert set(show_c_data['dependencies']) == {task_a_slug, task_b_slug}
+
+    # Show Task A (should have no dependencies listed)
+    show_a_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'show',
+                                        project_slug, task_a_slug])
+    assert show_a_result.exit_code == 0
+    show_a_data = json.loads(show_a_result.output)['data']
+    assert 'dependencies' in show_a_data
+    assert isinstance(show_a_data['dependencies'], list)
+    assert len(show_a_data['dependencies']) == 0
+
+
+def test_cli_task_delete_blocked_by_dependency(cli_runner_env):
+    """Test that 'task delete' is blocked if other tasks depend on it."""
+    runner, db_path = cli_runner_env
+    project_slug = "delete-dep-proj"
+    task_a_slug = "task-a"  # The dependency
+    task_b_slug = "task-b"  # Depends on A
+
+    # Setup
+    runner.invoke(cli, ['--db-path', db_path, 'project',
+                  'create', '--name', 'Delete Dep Proj'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
+                  '--project', project_slug, '--name', 'Task A'])
+    runner.invoke(cli, ['--db-path', db_path, 'task', 'create', '--project', project_slug, '--name', 'Task B',
+                        '--depends-on', task_a_slug])
+
+    # Attempt to delete Task A (should fail)
+    delete_a_fail = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'delete',
+                                        project_slug, task_a_slug, '--force'])
+    assert delete_a_fail.exit_code == 0  # Command runs
+    delete_a_fail_response = json.loads(delete_a_fail.output)
+    assert delete_a_fail_response['status'] == 'error'
+    assert "Cannot delete task" in delete_a_fail_response['message']
+    assert "It is a dependency for other tasks" in delete_a_fail_response['message']
+    # Check if dependent slug is mentioned
+    assert f"'{task_b_slug}'" in delete_a_fail_response['message']
+
+    # Verify Task A still exists
+    show_a_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'show',
+                                        project_slug, task_a_slug])
+    assert show_a_result.exit_code == 0
+    assert json.loads(show_a_result.output)['status'] == 'success'
+
+    # Remove the dependency B -> A
+    remove_dep_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'dependency', 'remove',
+                                            project_slug, task_b_slug, '--depends-on', task_a_slug])
+    assert remove_dep_result.exit_code == 0
+    assert json.loads(remove_dep_result.output)['status'] == 'success'
+
+    # Attempt to delete Task A again (should succeed now)
+    delete_a_success = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'delete',
+                                           project_slug, task_a_slug, '--force'])
+    assert delete_a_success.exit_code == 0, f"Output: {delete_a_success.output}"
+    assert json.loads(delete_a_success.output)['status'] == 'success'
+    assert "deleted" in json.loads(delete_a_success.output)['message']
+
+    # Verify Task A is gone
+    show_a_gone_result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'show',
+                                             project_slug, task_a_slug])
+    assert show_a_gone_result.exit_code == 0  # Command runs
+    assert json.loads(show_a_gone_result.output)[
+        'status'] == 'error'  # But reports error
+    assert "not found" in json.loads(show_a_gone_result.output)['message']

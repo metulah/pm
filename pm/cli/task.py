@@ -8,7 +8,8 @@ import textwrap  # Import textwrap
 from ..models import Task, TaskStatus
 from ..storage import (
     create_task, get_task, update_task, delete_task, list_tasks,
-    add_task_dependency, remove_task_dependency, get_task_dependencies
+    # Import get_task
+    add_task_dependency, remove_task_dependency, get_task_dependencies, get_task
 )
 from ..storage.project import get_project  # Import get_project (Fixed syntax)
 # Import resolvers and helper
@@ -171,8 +172,23 @@ def task_show(ctx, project_identifier: str, task_identifier: str):
         task = resolve_task_identifier(
             conn, project_obj, task_identifier)  # Use resolver
 
+        # Fetch dependencies
+        dependencies = get_task_dependencies(conn, task.id)
+        # Get slugs for cleaner display
+        dependency_slugs = [dep.slug for dep in dependencies if dep.slug]
+        # Add dependencies to the task object for output formatting
+        setattr(task, 'dependencies', dependency_slugs)
+
         output_format = ctx.obj.get('FORMAT', 'json')
+
+        # For text format, add project_slug and remove project_id for consistency with list
+        if output_format == 'text':
+            setattr(task, 'project_slug', project_obj.slug)
+            if hasattr(task, 'project_id'):
+                delattr(task, 'project_id')
+
         # Resolver raises error if not found, so we assume task exists here
+        # Pass the modified task object (now with dependencies and potentially project_slug)
         click.echo(format_output(output_format, "success", task))
     except Exception as e:
         # Get format from context

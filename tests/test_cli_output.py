@@ -284,12 +284,15 @@ def test_task_show_text(output_test_setup):
         cli, ['--db-path', db_path, '--format', 'text', 'task', 'show', data['proj_active_slug'], data['task_active_slug']])
     assert result.exit_code == 0
     output = result.output
-    assert f"Id:          {data['task_active_id']}" in output
-    assert f"Project Id:  {data['proj_active_id']}" in output
-    assert "Name:        Format Active Task" in output
-    assert f"Slug:        {data['task_active_slug']}" in output
+    # Adjusted spacing
+    assert f"Id:           {data['task_active_id']}" in output
+    # Changed to check for Slug
+    assert f"Project Slug: {data['proj_active_slug']}" in output
+    assert "Name:         Format Active Task" in output  # Adjusted spacing
+    # Adjusted spacing
+    assert f"Slug:         {data['task_active_slug']}" in output
     assert "Description: " in output  # Default description is empty
-    assert "Status:      In progress" in output  # Expect title case
+    assert "Status:       In progress" in output  # Adjusted spacing
 
 
 def test_project_list_json(output_test_setup):

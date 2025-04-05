@@ -165,6 +165,34 @@ def delete_task(conn: sqlite3.Connection, task_id: str, force: bool = False) -> 
     # so the 'force' flag here is mainly for potential direct storage layer use
     # and consistency with project delete. The actual deletion logic runs regardless.
 
+    # Check if any other tasks depend on this task
+    dependents_cursor = conn.execute(
+        "SELECT task_id FROM task_dependencies WHERE dependency_id = ?",
+        (task_id,)
+    )
+    dependent_task_ids = [row[0] for row in dependents_cursor.fetchall()]
+
+    if dependent_task_ids:
+        # Fetch slugs for better error message (optional but helpful)
+        # Note: This could be optimized, but is clearer for an error message
+        dependent_slugs = []
+        for dep_id in dependent_task_ids:
+            task = get_task(conn, dep_id)  # Re-use existing get_task
+            if task and task.slug:
+                dependent_slugs.append(f"'{task.slug}' (ID: {dep_id})")
+            else:
+                # Fallback if task/slug not found
+                dependent_slugs.append(f"ID: {dep_id}")
+
+        raise ValueError(
+            f"Cannot delete task (ID: {task_id}). It is a dependency for other tasks: {', '.join(dependent_slugs)}. "
+            "Remove these dependencies first."
+        )
+        # TODO: Consider if --force should bypass this check. Currently, it does not.
+        # TODO: Consider removing ON DELETE CASCADE from the dependency_id FK in db.py
+        #       for database-level enforcement, though this requires schema migration.
+
+    # If no dependents found, proceed with deletion
     with conn:
         # Explicitly delete associated data first
         # 1. Notes
