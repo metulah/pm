@@ -2,12 +2,16 @@
 
 import pytest
 import sqlite3
-from pm.models import Project, Task
+import uuid  # For generating IDs
+from pm.models import Project, Task, Subtask, Note  # Remove MetadataValue import
 from pm.storage import init_db
 # Needed to create projects for tasks
 from pm.storage.project import create_project
-from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks
-from pm.core.utils import generate_slug  # Needed for checking expected slugs
+from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks, delete_task, add_task_dependency
+from pm.storage.subtask import create_subtask  # Need subtask creation
+from pm.storage.note import create_note  # Need note creation
+from pm.storage.metadata import update_task_metadata  # Correct function name
+from pm.core.utils import generate_slug
 
 
 @pytest.fixture
@@ -111,3 +115,75 @@ def test_task_slug_storage(db_connection):
     # Test retrieval by valid slug but wrong project
     # Use expected_slug2a ('my-task-1') which only exists in project A
     assert get_task_by_slug(db_connection, "proj-b", expected_slug2a) is None
+
+
+def test_task_deletion_cascades(db_connection):
+    """Test that deleting a task deletes associated subtasks, notes, metadata, and dependencies."""
+    # 1. Setup Project and Tasks
+    project_id = str(uuid.uuid4())
+    project_data = Project(id=project_id, name="Project For Task Deletion")
+    create_project(db_connection, project_data)
+
+    task_id_to_delete = str(uuid.uuid4())
+    task_to_delete_data = Task(
+        id=task_id_to_delete, project_id=project_id, name="Task To Delete")
+    create_task(db_connection, task_to_delete_data)
+
+    dependency_task_id = str(uuid.uuid4())
+    dependency_task_data = Task(
+        id=dependency_task_id, project_id=project_id, name="Dependency Task")
+    create_task(db_connection, dependency_task_data)
+
+    # 2. Create Associated Data
+    # Subtask
+    subtask_id = str(uuid.uuid4())
+    subtask_data = Subtask(
+        id=subtask_id, task_id=task_id_to_delete, name="Subtask To Delete")
+    create_subtask(db_connection, subtask_data)
+
+    # Note
+    note_id = str(uuid.uuid4())
+    note_data = Note(id=note_id, entity_type='task',
+                     entity_id=task_id_to_delete, content="Task note")
+    create_note(db_connection, note_data)
+
+    # Metadata
+    metadata_key = "test_key"
+    metadata_value = "test_value"  # Pass the raw value
+    update_task_metadata(db_connection, task_id_to_delete,  # Use correct function name
+                         metadata_key, metadata_value)  # Call with raw value
+
+    # Dependency (task_to_delete depends on dependency_task)
+    add_task_dependency(db_connection, task_id_to_delete, dependency_task_id)
+    # Dependency (dependency_task depends on task_to_delete) - REMOVED to avoid circular dependency error
+    # add_task_dependency(db_connection, dependency_task_id, task_id_to_delete)
+
+    # Verify initial state
+    assert get_task(db_connection, task_id_to_delete) is not None
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM subtasks WHERE task_id = ?", (task_id_to_delete,)).fetchone()[0] == 1
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM notes WHERE entity_type = 'task' AND entity_id = ?", (task_id_to_delete,)).fetchone()[0] == 1
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM task_metadata WHERE task_id = ?", (task_id_to_delete,)).fetchone()[0] == 1
+    assert db_connection.execute("SELECT COUNT(*) FROM task_dependencies WHERE task_id = ? OR dependency_id = ?",
+                                 # Only one dependency link now
+                                 (task_id_to_delete, task_id_to_delete)).fetchone()[0] == 1
+
+    # 3. Delete Task
+    deleted = delete_task(db_connection, task_id_to_delete)
+    assert deleted is True
+
+    # 4. Verify deletion
+    assert get_task(db_connection, task_id_to_delete) is None
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM subtasks WHERE task_id = ?", (task_id_to_delete,)).fetchone()[0] == 0
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM notes WHERE entity_type = 'task' AND entity_id = ?", (task_id_to_delete,)).fetchone()[0] == 0
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM task_metadata WHERE task_id = ?", (task_id_to_delete,)).fetchone()[0] == 0
+    # Check dependencies involving the deleted task are gone
+    assert db_connection.execute("SELECT COUNT(*) FROM task_dependencies WHERE task_id = ? OR dependency_id = ?",
+                                 (task_id_to_delete, task_id_to_delete)).fetchone()[0] == 0
+    # Ensure the other task still exists
+    assert get_task(db_connection, dependency_task_id) is not None

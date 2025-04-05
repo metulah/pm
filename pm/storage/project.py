@@ -170,6 +170,14 @@ def delete_project(conn: sqlite3.Connection, project_id: str, force: bool = Fals
             )
     # Else: No tasks found, or tasks were deleted because force=True
 
+    # Also delete associated project-level notes if forcing
+    if force:
+        with conn:
+            conn.execute(
+                "DELETE FROM notes WHERE entity_type = 'project' AND entity_id = ?",
+                (project_id,)
+            )
+
     # Proceed with project deletion
     with conn:
         cursor = conn.execute(

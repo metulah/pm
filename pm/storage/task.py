@@ -156,9 +156,37 @@ def update_task(conn: sqlite3.Connection, task_id: str, **kwargs) -> Optional[Ta
     return get_task(conn, task_id)
 
 
-def delete_task(conn: sqlite3.Connection, task_id: str) -> bool:
-    """Delete a task by ID."""
+# Add force flag for consistency, though not strictly needed by CLI yet
+def delete_task(conn: sqlite3.Connection, task_id: str, force: bool = False) -> bool:
+    """Delete a task by ID, including associated data."""
+    # Note: The CLI layer currently ensures --force is used for task delete,
+    # so the 'force' flag here is mainly for potential direct storage layer use
+    # and consistency with project delete. The actual deletion logic runs regardless.
+
     with conn:
+        # Explicitly delete associated data first
+        # 1. Notes
+        conn.execute(
+            "DELETE FROM notes WHERE entity_type = 'task' AND entity_id = ?",
+            (task_id,)
+        )
+        # 2. Metadata
+        conn.execute(
+            "DELETE FROM task_metadata WHERE task_id = ?",
+            (task_id,)
+        )
+        # 3. Dependencies (where this task is either the task or the dependency)
+        conn.execute(
+            "DELETE FROM task_dependencies WHERE task_id = ? OR dependency_id = ?",
+            (task_id, task_id)
+        )
+        # 4. Subtasks
+        conn.execute(
+            "DELETE FROM subtasks WHERE task_id = ?",
+            (task_id,)
+        )
+
+        # 5. Finally, delete the task itself
         cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     return cursor.rowcount > 0
 

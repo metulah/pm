@@ -100,6 +100,8 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
     """Initialize the database and return a connection."""
     conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
     conn.row_factory = sqlite3.Row
+    # Enable foreign key constraint enforcement
+    conn.execute("PRAGMA foreign_keys = ON;")
 
     # --- Schema Creation / Migration ---
     with conn:

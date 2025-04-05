@@ -4,8 +4,14 @@ import pytest
 import sqlite3
 from pm.models import Project
 from pm.storage import init_db
-from pm.storage.project import create_project, get_project, get_project_by_slug, list_projects
-from pm.core.utils import generate_slug  # Needed for checking expected slugs
+from pm.storage.project import create_project, get_project, get_project_by_slug, list_projects, delete_project, ProjectNotEmptyError
+# Need to create tasks for deletion test
+from pm.storage.task import create_task
+# Need to create notes for deletion test
+from pm.storage.note import create_note
+from pm.models import Task, Note  # Need models for task/note creation
+from pm.core.utils import generate_slug
+import uuid  # For generating IDs
 
 
 @pytest.fixture
@@ -73,3 +79,78 @@ def test_project_slug_storage(db_connection):
 
     # Test retrieval by non-existent slug
     assert get_project_by_slug(db_connection, "non-existent-slug") is None
+
+
+def test_project_deletion_cascades(db_connection):
+    """Test that deleting a project with force=True deletes associated tasks and notes."""
+    # 1. Create Project
+    project_id = str(uuid.uuid4())
+    project_data = Project(id=project_id, name="Project To Delete")
+    create_project(db_connection, project_data)
+
+    # 2. Create Task
+    task_id = str(uuid.uuid4())
+    task_data = Task(id=task_id, project_id=project_id, name="Task To Delete")
+    create_task(db_connection, task_data)
+
+    # 3. Create Project Note
+    note_id = str(uuid.uuid4())
+    note_data = Note(id=note_id, entity_type='project',
+                     entity_id=project_id, content="Project note")
+    create_note(db_connection, note_data)
+
+    # Verify initial state
+    assert get_project(db_connection, project_id) is not None
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM tasks WHERE project_id = ?", (project_id,)).fetchone()[0] == 1
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM notes WHERE entity_type = 'project' AND entity_id = ?", (project_id,)).fetchone()[0] == 1
+
+    # 4. Delete Project with force=True
+    deleted = delete_project(db_connection, project_id, force=True)
+    assert deleted is True
+
+    # 5. Verify deletion
+    assert get_project(db_connection, project_id) is None
+    # Check tasks table directly
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM tasks WHERE project_id = ?", (project_id,)).fetchone()[0] == 0
+    # Check notes table directly
+    assert db_connection.execute(
+        "SELECT COUNT(*) FROM notes WHERE entity_type = 'project' AND entity_id = ?", (project_id,)).fetchone()[0] == 0
+
+
+def test_project_deletion_without_force_fails_if_not_empty(db_connection):
+    """Test that deleting a project without force fails if it has tasks."""
+    # 1. Create Project
+    project_id = str(uuid.uuid4())
+    project_data = Project(id=project_id, name="Project With Task")
+    create_project(db_connection, project_data)
+
+    # 2. Create Task
+    task_id = str(uuid.uuid4())
+    task_data = Task(id=task_id, project_id=project_id,
+                     name="Task Blocking Deletion")
+    create_task(db_connection, task_data)
+
+    # 3. Attempt delete without force
+    with pytest.raises(ProjectNotEmptyError):
+        delete_project(db_connection, project_id, force=False)
+
+    # 4. Verify project still exists
+    assert get_project(db_connection, project_id) is not None
+
+
+def test_project_deletion_without_force_succeeds_if_empty(db_connection):
+    """Test that deleting an empty project without force succeeds."""
+    # 1. Create Project
+    project_id = str(uuid.uuid4())
+    project_data = Project(id=project_id, name="Empty Project")
+    create_project(db_connection, project_data)
+
+    # 2. Attempt delete without force
+    deleted = delete_project(db_connection, project_id, force=False)
+    assert deleted is True
+
+    # 3. Verify project is deleted
+    assert get_project(db_connection, project_id) is None
