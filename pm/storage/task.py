@@ -6,7 +6,8 @@ import datetime  # Added for updated_at in update_task
 
 from ..models import Task, TaskStatus
 from ..core.types import ProjectStatus  # Moved import here
-from ..core.utils import generate_slug  # Import slug generator
+from ..core.utils import generate_slug
+from .note import count_notes  # Import the note counting function
 # Removed top-level import: from .project import get_project
 
 
@@ -57,7 +58,9 @@ def get_task(conn: sqlite3.Connection, task_id: str) -> Optional[Task]:
         status=TaskStatus(row['status']),
         slug=row['slug'],  # Populate slug
         created_at=row['created_at'],
-        updated_at=row['updated_at']
+        updated_at=row['updated_at'],
+        # Fetch and add note count
+        note_count=count_notes(conn, 'task', row['id'])
     )
 
 
@@ -78,7 +81,9 @@ def get_task_by_slug(conn: sqlite3.Connection, project_id: str, slug: str) -> Op
         status=TaskStatus(row['status']),
         slug=row['slug'],
         created_at=row['created_at'],
-        updated_at=row['updated_at']
+        updated_at=row['updated_at'],
+        # Fetch and add note count
+        note_count=count_notes(conn, 'task', row['id'])
     )
 
 

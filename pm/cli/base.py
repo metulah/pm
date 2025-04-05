@@ -318,13 +318,25 @@ def _format_dict_as_text(data: Dict[str, Any]) -> str:
     if not data:
         return "No data found."
 
-    # Calculate labels and max length first
-    temp_labels = [key.replace('_', ' ').title() + ':' for key in data.keys()]
+    # Define preferred order for single object display
+    preferred_order = ['id', 'slug', 'name', 'project_id', 'project_slug', 'task_id', 'parent_subtask_id',
+                       'description', 'status', 'note_count', 'content', 'author', 'entity_type', 'entity_id',
+                       'created_at', 'updated_at']  # Add note_count here
+
+    # Filter keys based on preferred order and what's actually in the data
+    display_keys = [key for key in preferred_order if key in data]
+    # Add any keys from data not in preferred_order (sorted for consistency)
+    display_keys.extend(
+        sorted([key for key in data if key not in display_keys]))
+
+    # Calculate labels and max length based on the keys we will display
+    temp_labels = [key.replace('_', ' ').title() + ':' for key in display_keys]
     max_label_len = max(len(label)
                         for label in temp_labels) if temp_labels else 0
 
     output = []
-    for key, value in data.items():
+    for key in display_keys:  # Iterate using the ordered display_keys
+        value = data[key]
         # Regenerate the label for the current key
         label_with_colon = key.replace('_', ' ').title() + ':'
         # Pad based on the calculated max length

@@ -5,7 +5,8 @@ import datetime
 from typing import Optional, List
 from ..models import Project
 from ..core.types import ProjectStatus
-from ..core.utils import generate_slug  # Import slug generator
+from ..core.utils import generate_slug
+from .note import count_notes  # Import the note counting function
 import sys
 # Removed top-level import: from .task import list_tasks
 
@@ -59,7 +60,9 @@ def get_project(conn: sqlite3.Connection, project_id: str) -> Optional[Project]:
         status=ProjectStatus(row['status']),
         slug=row['slug'],  # Populate slug
         created_at=row['created_at'],
-        updated_at=row['updated_at']
+        updated_at=row['updated_at'],
+        # Fetch and add note count
+        note_count=count_notes(conn, 'project', row['id'])
     )
 
 
@@ -77,7 +80,9 @@ def get_project_by_slug(conn: sqlite3.Connection, slug: str) -> Optional[Project
         status=ProjectStatus(row['status']),
         slug=row['slug'],
         created_at=row['created_at'],
-        updated_at=row['updated_at']
+        updated_at=row['updated_at'],
+        # Fetch and add note count
+        note_count=count_notes(conn, 'project', row['id'])
     )
 
 

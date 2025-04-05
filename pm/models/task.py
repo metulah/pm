@@ -20,6 +20,8 @@ class Task:
     slug: Optional[str] = None
     created_at: datetime.datetime = datetime.datetime.now()
     updated_at: datetime.datetime = datetime.datetime.now()
+    # Added to hold the count of associated notes
+    note_count: Optional[int] = None
 
     def validate(self):
         """Validate task data."""

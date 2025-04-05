@@ -26,7 +26,7 @@ clean:
 # Run all Python tests
 test:
 	@echo "Running Python tests..."
-	@python3 -m pytest -rP
+	@python3 -m pytest
 	@echo "Tests completed."
 
 # Show relevant project guidelines

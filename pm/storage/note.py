@@ -89,3 +89,13 @@ def list_notes(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> Li
             updated_at=row['updated_at']
         ) for row in rows
     ]
+
+
+def count_notes(conn: sqlite3.Connection, entity_type: str, entity_id: str) -> int:
+    """Count notes for a specific entity (task or project)."""
+    cursor = conn.execute(
+        "SELECT COUNT(*) FROM notes WHERE entity_type = ? AND entity_id = ?",
+        (entity_type, entity_id)
+    )
+    result = cursor.fetchone()
+    return result[0] if result else 0
