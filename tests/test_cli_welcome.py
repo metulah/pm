@@ -11,24 +11,39 @@ from pm.cli.base import cli
 # Assuming these files exist in pm/resources/
 RESOURCES_DIR = Path(__file__).parent.parent / 'pm' / 'resources'
 DEFAULT_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_default.md'
-SOFTWARE_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_software.md'
+# SOFTWARE_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_software.md' # Removed
+CODING_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_coding.md'
+VCS_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_vcs.md'
+TESTING_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_testing.md'
 
 # Read actual snippets to make tests less brittle to minor wording changes
 # Use more unique snippets if possible
 DEFAULT_CONTENT_SNIPPET = "Effectively through its CLI interface."  # Fallback
-SOFTWARE_CONTENT_SNIPPET = "(Software Development Focus)"  # Fallback
+# Define snippets for new guidelines
+CODING_CONTENT_SNIPPET = "Follow the project's coding standards"  # Fallback
+VCS_CONTENT_SNIPPET = "Commit changes frequently"  # Fallback
+TESTING_CONTENT_SNIPPET = "Write and/or update tests"  # Fallback
 try:
     if DEFAULT_GUIDELINE_PATH.is_file():
-        # Find a relatively unique line/phrase
         default_lines = DEFAULT_GUIDELINE_PATH.read_text(
             encoding='utf-8').splitlines()
+        # Use a snippet likely to remain stable
         DEFAULT_CONTENT_SNIPPET = next(
             (line for line in default_lines if 'Examine current state:' in line), DEFAULT_CONTENT_SNIPPET)
-    if SOFTWARE_GUIDELINE_PATH.is_file():
-        software_lines = SOFTWARE_GUIDELINE_PATH.read_text(
+    if CODING_GUIDELINE_PATH.is_file():
+        CODING_CONTENT_SNIPPET = CODING_GUIDELINE_PATH.read_text(
+            encoding='utf-8').splitlines()[-1].strip()  # Get the last line
+    if VCS_GUIDELINE_PATH.is_file():
+        # Get the first bullet point (line index 2)
+        vcs_lines = VCS_GUIDELINE_PATH.read_text(encoding='utf-8').splitlines()
+        if len(vcs_lines) > 2:
+            VCS_CONTENT_SNIPPET = vcs_lines[2].strip()
+    if TESTING_GUIDELINE_PATH.is_file():
+        # Get the first bullet point (line index 2)
+        testing_lines = TESTING_GUIDELINE_PATH.read_text(
             encoding='utf-8').splitlines()
-        SOFTWARE_CONTENT_SNIPPET = next(
-            (line for line in software_lines if 'Commit all code changes' in line), SOFTWARE_CONTENT_SNIPPET)
+        if len(testing_lines) > 2:
+            TESTING_CONTENT_SNIPPET = testing_lines[2].strip()
 except Exception:
     print("Warning: Could not read guideline files for test snippets. Using fallbacks.")
     pass  # Keep fallback if reading fails during test setup
@@ -62,25 +77,46 @@ def test_welcome_default(runner: CliRunner):
     print("STDERR:", result.stderr)
     assert result.exit_code == 0
     assert DEFAULT_CONTENT_SNIPPET in result.stdout
-    assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
+    # No need to check for absence of other built-ins here, focus is on default only
+    # assert CODING_CONTENT_SNIPPET not in result.stdout # etc.
     assert CUSTOM_FILE_CONTENT not in result.stdout
     assert SEPARATOR not in result.stdout  # Check for the *unique* separator
     assert result.stderr == ""  # No warnings expected
 
 
-def test_welcome_builtin_software_collated(runner: CliRunner):
-    """Test `pm welcome -g software` shows default + software (collated)."""
-    # NOTE: This test assumes the implementation uses -g or --guidelines
-    # It will FAIL until the welcome.py code is updated for collation
-    result = runner.invoke(cli, ['welcome', '--guidelines', 'software'])
+def test_welcome_builtin_coding_collated(runner: CliRunner):
+    """Test `pm welcome -g coding` shows default + coding (collated)."""
+    result = runner.invoke(cli, ['welcome', '--guidelines', 'coding'])
     print("STDOUT:", result.stdout)
     print("STDERR:", result.stderr)
     assert result.exit_code == 0
     assert DEFAULT_CONTENT_SNIPPET in result.stdout
-    assert SOFTWARE_CONTENT_SNIPPET in result.stdout
+    assert CODING_CONTENT_SNIPPET in result.stdout
+    assert VCS_CONTENT_SNIPPET not in result.stdout  # Ensure others aren't included
+    assert TESTING_CONTENT_SNIPPET not in result.stdout
     assert CUSTOM_FILE_CONTENT not in result.stdout
     assert SEPARATOR in result.stdout  # Expect separator
     assert result.stderr == ""  # No warnings expected
+
+
+def test_welcome_builtin_vcs_collated(runner: CliRunner):
+    """Test `pm welcome -g vcs` shows default + vcs (collated)."""
+    result = runner.invoke(cli, ['welcome', '--guidelines', 'vcs'])
+    assert result.exit_code == 0
+    assert DEFAULT_CONTENT_SNIPPET in result.stdout
+    assert VCS_CONTENT_SNIPPET in result.stdout
+    assert CODING_CONTENT_SNIPPET not in result.stdout
+    assert result.stderr == ""
+
+
+def test_welcome_builtin_testing_collated(runner: CliRunner):
+    """Test `pm welcome -g testing` shows default + testing (collated)."""
+    result = runner.invoke(cli, ['welcome', '--guidelines', 'testing'])
+    assert result.exit_code == 0
+    assert DEFAULT_CONTENT_SNIPPET in result.stdout
+    assert TESTING_CONTENT_SNIPPET in result.stdout
+    assert CODING_CONTENT_SNIPPET not in result.stdout
+    assert result.stderr == ""
 
 
 def test_welcome_custom_file_collated(runner: CliRunner, temp_guideline_file: Path):
@@ -93,28 +129,42 @@ def test_welcome_custom_file_collated(runner: CliRunner, temp_guideline_file: Pa
     print("STDERR:", result.stderr)
     assert result.exit_code == 0
     assert DEFAULT_CONTENT_SNIPPET in result.stdout
-    assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
+    assert CODING_CONTENT_SNIPPET not in result.stdout  # Check absence of others
     assert CUSTOM_FILE_CONTENT in result.stdout
     assert SEPARATOR in result.stdout  # Expect separator
     assert result.stderr == ""  # No warnings expected
 
 
-def test_welcome_builtin_and_file_collated(runner: CliRunner, temp_guideline_file: Path):
-    """Test `pm welcome -g software -g @<path>` shows default + software + file (collated)."""
-    # NOTE: This test assumes the implementation uses -g or --guidelines and @ prefix
-    # It will FAIL until the welcome.py code is updated for collation
+def test_welcome_builtin_coding_and_file_collated(runner: CliRunner, temp_guideline_file: Path):
+    """Test `pm welcome -g coding -g @<path>` shows default + coding + file (collated)."""
     arg = f"@{temp_guideline_file}"
     result = runner.invoke(
-        cli, ['welcome', '--guidelines', 'software', '--guidelines', arg])
+        cli, ['welcome', '--guidelines', 'coding', '--guidelines', arg])
     print("STDOUT:", result.stdout)
     print("STDERR:", result.stderr)
     assert result.exit_code == 0
-    # Check presence - order might vary depending on implementation details
     assert DEFAULT_CONTENT_SNIPPET in result.stdout
-    assert SOFTWARE_CONTENT_SNIPPET in result.stdout
+    assert CODING_CONTENT_SNIPPET in result.stdout  # Check for coding
     assert CUSTOM_FILE_CONTENT in result.stdout
+    assert VCS_CONTENT_SNIPPET not in result.stdout  # Check absence of others
     assert result.stdout.count(SEPARATOR) == 2  # Expect two separators
     assert result.stderr == ""  # No warnings expected
+
+
+def test_welcome_all_builtins_collated(runner: CliRunner):
+    """Test `pm welcome -g coding -g vcs -g testing` shows all."""
+    result = runner.invoke(cli, ['welcome', '--guidelines',
+                           'coding', '--guidelines', 'vcs', '--guidelines', 'testing'])
+    print("STDOUT:", result.stdout)
+    print("STDERR:", result.stderr)
+    assert result.exit_code == 0
+    assert DEFAULT_CONTENT_SNIPPET in result.stdout
+    assert CODING_CONTENT_SNIPPET in result.stdout
+    assert VCS_CONTENT_SNIPPET in result.stdout
+    assert TESTING_CONTENT_SNIPPET in result.stdout
+    assert CUSTOM_FILE_CONTENT not in result.stdout
+    assert result.stdout.count(SEPARATOR) == 3  # Expect three separators
+    assert result.stderr == ""
 
 
 def test_welcome_non_existent_name_collated(runner: CliRunner):
@@ -127,7 +177,7 @@ def test_welcome_non_existent_name_collated(runner: CliRunner):
     print("STDERR:", result.stderr)
     assert result.exit_code == 1  # Should fail due to explicit source error
     assert result.stdout == ""  # No output should be generated
-    assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
+    # assert SOFTWARE_CONTENT_SNIPPET not in result.stdout # Remove check for old snippet
     # Assertions for content absence are now covered by checking for empty stdout
     # assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
     # assert CUSTOM_FILE_CONTENT not in result.stdout
@@ -147,7 +197,7 @@ def test_welcome_non_existent_file_collated(runner: CliRunner, tmp_path: Path):
     print("STDERR:", result.stderr)
     assert result.exit_code == 1  # Should fail due to explicit source error
     assert result.stdout == ""  # No output should be generated
-    assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
+    # assert SOFTWARE_CONTENT_SNIPPET not in result.stdout # Remove check for old snippet
     # Assertions for content absence are now covered by checking for empty stdout
     # assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
     # assert CUSTOM_FILE_CONTENT not in result.stdout
@@ -169,7 +219,7 @@ def test_welcome_multiple_errors_collated(runner: CliRunner, tmp_path: Path):
     print("STDERR:", result.stderr)
     assert result.exit_code == 1  # Should fail due to explicit source error
     assert result.stdout == ""  # No output should be generated
-    assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
+    # assert SOFTWARE_CONTENT_SNIPPET not in result.stdout # Remove check for old snippet
     # Assertions for content absence are now covered by checking for empty stdout
     # assert SOFTWARE_CONTENT_SNIPPET not in result.stdout
     # assert CUSTOM_FILE_CONTENT not in result.stdout

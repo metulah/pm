@@ -23,14 +23,17 @@ This tool helps manage your projects and tasks effectively through its CLI inter
     - `python3 -m pm.cli task list` # Review tasks
     - `python3 -m pm.cli note list` # Review recent notes/handoffs
 2.  Review the latest notes for context.
-3.  **Set the task status to `IN_PROGRESS`**: Use `python3 -m pm.cli task update <TASK_ID_OR_SLUG> --status IN_PROGRESS` before starting work.
+3.  Confirm understanding of current objectives and constraints.
+4.  **Set the task status to `IN_PROGRESS`**: Use `python3 -m pm.cli task update <TASK_ID_OR_SLUG> --status IN_PROGRESS` before starting work.
 
 ### During Session
 
 1.  Stay focused on the current task's scope.
 2.  Document significant decisions, progress, or findings using the note system:
     - `python3 -m pm.cli note add` (Use `--task <TASK_ID_OR_SLUG>` to link to a specific task)
-3.  Use the PM tool to track progress and state changes (e.g., updating task status if needed).
+3.  Before implementing, verify plan assumptions against project state/notes/relevant artifacts.
+4.  Use the PM tool to track progress and state changes (e.g., updating task status if needed).
+5.  Re-evaluate the plan if significant unexpected issues or new insights emerge.
 
 ### Session End (CRITICAL)
 

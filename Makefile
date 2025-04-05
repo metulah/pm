@@ -1,6 +1,6 @@
 # Makefile for PM tool
 
-.PHONY: install-man test-man clean test
+.PHONY: install-man test-man clean test guidelines help
 
 # Default target
 all: install-man
@@ -29,6 +29,15 @@ test:
 	@python3 -m pytest -rP
 	@echo "Tests completed."
 
+# Show relevant project guidelines
+guidelines:
+	@echo "Displaying project development guidelines..."
+	@python3 -m pm.cli welcome \
+		-g coding \
+		-g vcs \
+		-g testing \
+		-g @DEVELOPMENT_GUIDELINES.md
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -36,4 +45,5 @@ help:
 	@echo "  test-man     - Test man page formatting"
 	@echo "  clean        - Remove installed man page"
 	@echo "  test         - Run all Python tests"
+	@echo "  guidelines   - Display relevant project development guidelines"
 	@echo "  help         - Show this help message"
