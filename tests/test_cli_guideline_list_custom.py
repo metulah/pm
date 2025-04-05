@@ -100,7 +100,7 @@ def test_guideline_list_only_custom(runner):
     mock_resources_dir = MagicMock(spec=Path)
     mock_resources_dir.glob.return_value = []  # Simulate no files found by glob
 
-    with patch('pm.cli.guideline.RESOURCES_DIR', mock_resources_dir):
+    with patch('pm.cli.guideline.list.RESOURCES_DIR', mock_resources_dir):  # Target updated
         with runner.isolated_filesystem() as fs:
             fs_path = Path(fs)
             # Use corrected helper

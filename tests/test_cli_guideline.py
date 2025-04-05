@@ -39,9 +39,9 @@ def test_guideline_list_success(runner):
 
 # Keep mocking for the 'no guidelines found' edge case
 # Patch the constant used within guideline.py
-@patch('pm.cli.guideline.RESOURCES_DIR')
-# Patch Path.cwd used within list_guidelines
-@patch('pm.cli.guideline.Path.cwd')
+@patch('pm.cli.guideline.list.RESOURCES_DIR')  # Target updated
+# Patch Path.cwd used within list_guidelines (via utils._ensure_custom_dir)
+@patch('pm.cli.guideline.utils.Path.cwd')  # Target updated
 def test_guideline_list_no_guidelines(mock_cwd, mock_resources_dir, runner):
     """Test `pm guideline list` when no guideline files are found."""
     # Mock the glob method for built-in dir
@@ -63,8 +63,8 @@ def test_guideline_list_no_guidelines(mock_cwd, mock_resources_dir, runner):
 
 
 # Keep mocking for the 'no description' edge case
-@patch('pm.cli.guideline.RESOURCES_DIR')
-@patch('pm.cli.guideline.Path.cwd')  # Patch Path.cwd
+@patch('pm.cli.guideline.list.RESOURCES_DIR')  # Target updated
+@patch('pm.cli.guideline.utils.Path.cwd')  # Target updated
 def test_guideline_list_no_description(mock_cwd, mock_resources_dir, runner):
     """Test `pm guideline list` when a file has no description metadata."""
     mock_no_desc_path = MagicMock(spec=Path)
@@ -86,7 +86,7 @@ def test_guideline_list_no_description(mock_cwd, mock_resources_dir, runner):
         return post
 
     # Patch frontmatter.load within the guideline module's scope
-    with patch('pm.cli.guideline.frontmatter.load', side_effect=mock_load_side_effect):
+    with patch('pm.cli.guideline.list.frontmatter.load', side_effect=mock_load_side_effect):  # Target updated
         result = runner.invoke(cli, ['guideline', 'list'])
 
         assert result.exit_code == 0
@@ -96,8 +96,8 @@ def test_guideline_list_no_description(mock_cwd, mock_resources_dir, runner):
 
 
 # Keep mocking for parsing error case
-@patch('pm.cli.guideline.RESOURCES_DIR')
-@patch('pm.cli.guideline.Path.cwd')  # Patch Path.cwd
+@patch('pm.cli.guideline.list.RESOURCES_DIR')  # Target updated
+@patch('pm.cli.guideline.utils.Path.cwd')  # Target updated
 def test_guideline_list_parsing_error(mock_cwd, mock_resources_dir, runner):
     """Test `pm guideline list` when frontmatter parsing fails for a file."""
     mock_invalid_path = MagicMock(spec=Path)
@@ -109,7 +109,7 @@ def test_guideline_list_parsing_error(mock_cwd, mock_resources_dir, runner):
 
     # Simulate frontmatter.load raising an exception
     mock_exception = Exception("Mock parsing error")
-    with patch('pm.cli.guideline.frontmatter.load', side_effect=mock_exception):
+    with patch('pm.cli.guideline.list.frontmatter.load', side_effect=mock_exception):  # Target updated
         result = runner.invoke(cli, ['guideline', 'list'])
 
         assert result.exit_code == 0  # Command should still succeed overall
@@ -124,8 +124,8 @@ def test_guideline_list_parsing_error(mock_cwd, mock_resources_dir, runner):
 
 
 # Keep mocking for mixed success/error case
-@patch('pm.cli.guideline.RESOURCES_DIR')
-@patch('pm.cli.guideline.Path.cwd')  # Patch Path.cwd
+@patch('pm.cli.guideline.list.RESOURCES_DIR')  # Target updated
+@patch('pm.cli.guideline.utils.Path.cwd')  # Target updated
 def test_guideline_list_mixed_success_and_error(mock_cwd, mock_resources_dir, runner):
     """Test `pm guideline list` with one valid file and one parsing error."""
     mock_default_path = MagicMock(spec=Path)
@@ -156,7 +156,7 @@ def test_guideline_list_mixed_success_and_error(mock_cwd, mock_resources_dir, ru
             # This mock should only be called for the built-in files
             pytest.fail(f"Unexpected call to frontmatter.load with {path_arg}")
 
-    with patch('pm.cli.guideline.frontmatter.load', side_effect=mock_load_side_effect):
+    with patch('pm.cli.guideline.list.frontmatter.load', side_effect=mock_load_side_effect):  # Target updated
         result = runner.invoke(cli, ['guideline', 'list'])
 
         assert result.exit_code == 0

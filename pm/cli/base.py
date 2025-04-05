@@ -1,6 +1,6 @@
 """Base CLI functionality and utilities."""
 
-from .guideline import guideline
+from .guideline.main import guideline
 from .welcome import welcome
 from ..models import Project, Task
 from ..storage.task import get_task, get_task_by_slug
