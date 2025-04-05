@@ -336,3 +336,68 @@ def test_project_delete_with_force(cli_runner_env):
     project = get_project(conn, project_id)  # Check by ID
     conn.close()
     assert project is None
+
+
+def test_cli_project_list_all_flag(cli_runner_env):
+    """Test 'project list --all' flag shows all statuses."""
+    runner, db_path = cli_runner_env
+
+    # Create projects with various statuses
+    statuses_to_create = ["ACTIVE", "PROSPECTIVE",
+                          "COMPLETED", "CANCELLED", "ARCHIVED"]
+    project_slugs = {}
+    for status in statuses_to_create:
+        name = f"All Flag Test {status}"
+        slug = f"all-flag-test-{status.lower()}"
+        project_slugs[status] = slug
+        result_create = runner.invoke(cli, ['--db-path', db_path, 'project', 'create',
+                                            '--name', name, '--status', status])
+        assert result_create.exit_code == 0, f"Failed to create {status} project"
+
+    # 1. List without --all (should only show ACTIVE)
+    result_list_default = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'list'])
+    assert result_list_default.exit_code == 0
+    response_default = json.loads(result_list_default.output)
+    assert response_default['status'] == 'success'
+    assert len(
+        response_default['data']) == 1, "Default list should only contain ACTIVE project"
+    assert response_default['data'][0]['slug'] == project_slugs["ACTIVE"]
+    assert response_default['data'][0]['status'] == "ACTIVE"
+
+    # 2. List with --all (should show all 5 projects)
+    result_list_all = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'list', '--all'])
+    assert result_list_all.exit_code == 0
+    response_all = json.loads(result_list_all.output)
+    assert response_all['status'] == 'success'
+    assert len(response_all['data']) == len(
+        statuses_to_create), "List with --all should show all projects"
+    listed_slugs_all = {p['slug'] for p in response_all['data']}
+    assert listed_slugs_all == set(project_slugs.values())
+
+    # 3. List with --all and another status flag (e.g., --completed)
+    #    --all should override the other flag, still showing all projects
+    result_list_all_override = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'list', '--all', '--completed'])
+    assert result_list_all_override.exit_code == 0
+    response_all_override = json.loads(result_list_all_override.output)
+    assert response_all_override['status'] == 'success'
+    assert len(response_all_override['data']) == len(
+        statuses_to_create), "--all should override other status flags"
+    listed_slugs_override = {p['slug']
+                             for p in response_all_override['data']}
+    assert listed_slugs_override == set(project_slugs.values())
+
+    # 4. List with just --completed (should show ACTIVE and COMPLETED)
+    result_list_completed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'list', '--completed'])
+    assert result_list_completed.exit_code == 0
+    response_completed = json.loads(result_list_completed.output)
+    assert response_completed['status'] == 'success'
+    assert len(
+        response_completed['data']) == 2, "List with --completed should show ACTIVE and COMPLETED"
+    listed_slugs_completed = {p['slug']
+                              for p in response_completed['data']}
+    assert listed_slugs_completed == {
+        project_slugs["ACTIVE"], project_slugs["COMPLETED"]}

@@ -67,17 +67,29 @@ def project_create(ctx, name: str, description: Optional[str], status: str):
 @click.option('--prospective', 'include_prospective', is_flag=True, default=False, help='Include prospective projects in the list.')
 # Add --cancelled flag
 @click.option('--cancelled', 'include_cancelled', is_flag=True, default=False, help='Include cancelled projects in the list.')
+# Add --all flag
+@click.option('--all', 'include_all', is_flag=True, default=False, help='Include projects of all statuses (overrides other status flags).')
 @click.pass_context
-# Add include_cancelled to signature
-def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool, include_archived: bool, include_cancelled: bool, include_prospective: bool):  # Added include_prospective
+# Add include_all to signature
+def project_list(ctx, show_id: bool, include_completed: bool, show_description: bool, include_archived: bool, include_cancelled: bool, include_prospective: bool, include_all: bool):
     """List all projects."""
     conn = get_db_connection()
     try:
         # print("DEBUG[project_list]: 1 - Getting projects", file=sys.stderr) # Removed debug
-        # Pass flag to storage function
+
+        # If --all is specified, override individual flags
+        if include_all:
+            include_completed = True
+            include_archived = True
+            include_cancelled = True
+            include_prospective = True
+            # Note: ACTIVE projects are included by default unless filtered out
+
+        # Pass flags to storage function
         projects = list_projects(conn, include_completed=include_completed,
-                                 # Pass include_prospective
-                                 include_archived=include_archived, include_cancelled=include_cancelled, include_prospective=include_prospective)
+                                 include_archived=include_archived,
+                                 include_cancelled=include_cancelled,
+                                 include_prospective=include_prospective)
         # print(f"DEBUG[project_list]: 2 - Got {len(projects)} projects", file=sys.stderr) # Removed debug
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
