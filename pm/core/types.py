@@ -10,6 +10,7 @@ class TaskStatus(enum.Enum):
     BLOCKED = "BLOCKED"
     PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
+    ABANDONED = "ABANDONED"
 
 
 class ProjectStatus(enum.Enum):

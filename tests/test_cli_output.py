@@ -204,7 +204,7 @@ def test_project_show_text(output_test_setup):
     assert "Name:        Format Active Proj" in output
     assert f"Slug:        {data['proj_active_slug']}" in output
     assert "Description: Active Desc" in output
-    assert "Status:      ACTIVE" in output
+    assert "Status:      Active" in output  # Expect title case
 
 
 def test_task_list_text_defaults(output_test_setup):
@@ -289,7 +289,7 @@ def test_task_show_text(output_test_setup):
     assert "Name:        Format Active Task" in output
     assert f"Slug:        {data['task_active_slug']}" in output
     assert "Description: " in output  # Default description is empty
-    assert "Status:      IN_PROGRESS" in output
+    assert "Status:      In progress" in output  # Expect title case
 
 
 def test_project_list_json(output_test_setup):
@@ -363,4 +363,4 @@ def test_default_output_is_text(output_test_setup):
     # Check for text formatting characteristics (key-value pairs from _format_dict_as_text)
     assert "Name:        Format Active Proj" in output
     assert f"Slug:        {data['proj_active_slug']}" in output
-    assert "Status:      ACTIVE" in output
+    assert "Status:      Active" in output  # Expect title case

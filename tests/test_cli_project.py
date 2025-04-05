@@ -187,7 +187,8 @@ def test_cli_project_status(cli_runner_env):
         cli, ['--db-path', db_path, '--format', 'text', 'project', 'list'])
     assert result_list_default.exit_code == 0
     assert active_slug in result_list_default.output  # Active should be listed
-    assert "ACTIVE" in result_list_default.output
+    # Expect title case in table output
+    assert " Active " in result_list_default.output
     # Prospective should NOT be listed
     assert project_slug_3 not in result_list_default.output
     assert "PROSPECTIVE" not in result_list_default.output
@@ -203,7 +204,8 @@ def test_cli_project_status(cli_runner_env):
     assert active_slug in result_list_prospective_flag.output  # Active still listed
     # Prospective IS listed now
     assert project_slug_3 in result_list_prospective_flag.output
-    assert "PROSPECTIVE" in result_list_prospective_flag.output
+    # Expect title case in table output
+    assert " Prospective " in result_list_prospective_flag.output
     # Archived still NOT listed
     assert project_slug_1 not in result_list_prospective_flag.output
     # Cancelled still NOT listed

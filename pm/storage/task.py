@@ -132,10 +132,12 @@ def update_task(conn: sqlite3.Connection, task_id: str, **kwargs) -> Optional[Ta
     if original_status != task.status:
         valid_transitions = {
             TaskStatus.NOT_STARTED: {TaskStatus.IN_PROGRESS},
-            TaskStatus.IN_PROGRESS: {TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.PAUSED},
-            TaskStatus.BLOCKED: {TaskStatus.IN_PROGRESS},
-            TaskStatus.PAUSED: {TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED},
-            TaskStatus.COMPLETED: set()  # No transitions allowed from COMPLETED
+            # Added ABANDONED as a possible target state
+            TaskStatus.IN_PROGRESS: {TaskStatus.COMPLETED, TaskStatus.BLOCKED, TaskStatus.PAUSED, TaskStatus.ABANDONED},
+            TaskStatus.BLOCKED: {TaskStatus.IN_PROGRESS, TaskStatus.ABANDONED},
+            TaskStatus.PAUSED: {TaskStatus.IN_PROGRESS, TaskStatus.BLOCKED, TaskStatus.ABANDONED},
+            TaskStatus.COMPLETED: set(),  # No transitions allowed from COMPLETED
+            TaskStatus.ABANDONED: set()   # No transitions allowed from ABANDONED
         }
         if task.status not in valid_transitions.get(original_status, set()):
             raise ValueError(
@@ -191,8 +193,8 @@ def delete_task(conn: sqlite3.Connection, task_id: str, force: bool = False) -> 
     return cursor.rowcount > 0
 
 
-def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, status: Optional[TaskStatus] = None, include_completed: bool = False, include_inactive_project_tasks: bool = False) -> List[Task]:
-    """List tasks with optional filtering, optionally including completed tasks and tasks from inactive projects."""
+def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, status: Optional[TaskStatus] = None, include_completed: bool = False, include_abandoned: bool = False, include_inactive_project_tasks: bool = False) -> List[Task]:
+    """List tasks with optional filtering, optionally including completed, abandoned tasks and tasks from inactive projects."""
     # Select all columns from tasks table (aliased as t)
     query = "SELECT t.* FROM tasks t"
     params = []
@@ -217,12 +219,19 @@ def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, statu
         # Filter by specific task status if provided
         conditions.append("t.status = ?")
         params.append(status.value)
-    elif not include_completed:
-        # Otherwise, if not including completed, filter them out
-        conditions.append("t.status != ?")
-        params.append(TaskStatus.COMPLETED.value)
-    # If status is None and include_completed is True, no task status filter is added.
-    # If status is None and include_completed is True, no status filter is added.
+    else:
+        # If no specific status is requested, apply default filters
+        default_exclude_statuses = []
+        if not include_completed:
+            default_exclude_statuses.append(TaskStatus.COMPLETED.value)
+        if not include_abandoned:
+            default_exclude_statuses.append(TaskStatus.ABANDONED.value)
+
+        if default_exclude_statuses:
+            placeholders = ', '.join('?' for _ in default_exclude_statuses)
+            conditions.append(f"t.status NOT IN ({placeholders})")
+            params.extend(default_exclude_statuses)
+    # If status is provided, or if both include_completed and include_abandoned are True, no default status filter is added.
 
     # Join with projects table (aliased as p) to sort by project slug
     query += " JOIN projects p ON t.project_id = p.id"

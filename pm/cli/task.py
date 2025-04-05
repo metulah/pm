@@ -66,6 +66,8 @@ def task_create(ctx, project: str, name: str, description: Optional[str], status
 @click.option('--id', 'show_id', is_flag=True, default=False, help='Show the full ID column in text format.')
 # Add --completed flag
 @click.option('--completed', 'include_completed', is_flag=True, default=False, help='Include completed tasks in the list (unless --status is used).')
+# Add --abandoned flag
+@click.option('--abandoned', 'include_abandoned', is_flag=True, default=False, help='Include abandoned tasks in the list (unless --status is used).')
 # Add --description flag
 @click.option('--description', 'show_description', is_flag=True, default=False, help='Show the full description column in text format.')
 # Add --inactive flag
@@ -73,7 +75,7 @@ def task_create(ctx, project: str, name: str, description: Optional[str], status
 @click.pass_context
 # Add include_inactive_project_tasks to signature
 # Signature already correct
-def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool, include_completed: bool, show_description: bool, include_inactive_project_tasks: bool):
+def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool, include_completed: bool, include_abandoned: bool, show_description: bool, include_inactive_project_tasks: bool):
     """List tasks with optional filters."""
     conn = get_db_connection()
     try:
@@ -85,7 +87,7 @@ def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool,
 
         status_enum = TaskStatus(status) if status else None
         tasks = list_tasks(conn, project_id=project_id, status=status_enum,
-                           include_completed=include_completed, include_inactive_project_tasks=include_inactive_project_tasks)  # Pass flags
+                           include_completed=include_completed, include_abandoned=include_abandoned, include_inactive_project_tasks=include_inactive_project_tasks)  # Pass flags
 
         output_format = ctx.obj.get('FORMAT', 'json')
         ctx.obj['SHOW_ID'] = show_id

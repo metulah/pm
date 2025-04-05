@@ -148,7 +148,7 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
             updated_at TIMESTAMP NOT NULL,
             FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
             UNIQUE (project_id, slug), -- Add unique constraint for slug within project
-            CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'PAUSED', 'COMPLETED'))
+            CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'BLOCKED', 'PAUSED', 'COMPLETED', 'ABANDONED'))
         )
         """)
 
@@ -327,5 +327,7 @@ def init_db(db_path: str = "pm.db") -> sqlite3.Connection:
                     f"WARNING: Could not create unique index on tasks(project_id, slug). Duplicates might exist. Error: {e}", file=sys.stderr)
 
         # --- End Slug Column Migration ---
+
+        # --- End Task Status CHECK Constraint Migration --- (Removed logic)
 
     return conn

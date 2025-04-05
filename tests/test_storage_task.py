@@ -7,11 +7,12 @@ from pm.models import Project, Task, Subtask, Note  # Remove MetadataValue impor
 from pm.storage import init_db
 # Needed to create projects for tasks
 from pm.storage.project import create_project
-from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks, delete_task, add_task_dependency
+from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks, delete_task, add_task_dependency, update_task  # Added update_task
 from pm.storage.subtask import create_subtask  # Need subtask creation
 from pm.storage.note import create_note  # Need note creation
 from pm.storage.metadata import update_task_metadata  # Correct function name
 from pm.core.utils import generate_slug
+from pm.core.types import TaskStatus  # Import TaskStatus for tests
 
 
 @pytest.fixture
@@ -187,3 +188,77 @@ def test_task_deletion_cascades(db_connection):
                                  (task_id_to_delete, task_id_to_delete)).fetchone()[0] == 0
     # Ensure the other task still exists
     assert get_task(db_connection, dependency_task_id) is not None
+
+
+@pytest.fixture
+def setup_task_for_abandon_test(db_connection):
+    """Fixture to set up a project and a task for abandon status tests."""
+    project_id = str(uuid.uuid4())
+    project_data = Project(id=project_id, name="Project For Abandon Test")
+    create_project(db_connection, project_data)
+    task_id = str(uuid.uuid4())
+    task_data = Task(id=task_id, project_id=project_id, name="Task To Abandon")
+    create_task(db_connection, task_data)  # Starts as NOT_STARTED
+    return db_connection, task_id
+
+
+@pytest.mark.parametrize("start_status", [
+    TaskStatus.IN_PROGRESS,
+    TaskStatus.PAUSED,
+    TaskStatus.BLOCKED,
+])
+def test_task_status_valid_transitions_to_abandoned(setup_task_for_abandon_test, start_status):
+    """Test valid transitions TO ABANDONED status."""
+    db_connection, task_id = setup_task_for_abandon_test
+
+    # Set the task to the starting status (via IN_PROGRESS if needed)
+    if start_status != TaskStatus.IN_PROGRESS:
+        update_task(db_connection, task_id, status=TaskStatus.IN_PROGRESS)
+    update_task(db_connection, task_id, status=start_status)
+
+    # Perform the transition to ABANDONED
+    updated_task = update_task(
+        db_connection, task_id, status=TaskStatus.ABANDONED)
+    assert updated_task.status == TaskStatus.ABANDONED
+
+
+@pytest.mark.parametrize("start_status", [
+    TaskStatus.NOT_STARTED,
+    TaskStatus.COMPLETED,
+])
+def test_task_status_invalid_transitions_to_abandoned(setup_task_for_abandon_test, start_status):
+    """Test invalid transitions TO ABANDONED status."""
+    db_connection, task_id = setup_task_for_abandon_test
+
+    # Set the task to the starting status (via IN_PROGRESS if needed for COMPLETED)
+    if start_status == TaskStatus.COMPLETED:
+        update_task(db_connection, task_id, status=TaskStatus.IN_PROGRESS)
+    update_task(db_connection, task_id, status=start_status)
+
+    # Attempt the invalid transition
+    with pytest.raises(ValueError, match="Invalid status transition"):
+        update_task(db_connection, task_id, status=TaskStatus.ABANDONED)
+
+
+@pytest.mark.parametrize("target_status", [
+    TaskStatus.NOT_STARTED,
+    TaskStatus.IN_PROGRESS,
+    TaskStatus.BLOCKED,
+    TaskStatus.PAUSED,
+    TaskStatus.COMPLETED,
+])
+def test_task_status_invalid_transitions_from_abandoned(setup_task_for_abandon_test, target_status):
+    """Test invalid transitions FROM ABANDONED status."""
+    db_connection, task_id = setup_task_for_abandon_test
+
+    # Set the task to ABANDONED first (via a valid path)
+    update_task(db_connection, task_id, status=TaskStatus.IN_PROGRESS)
+    update_task(db_connection, task_id, status=TaskStatus.ABANDONED)
+    assert get_task(db_connection, task_id).status == TaskStatus.ABANDONED
+
+    # Attempt the invalid transition
+    with pytest.raises(ValueError, match="Invalid status transition"):
+        update_task(db_connection, task_id, status=target_status)
+
+    # Verify status remains ABANDONED
+    assert get_task(db_connection, task_id).status == TaskStatus.ABANDONED
