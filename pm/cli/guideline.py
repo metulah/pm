@@ -3,6 +3,8 @@ import click
 import os
 import frontmatter
 from pathlib import Path
+from rich.console import Console
+from rich.markdown import Markdown
 # Assuming RESOURCES_DIR is defined in base or accessible
 from .constants import RESOURCES_DIR  # Import from the new constants file
 
@@ -10,8 +12,12 @@ from .constants import RESOURCES_DIR  # Import from the new constants file
 
 
 @click.group()
-def guideline():
+@click.pass_context
+def guideline(ctx):
     """Commands for managing and viewing guidelines."""
+    # ensure that ctx.obj exists and is a dict (in case `cli` is called
+    # by means other than the `if __name__ == "__main__":` block below)
+    ctx.ensure_object(dict)
     pass
 
 # Define the list subcommand
@@ -57,6 +63,35 @@ def list_guidelines():
 
     except Exception as e:
         click.echo(f"Error scanning for guidelines: {e}", err=True)
+# Define the show subcommand
 
-# Add more subcommands to the 'guideline' group here later if needed
-# e.g., @guideline.command('show') ...
+
+@guideline.command('show')
+@click.argument('name')
+@click.pass_context
+def show_guideline(ctx, name):
+    """Shows the content of a specific guideline."""
+    console = Console()
+    try:
+        # Construct the expected filename
+        guideline_filename = f"welcome_guidelines_{name}.md"
+        guideline_path = RESOURCES_DIR / guideline_filename
+
+        if not guideline_path.is_file():
+            click.echo(
+                f"Error: Guideline '{name}' not found at expected location {guideline_path}", err=True)
+            ctx.exit(1)
+            return  # Redundant due to ctx.exit, but good practice
+
+        # Read the full content of the file
+        # Use frontmatter.load to handle potential metadata, but get the raw content
+        post = frontmatter.load(guideline_path)
+        content = post.content  # Get content after frontmatter
+
+        # Render the Markdown content
+        markdown = Markdown(content)
+        console.print(markdown)
+
+    except Exception as e:
+        click.echo(f"Error showing guideline '{name}': {e}", err=True)
+        ctx.exit(1)

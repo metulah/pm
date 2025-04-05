@@ -142,3 +142,28 @@ def test_guideline_list_mixed_success_and_error(mock_resources_dir, runner):
         assert "- default: Mock Default Description" in result.output
         # Check the invalid one is NOT listed
         assert "- invalid:" not in result.output
+
+
+# --- Tests for `pm guideline show` ---
+
+def test_guideline_show_success(runner):
+    """Test `pm guideline show <name>` successfully displays a guideline."""
+    # Assuming 'default' guideline exists and contains specific text
+    result = runner.invoke(cli, ['guideline', 'show', 'default'])
+
+    assert result.exit_code == 0
+    # Check for key content expected from welcome_guidelines_default.md
+    # Note: Output is rendered by rich.markdown, not raw Markdown.
+    assert "Welcome to the PM Tool!" in result.output
+    assert "Core Commands" in result.output
+    assert "Session Workflow" in result.output
+    # Check it doesn't include frontmatter
+    assert "description:" not in result.output
+
+
+def test_guideline_show_not_found(runner):
+    """Test `pm guideline show <name>` when the guideline does not exist."""
+    result = runner.invoke(cli, ['guideline', 'show', 'nonexistent'])
+
+    assert result.exit_code != 0  # Expect non-zero exit code for error
+    assert "Error: Guideline 'nonexistent' not found" in result.output
