@@ -3,6 +3,8 @@ import click
 import os
 import io
 from pathlib import Path
+from rich.console import Console
+from rich.markdown import Markdown
 from .constants import RESOURCES_DIR  # Import from the new constants file
 DEFAULT_GUIDELINE_NAME = 'default'
 SEPARATOR = "\n\n<<<--- GUIDELINE SEPARATOR --->>>\n\n"  # Use a unique separator
@@ -84,7 +86,8 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
     # Output the final collated content
     # Only output if no errors occurred for explicitly requested sources
     if not explicit_source_error and collated_content:
-        click.echo("".join(collated_content))
+        console = Console()
+        console.print(Markdown("".join(collated_content)))
     elif explicit_source_error:
         # Optionally add a final summary error message to stderr
         click.echo(

@@ -5,6 +5,7 @@ This document outlines specific conventions and practices for developing the PM 
 ## Implementation Conventions
 
 - **Destructive Operations:** Commands that perform irreversible actions (like deletion) MUST include a `--force` flag. The command should fail with an informative error message if the flag is omitted.
+- **CLI Output Rendering:** Use the `rich` library (`rich.console.Console` and `rich.markdown.Markdown`) to render Markdown content (like guidelines or formatted messages) in the terminal for improved readability.
 
 ## Testing Conventions
 

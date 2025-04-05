@@ -8,7 +8,7 @@ __pycache__/
 *.egg
 dist/
 build/
-venv/
+.venv/
 
 # Database
 pm.db

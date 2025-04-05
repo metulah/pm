@@ -4,7 +4,8 @@ import uuid
 from typing import Optional
 import click
 import textwrap  # Import textwrap
-
+from rich.console import Console
+from rich.markdown import Markdown
 from ..models import Task, TaskStatus
 from ..storage import (
     create_task, get_task, update_task, delete_task, list_tasks,
@@ -254,7 +255,8 @@ def task_update(ctx, project_identifier: str, task_identifier: str, name: Option
                 **When starting the next task/session:**
                 - Remember to set the task status to IN_PROGRESS!
              """)
-            click.echo(reminder.strip(), err=True)
+            console = Console(stderr=True)
+            console.print(Markdown(reminder.strip()))
     except Exception as e:
         # Get format from context
         output_format = ctx.obj.get('FORMAT', 'json')
