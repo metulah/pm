@@ -15,6 +15,7 @@ from ..storage import init_db
 from ..storage.project import get_project, get_project_by_slug
 from ..storage.task import get_task, get_task_by_slug
 from ..models import Project, Task
+from .welcome import welcome  # Add import for the welcome command
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -449,3 +450,7 @@ def cli(ctx, db_path, format):  # Add format to signature
     ctx.ensure_object(dict)
     ctx.obj['DB_PATH'] = db_path
     ctx.obj['FORMAT'] = format  # Store format in context
+
+
+# Register commands from other modules
+cli.add_command(welcome)
