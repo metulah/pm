@@ -12,7 +12,7 @@ from ...common_utils import get_db_connection, format_output
 @click.argument("subtask_id")
 @click.option("--name", help="New subtask name")
 @click.option("--description", help="New subtask description")
-@click.option("--required/--optional",
+@click.option("--required/--optional", default=None,  # Explicitly default to None
               help="Whether this subtask is required for task completion")
 @click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
               help="New subtask status")
