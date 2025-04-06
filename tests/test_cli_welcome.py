@@ -4,8 +4,8 @@ from click.testing import CliRunner
 from pathlib import Path
 import os
 
-# Import the main cli entry point from base where 'welcome' was added
-from pm.cli.base import cli
+# Import the main cli entry point
+from pm.cli.__main__ import cli
 
 # Define expected content snippets (adjust if actual content changes)
 # Assuming these files exist in pm/resources/
