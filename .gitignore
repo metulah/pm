@@ -19,3 +19,5 @@ pm.db
 
 # PM Tool Specific
 .pm/
+# Allow custom guidelines to be committed
+!.pm/guidelines/

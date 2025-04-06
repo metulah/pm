@@ -1,3 +1,8 @@
+---
+metadata:
+  description: PM Tool Development Guidelines
+---
+
 # PM Tool Development Guidelines
 
 This document outlines specific conventions and practices for developing the PM tool itself. These supplement any general guidelines provided by the `pm welcome` command.
