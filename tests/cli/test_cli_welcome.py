@@ -9,7 +9,8 @@ from pm.cli.__main__ import cli
 
 # Define expected content snippets (adjust if actual content changes)
 # Assuming these files exist in pm/resources/
-RESOURCES_DIR = Path(__file__).parent.parent / 'pm' / 'resources'
+RESOURCES_DIR = Path(__file__).parent.parent.parent / \
+    'pm' / 'resources'  # Go up one more level
 DEFAULT_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_default.md'
 # SOFTWARE_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_software.md' # Removed
 CODING_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_coding.md'
@@ -27,10 +28,11 @@ try:
     if DEFAULT_GUIDELINE_PATH.is_file():
         default_lines = DEFAULT_GUIDELINE_PATH.read_text(
             encoding='utf-8').splitlines()
-        # Use a snippet likely to remain stable - just the core text
+        # Restore dynamic update: Use a more stable snippet if found
         if any('Examine current state:' in line for line in default_lines):
             DEFAULT_CONTENT_SNIPPET = "Examine current state:"
         # else: keep the original fallback
+        # The fallback "Effectively through its CLI interface." appears correct.
     if CODING_GUIDELINE_PATH.is_file():
         # Get the core text of the last line
         last_line = CODING_GUIDELINE_PATH.read_text(
