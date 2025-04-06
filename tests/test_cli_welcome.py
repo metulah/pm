@@ -256,3 +256,39 @@ def test_welcome_multiple_errors_collated(runner: CliRunner, tmp_path: Path):
     assert CUSTOM_FILE_CONTENT not in result.stdout
     assert SEPARATOR not in result.stdout
     # assert result.stderr == "" # This assertion was incorrect and is now removed.
+
+
+def test_welcome_custom_guideline_by_name_fails(runner: CliRunner, tmp_path: Path):
+    """Test `pm welcome -g <custom_name>` successfully loads custom guideline by name."""
+    custom_guideline_name = "my-custom-test-guideline"
+    custom_content = "Content of the custom guideline loaded by name."
+    # Create the guideline file in the expected location relative to CWD
+    # Note: This assumes pm welcome looks relative to CWD. If it uses a fixed
+    # path or user config dir, this setup might need adjustment.
+    guideline_dir = tmp_path / ".pm" / "guidelines"
+    guideline_dir.mkdir(parents=True, exist_ok=True)
+    guideline_file = guideline_dir / f"{custom_guideline_name}.md"
+    guideline_file.write_text(custom_content, encoding='utf-8')
+
+    # Temporarily change CWD for the invoke command so it finds .pm/guidelines
+    # This is necessary because the welcome command likely searches relative to CWD.
+    original_cwd = Path.cwd()
+    os.chdir(tmp_path)
+    try:
+        result = runner.invoke(
+            cli, ['welcome', '--guidelines', custom_guideline_name])
+    finally:
+        os.chdir(original_cwd)  # Ensure we change back
+
+    print("STDOUT:", result.stdout)
+    print("STDERR:", result.stderr)
+
+    # Expect success now that custom names are resolved
+    assert result.exit_code == 0, "Command should succeed loading custom guideline by name"
+    assert result.stderr == "", "No warnings expected"
+    # Should include default content AND custom content, separated
+    assert DEFAULT_CONTENT_SNIPPET in result.stdout
+    # Use strip() to handle potential trailing whitespace
+    assert custom_content in result.stdout.strip()
+    # Check for core separator text
+    assert "<<<--- GUIDELINE SEPARATOR --->>>" in result.stdout

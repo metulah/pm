@@ -8,8 +8,9 @@ from rich.console import Console
 from rich.markdown import Markdown
 from .constants import RESOURCES_DIR  # Import from the new constants file
 DEFAULT_GUIDELINE_NAME = 'default'
+# Define path for custom guidelines
+CUSTOM_GUIDELINES_DIR = Path(".pm") / "guidelines"
 SEPARATOR = "\n\n<<<--- GUIDELINE SEPARATOR --->>>\n\n"  # Use a unique separator
-# SEPARATOR = "\n---\n" # REMOVE incorrect redefinition
 
 
 @click.command()
@@ -51,15 +52,21 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
                 if potential_builtin_path.is_file():
                     guideline_path = potential_builtin_path
                 else:
-                    # Only warn for non-default missing built-ins
-                    if not is_default:
-                        click.echo(
-                            f"Warning: Could not find or read guideline source '{source}' (Built-in name not found).", err=True)
+                    # Check for custom guideline name
+                    potential_custom_path = CUSTOM_GUIDELINES_DIR / \
+                        f"{source}.md"
+                    if potential_custom_path.is_file():
+                        guideline_path = potential_custom_path
                     else:
-                        # Error specifically for missing default
-                        click.echo(
-                            f"Error: Default guideline file '{DEFAULT_GUIDELINE_NAME}' not found at expected location: {potential_builtin_path}", err=True)
-                    error_occurred = True  # Mark error even for missing default
+                        # Only warn for non-default missing sources
+                        if not is_default:
+                            click.echo(
+                                f"Warning: Could not find or read guideline source '{source}' (Name not found as built-in or custom).", err=True)
+                        else:
+                            # Error specifically for missing default
+                            click.echo(
+                                f"Error: Default guideline file '{DEFAULT_GUIDELINE_NAME}' not found at expected location: {potential_builtin_path}", err=True)
+                        error_occurred = True  # Mark error even for missing default
 
             # Read content if path was found
             if guideline_path and not error_occurred:

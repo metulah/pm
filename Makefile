@@ -36,7 +36,7 @@ guidelines:
 		-g coding \
 		-g vcs \
 		-g testing \
-		-g @.pm/guidelines/development.md
+		-g development
 
 # Help target
 help:
