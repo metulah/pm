@@ -6,7 +6,7 @@ import sqlite3
 import os
 from pathlib import Path
 from pm.storage import init_db, get_task
-from pm.cli.base import get_db_connection  # Keep for consistency
+from pm.cli.common_utils import get_db_connection  # Import from common_utils
 from pm.core.types import TaskStatus
 from pm.cli.__main__ import cli
 from click.testing import CliRunner

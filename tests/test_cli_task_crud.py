@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from pm.storage import init_db, get_task  # Removed get_db_connection from here
 # Import get_db_connection from correct location
-from pm.cli.base import get_db_connection
+from pm.cli.common_utils import get_db_connection  # Import from common_utils
 from pm.core.types import TaskStatus  # Import TaskStatus
 from pm.cli.__main__ import cli  # Import the main cli entry point
 from click.testing import CliRunner

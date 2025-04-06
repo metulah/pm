@@ -9,7 +9,8 @@ import click
 # Assume models are defined correctly for type hinting and mock return values
 from pm.models import Project, Task
 from pm.core.types import ProjectStatus, TaskStatus  # Import enums from core.types
-from pm.cli.base import resolve_project_identifier, resolve_task_identifier, is_valid_uuid
+# Import from common_utils
+from pm.cli.common_utils import resolve_project_identifier, resolve_task_identifier, is_valid_uuid
 
 # --- Test is_valid_uuid ---
 
@@ -24,8 +25,8 @@ def test_is_valid_uuid():
 # --- Test resolve_project_identifier ---
 
 
-@patch('pm.cli.base.get_project')
-@patch('pm.cli.base.get_project_by_slug')
+@patch('pm.cli.common_utils.get_project')  # Target common_utils
+@patch('pm.cli.common_utils.get_project_by_slug')  # Target common_utils
 def test_resolve_project_by_uuid(mock_get_by_slug, mock_get_by_id):
     """Test resolving project by UUID."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -41,8 +42,8 @@ def test_resolve_project_by_uuid(mock_get_by_slug, mock_get_by_id):
     assert resolved_project == mock_project
 
 
-@patch('pm.cli.base.get_project')
-@patch('pm.cli.base.get_project_by_slug')
+@patch('pm.cli.common_utils.get_project')  # Target common_utils
+@patch('pm.cli.common_utils.get_project_by_slug')  # Target common_utils
 def test_resolve_project_by_slug(mock_get_by_slug, mock_get_by_id):
     """Test resolving project by slug when ID lookup fails or identifier is not UUID."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -60,8 +61,8 @@ def test_resolve_project_by_slug(mock_get_by_slug, mock_get_by_id):
     assert resolved_project == mock_project
 
 
-@patch('pm.cli.base.get_project')
-@patch('pm.cli.base.get_project_by_slug')
+@patch('pm.cli.common_utils.get_project')  # Target common_utils
+@patch('pm.cli.common_utils.get_project_by_slug')  # Target common_utils
 def test_resolve_project_not_found(mock_get_by_slug, mock_get_by_id):
     """Test resolving non-existent project identifier."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -82,8 +83,8 @@ mock_project_obj = Project(id=str(uuid.uuid4(
 )), name="Parent Project", slug="parent-project", status=ProjectStatus.ACTIVE)
 
 
-@patch('pm.cli.base.get_task')
-@patch('pm.cli.base.get_task_by_slug')
+@patch('pm.cli.common_utils.get_task')  # Target common_utils
+@patch('pm.cli.common_utils.get_task_by_slug')  # Target common_utils
 def test_resolve_task_by_uuid(mock_get_by_slug, mock_get_by_id):
     """Test resolving task by UUID within the correct project."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -100,8 +101,8 @@ def test_resolve_task_by_uuid(mock_get_by_slug, mock_get_by_id):
     assert resolved_task == mock_task
 
 
-@patch('pm.cli.base.get_task')
-@patch('pm.cli.base.get_task_by_slug')
+@patch('pm.cli.common_utils.get_task')  # Target common_utils
+@patch('pm.cli.common_utils.get_task_by_slug')  # Target common_utils
 def test_resolve_task_by_slug(mock_get_by_slug, mock_get_by_id):
     """Test resolving task by slug within the correct project."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -120,8 +121,8 @@ def test_resolve_task_by_slug(mock_get_by_slug, mock_get_by_id):
     assert resolved_task == mock_task
 
 
-@patch('pm.cli.base.get_task')
-@patch('pm.cli.base.get_task_by_slug')
+@patch('pm.cli.common_utils.get_task')  # Target common_utils
+@patch('pm.cli.common_utils.get_task_by_slug')  # Target common_utils
 def test_resolve_task_uuid_wrong_project(mock_get_by_slug, mock_get_by_id):
     """Test resolving task by UUID when it belongs to a different project."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -143,8 +144,8 @@ def test_resolve_task_uuid_wrong_project(mock_get_by_slug, mock_get_by_id):
         mock_conn, mock_project_obj.id, task_id)
 
 
-@patch('pm.cli.base.get_task')
-@patch('pm.cli.base.get_task_by_slug')
+@patch('pm.cli.common_utils.get_task')  # Target common_utils
+@patch('pm.cli.common_utils.get_task_by_slug')  # Target common_utils
 def test_resolve_task_slug_wrong_project(mock_get_by_slug, mock_get_by_id):
     """Test resolving task by slug when slug exists but in different project."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
@@ -161,8 +162,8 @@ def test_resolve_task_slug_wrong_project(mock_get_by_slug, mock_get_by_id):
         mock_conn, mock_project_obj.id, task_slug)
 
 
-@patch('pm.cli.base.get_task')
-@patch('pm.cli.base.get_task_by_slug')
+@patch('pm.cli.common_utils.get_task')  # Target common_utils
+@patch('pm.cli.common_utils.get_task_by_slug')  # Target common_utils
 def test_resolve_task_not_found(mock_get_by_slug, mock_get_by_id):
     """Test resolving non-existent task identifier."""
     mock_conn = MagicMock(spec=sqlite3.Connection)
