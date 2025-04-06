@@ -105,6 +105,78 @@ pm task dependency remove <project_id_or_slug> <task_id_or_slug> --depends-on <d
 pm task dependency list <project_id_or_slug> <task_id_or_slug>
 ```
 
+### Note Commands
+
+```bash
+# Add a note to a project or task
+pm note add --project <project_id_or_slug> --content "Project note"
+pm note add --project <project_id_or_slug> --task <task_id_or_slug> --content "Task note"
+
+# List notes for a project or task
+pm note list --project <project_id_or_slug>
+pm note list --project <project_id_or_slug> --task <task_id_or_slug>
+
+# Show a note
+pm note show <note_id>
+
+# Update a note
+pm note update <note_id> --content "Updated content"
+
+# Delete a note
+pm note delete <note_id>
+```
+
+### Template Commands
+
+```bash
+# Create a task template
+pm template create --name "My Task Template" --description "Template description"
+
+# List templates
+pm template list
+
+# Show template details (including subtask templates)
+pm template show <template_id>
+
+# Add a subtask template
+pm template add-subtask <template_id> --name "Subtask Template Name" [--description "Desc"] [--optional]
+
+# Apply a template to a task (creates subtasks)
+pm template apply <template_id> --task <task_id>
+
+# Delete a template
+pm template delete <template_id>
+```
+
+### Guideline Commands
+
+```bash
+# Show default guidelines
+pm welcome
+
+# Show default + specific built-in guidelines (e.g., coding, vcs)
+pm welcome -g coding -g vcs
+
+# Show default + guideline from a file path
+pm welcome -g @path/to/my_guideline.md
+
+# List custom guidelines saved in .pm/guidelines/
+pm guideline list
+
+# Show a specific custom guideline
+pm guideline show <custom_guideline_name>
+
+# Create/Update a custom guideline
+pm guideline create <name> --content "Guideline content"
+pm guideline update <name> --content "New content"
+
+# Copy a built-in guideline to custom directory for modification
+pm guideline copy <builtin_name> --new-name <custom_name>
+
+# Delete a custom guideline
+pm guideline delete <custom_guideline_name>
+```
+
 ## Development
 
 ### Running Tests
