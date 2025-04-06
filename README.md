@@ -29,8 +29,40 @@ python3 -m pip install -e ".[dev]"
 
 The PM tool comes with comprehensive documentation in the form of a man page. After installation, you can access it using:
 
-```bash
+````bash
 man pm
+
+## Project and Task Lifecycles
+
+### Project Lifecycle
+
+```mermaid
+stateDiagram-v2
+[*] --> PROSPECTIVE: Create
+PROSPECTIVE --> ACTIVE: Start work
+ACTIVE --> COMPLETED: Finish work
+ACTIVE --> ARCHIVED: Archive
+ACTIVE --> CANCELLED: Cancel
+COMPLETED --> ARCHIVED: Archive
+```
+
+### Task Lifecycle
+
+```mermaid
+stateDiagram-v2
+[*] --> NOT_STARTED: Create
+NOT_STARTED --> IN_PROGRESS: Start work
+IN_PROGRESS --> COMPLETED: Finish work
+IN_PROGRESS --> BLOCKED: Encounter issue
+BLOCKED --> IN_PROGRESS: Resolve issue
+IN_PROGRESS --> PAUSED: Pause work
+PAUSED --> IN_PROGRESS: Resume work
+IN_PROGRESS --> ABANDONED: Abandon task
+NOT_STARTED --> ABANDONED: Abandon task
+```
+
+The project and task lifecycles illustrate the typical status transitions for projects and tasks in the PM tool. Understanding these lifecycles helps users navigate the tool more effectively.
+
 ```
 
 For quick help on specific commands, you can also use the `--help` option:
@@ -39,7 +71,7 @@ For quick help on specific commands, you can also use the `--help` option:
 pm --help
 pm project --help
 pm task --help
-```
+````
 
 ## Usage
 
