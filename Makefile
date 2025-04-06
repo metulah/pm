@@ -26,13 +26,13 @@ clean:
 # Run all Python tests
 test:
 	@echo "Running Python tests..."
-	@python3 -m pytest
+	@pytest
 	@echo "Tests completed."
 
 # Show relevant project guidelines
-guidelines:
+welcome:
 	@echo "Displaying project development guidelines..."
-	@python3 -m pm.cli welcome \
+	@pm welcome \
 		-g coding \
 		-g vcs \
 		-g testing \
