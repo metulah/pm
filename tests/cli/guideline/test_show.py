@@ -55,7 +55,7 @@ def test_guideline_show_not_found(runner):
         result = runner.invoke(cli, ['guideline', 'show', 'nonexistent'])
 
         assert result.exit_code != 0  # Expect non-zero exit code for error
-        assert "Error: Guideline 'nonexistent' not found." in result.output  # Added period
+        assert "Error: Guideline 'nonexistent' not found." in result.output
 
 
 # --- Custom Guideline Show Tests ---

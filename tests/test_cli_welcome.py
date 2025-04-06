@@ -251,8 +251,6 @@ def test_welcome_multiple_errors_collated(runner: CliRunner, tmp_path: Path):
     assert f"Warning: Could not find or read guideline source '{arg_file}'" in result.stderr
     # The previous assertion `assert result.stderr == ""` was incorrect and has been removed.
 # Remove the test for the old positional argument behavior as it's deprecated
-# def test_welcome_original_behavior_software(runner: CliRunner):
-#     ...
     assert CUSTOM_FILE_CONTENT not in result.stdout
     assert SEPARATOR not in result.stdout
     # assert result.stderr == "" # This assertion was incorrect and is now removed.

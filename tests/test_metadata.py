@@ -164,7 +164,6 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     """Test metadata CLI commands using --db-path option."""
     from pm.cli import cli  # No longer need get_db_connection here
     from click.testing import CliRunner
-    # import os # No longer needed
 
     # Use a fresh temporary database
     db_path = str(tmp_path / "test.db")

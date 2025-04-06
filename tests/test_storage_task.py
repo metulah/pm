@@ -7,7 +7,7 @@ from pm.models import Project, Task, Subtask, Note  # Remove MetadataValue impor
 from pm.storage import init_db
 # Needed to create projects for tasks
 from pm.storage.project import create_project
-from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks, delete_task, add_task_dependency, update_task  # Added update_task
+from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks, delete_task, add_task_dependency, update_task
 from pm.storage.subtask import create_subtask  # Need subtask creation
 from pm.storage.note import create_note  # Need note creation
 from pm.storage.metadata import update_task_metadata  # Correct function name
