@@ -17,20 +17,32 @@ from ..common_utils import get_db_connection, format_output, resolve_project_ide
 @click.option('--abandoned', 'include_abandoned', is_flag=True, default=False, help='Include abandoned tasks in the list (unless --status is used).')
 @click.option('--description', 'show_description', is_flag=True, default=False, help='Show the full description column in text format.')
 @click.option('--inactive', 'include_inactive_project_tasks', is_flag=True, default=False, help='Include tasks from non-ACTIVE projects.')
+@click.option('--all', 'list_all', is_flag=True, default=False,
+              help='List all tasks from all projects, regardless of status (overrides --project, --status, --completed, --abandoned, and implies --inactive).')
 @click.pass_context
-def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool, include_completed: bool, include_abandoned: bool, show_description: bool, include_inactive_project_tasks: bool):
+def task_list(ctx, project: Optional[str], status: Optional[str], show_id: bool, include_completed: bool, include_abandoned: bool, show_description: bool, include_inactive_project_tasks: bool, list_all: bool):
     """List tasks with optional filters."""
     conn = get_db_connection()
     try:
         project_id = None
-        if project:
-            # Resolve project identifier if provided
+        status_enum = TaskStatus(status) if status else None
+
+        # Handle the --all flag: overrides project and status filters
+        if list_all:
+            project_id = None  # Override --project
+            status_enum = None  # Override --status
+            include_completed = True  # Override --completed=False
+            include_abandoned = True  # Override --abandoned=False
+            include_inactive_project_tasks = True  # Imply --inactive
+        elif project:
+            # Resolve project identifier only if --all is not specified
             project_obj = resolve_project_identifier(conn, project)
             project_id = project_obj.id
+        # else: project is None and list_all is False, so project_id remains None (list all tasks from active projects by default)
 
-        status_enum = TaskStatus(status) if status else None
+        # Fetch tasks using the determined filters
         tasks = list_tasks(conn, project_id=project_id, status=status_enum,
-                           include_completed=include_completed, include_abandoned=include_abandoned, include_inactive_project_tasks=include_inactive_project_tasks)  # Pass flags
+                           include_completed=include_completed, include_abandoned=include_abandoned, include_inactive_project_tasks=include_inactive_project_tasks)
 
         output_format = ctx.obj.get('FORMAT', 'json')
         ctx.obj['SHOW_ID'] = show_id

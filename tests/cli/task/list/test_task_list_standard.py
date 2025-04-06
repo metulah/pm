@@ -1,54 +1,13 @@
+# tests/cli/task/list/test_task_list_standard.py
+# (Content from tests/cli/task/test_task_list.py will be placed here)
 import pytest
 import json
+from click.testing import CliRunner  # Import CliRunner
 from pm.cli.__main__ import cli
 from pm.core.types import TaskStatus  # Needed for status checks if any
+# Removed init_db import as it's not needed here anymore
 
-# --- Fixture for setting up tasks with different statuses ---
-# This fixture is complex and specific to these list tests.
-# It's kept here instead of conftest.py for clarity.
-
-
-@pytest.fixture
-def setup_tasks_for_list_test(task_cli_runner_env):
-    """Fixture to set up tasks with various statuses for list tests."""
-    runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
-
-    tasks = {}
-
-    # Helper to create tasks
-    def create_task(name, status=TaskStatus.NOT_STARTED):
-        task_name = f"List Test - {name}"
-        result = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
-                                     '--project', project_slug, '--name', task_name, '--status', status.value])
-        assert result.exit_code == 0, f"Failed to create task '{task_name}': {result.output}"
-        task_data = json.loads(result.output)['data']
-        tasks[name] = task_data  # Store the whole dict
-        # Don't return anything, just populate the tasks dict
-
-    # Create tasks with different statuses
-    create_task("Not Started", TaskStatus.NOT_STARTED)
-    create_task("In Progress", TaskStatus.IN_PROGRESS)
-    create_task("Blocked", TaskStatus.BLOCKED)
-    # Need to go through IN_PROGRESS for these
-    create_task("To Complete", TaskStatus.IN_PROGRESS)
-    completed_slug = tasks["To Complete"]['slug']  # Get slug from stored dict
-    runner.invoke(cli, ['--db-path', db_path, 'task', 'update', project_slug,
-                  completed_slug, '--status', TaskStatus.COMPLETED.value])
-    # Corrected line 37/38
-    tasks['Completed'] = json.loads(runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'show', project_slug, completed_slug]).output)['data']
-
-    create_task("To Abandon", TaskStatus.IN_PROGRESS)
-    abandoned_slug = tasks["To Abandon"]['slug']  # Get slug from stored dict
-    runner.invoke(cli, ['--db-path', db_path, 'task', 'update', project_slug,
-                  abandoned_slug, '--status', TaskStatus.ABANDONED.value])
-    # Corrected line 43/44
-    tasks['Abandoned'] = json.loads(runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'show', project_slug, abandoned_slug]).output)['data']
-
-    # Return all necessary info (Corrected indentation)
-    return runner, db_path, project_slug, tasks
+# Fixture `setup_tasks_for_list_test` moved to conftest.py
 
 
 # --- List Tests --- (Corrected indentation)
@@ -158,3 +117,7 @@ def test_cli_task_list_with_abandoned_and_completed_flags(setup_tasks_for_list_t
     assert tasks['Blocked']['slug'] in listed_slugs
     assert tasks['Completed']['slug'] in listed_slugs
     assert tasks['Abandoned']['slug'] in listed_slugs
+
+
+# Removed the --all fixture and tests from this file.
+# They are now located in tests/cli/task/list/test_task_list_all.py
