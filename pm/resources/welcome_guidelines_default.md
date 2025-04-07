@@ -45,17 +45,19 @@ This section highlights common commands for viewing and adding information.
     - List recent notes for the project: `pm note list --project <PROJECT_ID_OR_SLUG>`
     - _Optionally_, list notes specifically for the target task: `pm note list --project <PROJECT_ID_OR_SLUG> --task <TASK_ID_OR_SLUG>`
     - Review the latest relevant notes to understand history, decisions, and blockers.
-4.  **Confirm Objectives:** Ensure you understand the current goals and constraints for the task based on the information gathered.
+4.  **Confirm Objectives & Plan:** Ensure you understand the current goals and constraints. _Optionally, record your initial plan as a note:_ `pm note add --content "Initial plan: ..." --project <PROJECT_ID_OR_SLUG> --task <TASK_ID_OR_SLUG>`
 5.  **Begin Work:** Set the task status to `IN_PROGRESS`: `pm task update <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG> --status IN_PROGRESS`
 
 ### During Session
 
-1.  Stay focused on the current task's scope.
-2.  Document significant decisions, progress, or findings using the note system:
-    - `pm note add --content "<CONTENT>" --project <PROJECT_ID_OR_SLUG> --task <TASK_ID_OR_SLUG>`
-3.  Before implementing, verify plan assumptions against project state/notes/relevant artifacts.
-4.  Use the PM tool to track progress and state changes (e.g., updating task status if needed).
-5.  Re-evaluate the plan if significant unexpected issues or new insights emerge.
+1.  **Maintain Focus:** Concentrate on the objectives and scope defined for the current task.
+2.  **Document Continuously:** As you make progress or decisions, record them as notes attached to the task:
+    - `pm note add --content "<FINDING/DECISION/PROGRESS>" --project <PROJECT_ID_OR_SLUG> --task <TASK_ID_OR_SLUG>`
+3.  **Verify Before Implementing:** Before making changes (e.g., code edits, configuration updates), double-check assumptions against the current project state, notes, or other relevant artifacts.
+4.  **Track State Changes:** Update the task status promptly if circumstances change using the `pm` tool:
+    - Example (Task Blocked): `pm task update <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG> --status BLOCKED`
+    - Example (Task Paused): `pm task update <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG> --status PAUSED`
+5.  **Adapt as Needed:** If significant unexpected issues arise or new information requires a change in direction, pause and re-evaluate the plan. Document the change in approach with a note.
 
 ### Session End (CRITICAL)
 
