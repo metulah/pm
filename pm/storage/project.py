@@ -233,7 +233,9 @@ def list_projects(conn: sqlite3.Connection, include_completed: bool = False, inc
                 status=ProjectStatus(row['status']),
                 slug=row['slug'],  # Populate slug
                 created_at=row['created_at'],
-                updated_at=row['updated_at']
+                updated_at=row['updated_at'],
+                # Fetch and add note count
+                note_count=count_notes(conn, 'project', row['id'])
             )
             projects.append(project)
         except IndexError as e:

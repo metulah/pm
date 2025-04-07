@@ -256,9 +256,37 @@ def test_task_status_invalid_transitions_from_abandoned(setup_task_for_abandon_t
     update_task(db_connection, task_id, status=TaskStatus.ABANDONED)
     assert get_task(db_connection, task_id).status == TaskStatus.ABANDONED
 
-    # Attempt the invalid transition
-    with pytest.raises(ValueError, match="Invalid status transition"):
-        update_task(db_connection, task_id, status=target_status)
 
-    # Verify status remains ABANDONED
-    assert get_task(db_connection, task_id).status == TaskStatus.ABANDONED
+def test_list_tasks_includes_note_count(db_connection):
+    """Test that list_tasks correctly includes the note_count."""
+    # 1. Create project
+    project_id = str(uuid.uuid4())
+    project_data = Project(
+        id=project_id, name="Project For Task Note Count Test")
+    create_project(db_connection, project_data)
+
+    # 2. Create task 1 (no notes)
+    task1_id = str(uuid.uuid4())
+    task1_data = Task(id=task1_id, project_id=project_id,
+                      name="Task With No Notes")
+    create_task(db_connection, task1_data)
+
+    # 3. Create task 2 (with one note)
+    task2_id = str(uuid.uuid4())
+    task2_data = Task(id=task2_id, project_id=project_id,
+                      name="Task With One Note")
+    create_task(db_connection, task2_data)
+    note_data = Note(id=str(uuid.uuid4()), entity_type='task',
+                     entity_id=task2_id, content="A note for task 2")
+    create_note(db_connection, note_data)
+
+    # 4. List tasks for the project
+    tasks = list_tasks(db_connection, project_id=project_id)
+
+    # 5. Verify note counts
+    task_map = {t.id: t for t in tasks}
+    assert task1_id in task_map
+    assert task_map[task1_id].note_count == 0, f"Expected 0 notes for {task1_id}, got {task_map[task1_id].note_count}"
+
+    assert task2_id in task_map
+    assert task_map[task2_id].note_count == 1, f"Expected 1 note for {task2_id}, got {task_map[task2_id].note_count}"

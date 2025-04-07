@@ -154,3 +154,30 @@ def test_project_deletion_without_force_succeeds_if_empty(db_connection):
 
     # 3. Verify project is deleted
     assert get_project(db_connection, project_id) is None
+
+
+def test_list_projects_includes_note_count(db_connection):
+    """Test that list_projects correctly includes the note_count."""
+    # 1. Create project 1 (no notes)
+    proj1_id = str(uuid.uuid4())
+    proj1_data = Project(id=proj1_id, name="Project With No Notes")
+    create_project(db_connection, proj1_data)
+
+    # 2. Create project 2 (with one note)
+    proj2_id = str(uuid.uuid4())
+    proj2_data = Project(id=proj2_id, name="Project With One Note")
+    create_project(db_connection, proj2_data)
+    note_data = Note(id=str(uuid.uuid4()), entity_type='project',
+                     entity_id=proj2_id, content="A note for project 2")
+    create_note(db_connection, note_data)
+
+    # 3. List projects
+    projects = list_projects(db_connection)
+
+    # 4. Verify note counts
+    project_map = {p.id: p for p in projects}
+    assert proj1_id in project_map
+    assert project_map[proj1_id].note_count == 0, f"Expected 0 notes for {proj1_id}, got {project_map[proj1_id].note_count}"
+
+    assert proj2_id in project_map
+    assert project_map[proj2_id].note_count == 1, f"Expected 1 note for {proj2_id}, got {project_map[proj2_id].note_count}"

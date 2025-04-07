@@ -281,7 +281,9 @@ def list_tasks(conn: sqlite3.Connection, project_id: Optional[str] = None, statu
             status=TaskStatus(row['status']),
             slug=row['slug'],  # Populate slug
             created_at=row['created_at'],
-            updated_at=row['updated_at']
+            updated_at=row['updated_at'],
+            # Fetch and add note count
+            note_count=count_notes(conn, 'task', row['id'])
         ))
     return tasks
 
