@@ -8,15 +8,28 @@ This tool helps manage your projects and tasks effectively through its CLI inter
 
 ## Core Commands
 
+This section highlights common commands for viewing and adding information.
+
+### Project Commands
+
 - `pm project list`: List all projects
-- `pm task list --project <PROJECT_ID_OR_SLUG>`: List tasks for a specific project
-- `pm note list --project <PROJECT_ID_OR_SLUG> [--task <TASK_ID_OR_SLUG>]`: List notes for a project or task
 - `pm project show <PROJECT_ID_OR_SLUG>`: Show project details
+
+### Task Commands
+
+- `pm task list --project <PROJECT_ID_OR_SLUG>`: List tasks for a specific project
 - `pm task show <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG>`: Show task details
+
+### Note Commands
+
+- `pm note list --project <PROJECT_ID_OR_SLUG> [--task <TASK_ID_OR_SLUG>]`: List notes for a project or task
 - `pm note add --content "<CONTENT>" (--project <PROJ_ID> | --task <TASK_ID> --project <PROJ_ID>)`: Add a new note
 - `pm note show <NOTE_ID>`: Show note details
-- `pm note update <NOTE_ID> --content "<NEW_CONTENT>"`: Update existing note
-- Use `--help` on any command (e.g., `pm task --help`, `pm task list --help`) for more options.
+- `pm note update <NOTE_ID> --content "<NEW_CONTENT>"`: Update an existing note
+
+---
+
+- **For other operations** (like creating, updating, or deleting projects/tasks) and more options, use `--help` on any command (e.g., `pm project --help`, `pm task create --help`).
 
 ## Session Workflow
 
