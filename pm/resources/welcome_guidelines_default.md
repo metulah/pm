@@ -35,13 +35,18 @@ This section highlights common commands for viewing and adding information.
 
 ### Session Start
 
-1.  Examine current state:
-    - `pm project list` # Review projects
-    - `pm task list --project <PROJECT_ID_OR_SLUG>` # Review tasks for a project
-    - `pm note list --project <PROJECT_ID_OR_SLUG>` # Review recent project notes
-2.  Review the latest notes for context.
-3.  Confirm understanding of current objectives and constraints.
-4.  **Set the task status to `IN_PROGRESS`**: Use `pm task update <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG> --status IN_PROGRESS` before starting work.
+1.  **Identify Target Project:**
+    - List projects (consider filtering if needed): `pm project list`
+    - Show details for the chosen project: `pm project show <PROJECT_ID_OR_SLUG>`
+2.  **Identify Target Task(s):**
+    - List tasks for the project: `pm task list --project <PROJECT_ID_OR_SLUG>` (or `pm project tasks <PROJECT_ID_OR_SLUG>`)
+    - Show details for the specific task(s) you'll be working on: `pm task show <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG>`
+3.  **Review Context (Notes):**
+    - List recent notes for the project: `pm note list --project <PROJECT_ID_OR_SLUG>`
+    - _Optionally_, list notes specifically for the target task: `pm note list --project <PROJECT_ID_OR_SLUG> --task <TASK_ID_OR_SLUG>`
+    - Review the latest relevant notes to understand history, decisions, and blockers.
+4.  **Confirm Objectives:** Ensure you understand the current goals and constraints for the task based on the information gathered.
+5.  **Begin Work:** Set the task status to `IN_PROGRESS`: `pm task update <PROJECT_ID_OR_SLUG> <TASK_ID_OR_SLUG> --status IN_PROGRESS`
 
 ### During Session
 
