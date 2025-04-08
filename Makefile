@@ -1,6 +1,6 @@
 # Makefile for PM tool
 
-.PHONY: install-man test-man clean test guidelines help setup-dev
+.PHONY: install-man test-man clean test guidelines help setup-dev install-global
 
 # Default target
 all: install-man
@@ -46,6 +46,13 @@ setup-dev:
 	@$(MAKE) install-man
 	@echo "Development environment setup complete. Activate it with: source .venv/bin/activate"
 
+# Install globally (requires sudo)
+install-global:
+	@echo "Installing PM tool globally..."
+	@sudo rm -rf build dist pm.egg-info
+	@sudo -H pip install -e .
+	@echo "PM tool installed globally. You can now use 'pm' from anywhere."
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -53,6 +60,7 @@ help:
 	@echo "  test-man     - Test man page formatting"
 	@echo "  clean        - Remove installed man page"
 	@echo "  test         - Run all Python tests"
-	@echo "  guidelines   - Display relevant project development guidelines"
-	@echo "  setup-dev    - Set up development environment (create venv, install package)"
-	@echo "  help         - Show this help message"
+	@echo "  guidelines    - Display relevant project development guidelines"
+	@echo "  setup-dev     - Set up development environment (create venv, install package)"
+	@echo "  install-global - Install PM tool globally (requires sudo)"
+	@echo "  help          - Show this help message"
