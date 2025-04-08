@@ -3,12 +3,62 @@
 import click
 import os
 import pathlib
+import subprocess
+import sys
 from pm.storage import db
 
 # Define the standard path for the PM database
 DEFAULT_PM_DIR = ".pm"
 DEFAULT_DB_FILENAME = "pm.db"
+GITIGNORE_COMMENT = "# PM Tool configuration directory"
+GITIGNORE_IGNORE_ENTRY = ".pm/*"  # Ignore contents of .pm
+GITIGNORE_ALLOW_GUIDELINES = "!.pm/guidelines/"  # Allow custom guidelines
 
+# --- Helper Functions for Gitignore ---
+
+
+def _run_git_command(command_args):
+    """Runs a Git command and captures its output and exit code."""
+    try:
+        # Use text=True for automatic decoding, capture_output for stdout/stderr
+        # check=False to prevent raising CalledProcessError on non-zero exit
+        process = subprocess.run(
+            ["git"] + command_args,
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=pathlib.Path.cwd(),  # Ensure git runs in the correct directory
+        )
+        return process
+    except FileNotFoundError:
+        # Git command not found
+        return None
+    except Exception as e:
+        # Other potential errors during subprocess execution
+        click.echo(
+            f"Warning: Error running git command: {e}", err=True, file=sys.stderr)
+        return None
+
+
+def _is_git_repository():
+    """Checks if the current directory is inside a Git repository."""
+    process = _run_git_command(["rev-parse", "--is-inside-work-tree"])
+    # Check if process is None (command failed to run) or exit code is non-zero
+    return process is not None and process.returncode == 0 and process.stdout.strip() == "true"
+
+
+def _get_git_root():
+    """Gets the root directory of the Git repository."""
+    process = _run_git_command(["rev-parse", "--show-toplevel"])
+    if process is not None and process.returncode == 0:
+        # Strip whitespace/newlines from the output
+        root_path_str = process.stdout.strip()
+        if root_path_str:
+            return pathlib.Path(root_path_str)
+    return None
+
+
+# --- CLI Command ---
 
 @click.command()
 @click.option(
@@ -72,6 +122,68 @@ def init(ctx, yes):
         conn.close()
         click.echo(
             f"Successfully initialized pm environment in {pm_dir_path}/")
+
+        # --- Update .gitignore ---
+        if _is_git_repository():
+            git_root = _get_git_root()
+            if git_root:
+                gitignore_path = git_root / ".gitignore"
+                # Combine ignore and allow entries with the comment
+                entries_to_add = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
+                ignore_entry_exists = False
+                allow_entry_exists = False
+
+                try:
+                    if gitignore_path.exists():
+                        click.echo(f"Checking {gitignore_path}...")
+                        content = gitignore_path.read_text()
+                        # Check if both entries are already present
+                        # Use simple string checking. More robust parsing could be added if needed.
+                        # Ensure checks look for the specific lines, potentially with surrounding newlines
+                        # A simple 'in' check might be too broad if entries are substrings of others.
+                        # Let's check for the exact lines for more accuracy.
+                        content_lines = content.splitlines()
+                        ignore_entry_exists = GITIGNORE_IGNORE_ENTRY in content_lines
+                        allow_entry_exists = GITIGNORE_ALLOW_GUIDELINES in content_lines
+
+                        if ignore_entry_exists and allow_entry_exists:
+                            click.echo(
+                                f"Entries '{GITIGNORE_IGNORE_ENTRY}' and '{GITIGNORE_ALLOW_GUIDELINES}' already exist in {gitignore_path}.")
+                        else:
+                            # Append the full block if either entry is missing
+                            append_content = entries_to_add
+                            # Ensure newline before appending if file doesn't end with one
+                            if content and not content.endswith("\n"):
+                                append_content = "\n" + append_content
+                            # Add extra newline if appending to ensure separation
+                            elif content:
+                                append_content = "\n" + append_content
+
+                            with gitignore_path.open("a") as f:
+                                f.write(append_content)
+                            click.echo(
+                                f"Appended PM tool entries to {gitignore_path}.")
+                    else:
+                        click.echo(f"Creating {gitignore_path}...")
+                        with gitignore_path.open("w") as f:
+                            f.write(entries_to_add)  # Write the combined block
+                        click.echo(
+                            f"Created {gitignore_path} and added PM tool entries.")
+
+                except OSError as e:
+                    click.echo(
+                        f"Warning: Could not read or write {gitignore_path}: {e}", err=True, file=sys.stderr)
+                except Exception as e:  # Catch other potential errors
+                    click.echo(
+                        f"Warning: An unexpected error occurred during .gitignore update: {e}", err=True, file=sys.stderr)
+            else:
+                click.echo(
+                    "Warning: Could not determine Git repository root. Skipping .gitignore update.", err=True, file=sys.stderr)
+        else:
+            # Not a git repo, or git command failed
+            click.echo(
+                "Not inside a Git repository. Skipping .gitignore update.")
+
         click.echo(
             "\nYou can now start managing your project. Try running `pm welcome` for guidance."
         )
