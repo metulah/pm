@@ -1,6 +1,6 @@
 # Makefile for PM tool
 
-.PHONY: install-man test-man clean test guidelines help
+.PHONY: install-man test-man clean test guidelines help setup-dev
 
 # Default target
 all: install-man
@@ -38,6 +38,14 @@ welcome:
 		-g testing \
 		-g development
 
+# Set up development environment
+setup-dev:
+	@echo "Setting up development environment..."
+	@test -d .venv || python -m venv .venv
+	@. .venv/bin/activate && pip install -e .
+	@$(MAKE) install-man
+	@echo "Development environment setup complete. Activate it with: source .venv/bin/activate"
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -46,4 +54,5 @@ help:
 	@echo "  clean        - Remove installed man page"
 	@echo "  test         - Run all Python tests"
 	@echo "  guidelines   - Display relevant project development guidelines"
+	@echo "  setup-dev    - Set up development environment (create venv, install package)"
 	@echo "  help         - Show this help message"
