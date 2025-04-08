@@ -9,6 +9,7 @@ from .task.main import task  # Import the task group from its new location
 from .note.main import note  # Import the note group from its new location
 # Import the template group from its new location
 from .template.main import template
+from .init import init  # Import the init command
 
 
 # Utility functions moved to pm/cli/common_utils.py
@@ -35,3 +36,4 @@ cli.add_command(project)    # Register the project command group
 cli.add_command(task)       # Register the task command group
 cli.add_command(note)       # Register the note command group
 cli.add_command(template)   # Register the template command group
+cli.add_command(init)       # Register the init command

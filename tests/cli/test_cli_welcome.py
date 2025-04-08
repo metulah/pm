@@ -19,7 +19,7 @@ TESTING_GUIDELINE_PATH = RESOURCES_DIR / 'welcome_guidelines_testing.md'
 
 # Read actual snippets to make tests less brittle to minor wording changes
 # Use more unique snippets if possible
-DEFAULT_CONTENT_SNIPPET = "Effectively through its CLI interface."  # Fallback
+DEFAULT_CONTENT_SNIPPET = "Session Workflow"  # Updated Fallback
 # Define snippets for new guidelines
 CODING_CONTENT_SNIPPET = "Follow the project's coding standards"  # Fallback
 VCS_CONTENT_SNIPPET = "Commit changes frequently"  # Fallback
