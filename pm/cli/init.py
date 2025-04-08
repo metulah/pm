@@ -11,8 +11,15 @@ DEFAULT_DB_FILENAME = "pm.db"
 
 
 @click.command()
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Skip interactive confirmation.",
+)
 @click.pass_context
-def init(ctx):
+def init(ctx, yes):
     """Initializes the PM tool environment in the current directory."""
     pm_dir_path = pathlib.Path(DEFAULT_PM_DIR)
     db_path = pm_dir_path / DEFAULT_DB_FILENAME
@@ -27,10 +34,32 @@ def init(ctx):
             "To re-initialize (use with caution!), delete the .pm directory first.")
         ctx.exit(1)  # Exit with error code
 
-    click.echo(f"Creating PM directory at {pm_dir_path}...")
+    # Proceed only if non-interactive or confirmed by user
+    if not yes:
+        # Display welcome message and ask for confirmation
+        click.echo("\nWelcome to `pm init`!\n")
+        click.echo(
+            "This command will initialize the current directory for use with the pm tool."
+        )
+        click.echo(
+            "It will create a hidden `.pm` directory and a database file (`.pm/pm.db`)"
+        )
+        click.echo("within it to store project and task information.\n")
+        click.echo(
+            "This setup allows you to manage your projects effectively using the `pm` commands.\n"
+        )
+        # abort=True will exit the script if the user enters 'n'
+        # abort=True will exit the script if the user enters 'n'
+        # default=True makes Enter key confirm
+        click.confirm(
+            # click.confirm automatically adds [Y/n] based on default=True
+            "Is it okay to proceed?", abort=True, default=True)
+        click.echo()  # Add a newline after confirmation for better spacing
+
+    # --- Actual Initialization ---
+    click.echo(f"Creating pm directory at {pm_dir_path}...")
     try:
-        # exist_ok=True is safer if only checking for db file, but let's be specific
-        # If the dir exists but db doesn't, we want to proceed.
+        # exist_ok=True handles case where dir exists but db doesn't
         pm_dir_path.mkdir(parents=True, exist_ok=True)
     except OSError as e:
         click.echo(f"Error creating directory {pm_dir_path}: {e}", err=True)
@@ -42,7 +71,10 @@ def init(ctx):
         conn = db.init_db(db_path=str(db_path))
         conn.close()
         click.echo(
-            f"Successfully initialized PM environment in {pm_dir_path}/")
+            f"Successfully initialized pm environment in {pm_dir_path}/")
+        click.echo(
+            "\nYou can now start managing your project. Try running `pm welcome` for guidance."
+        )
     except Exception as e:
         click.echo(f"Error initializing database: {e}", err=True)
         # Attempt cleanup if initialization failed
