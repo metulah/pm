@@ -18,14 +18,66 @@ from ..storage.task import get_task, get_task_by_slug
 from ..storage.project import get_project, get_project_by_slug
 from ..storage import init_db
 
+import os  # Added for path operations
+
+
+def find_project_root() -> Optional[str]:
+    """
+    Search upwards from the current directory to find the project root
+    marked by a '.pm' directory.
+    Returns the path to the root directory if found, otherwise None.
+    """
+    current_dir = os.path.abspath(os.getcwd())
+    while True:
+        pm_dir_path = os.path.join(current_dir, '.pm')
+        if os.path.isdir(pm_dir_path):
+            return current_dir
+
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir == current_dir:
+            # Reached the filesystem root
+            return None
+        current_dir = parent_dir
+
 
 def get_db_connection() -> sqlite3.Connection:
-    """Get a connection to the SQLite database, respecting context."""
+    """
+    Get a connection to the SQLite database.
+    Prioritizes explicit DB path from context (e.g., --db-path),
+    otherwise searches upwards for the .pm directory.
+    Raises ClickException if connection fails or project root not found.
+    """
+    # Prioritize explicit path from context (e.g., --db-path global option)
     ctx = click.get_current_context(silent=True)
-    db_path = ctx.obj.get('DB_PATH') if ctx and ctx.obj else None
-    # If db_path is not set in context, init_db will use its default "pm.db"
-    conn = init_db(db_path) if db_path else init_db()
-    return conn
+    explicit_db_path = ctx.obj.get('DB_PATH') if ctx and ctx.obj else None
+
+    if explicit_db_path:
+        try:
+            # Use the explicitly provided path
+            conn = init_db(explicit_db_path)
+            return conn
+        except sqlite3.OperationalError as e:
+            # Handle errors even with explicit path
+            raise click.ClickException(
+                f"Error connecting to specified database at '{explicit_db_path}': {e}")
+    else:
+        # If no explicit path, search upwards for the project root
+        project_root = find_project_root()
+        if project_root:
+            db_path = os.path.join(project_root, '.pm', 'pm.db')
+            try:
+                conn = init_db(db_path)
+                return conn
+            except sqlite3.OperationalError as e:
+                # Catch potential errors during connection even if path seems valid
+                raise click.ClickException(
+                    f"Error connecting to database at '{db_path}': {e}")
+        else:
+            # This 'else' corresponds to 'if project_root:' (when upward search fails)
+            raise click.ClickException(
+                "Not inside a pm project directory (or any parent directory). "
+                "Run 'pm init' to initialize a project first."
+            )
 
 
 def _format_relative_time(dt_input: Any) -> str:
