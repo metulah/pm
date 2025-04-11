@@ -13,6 +13,7 @@ DEFAULT_DB_FILENAME = "pm.db"
 GITIGNORE_COMMENT = "# PM Tool configuration directory"
 GITIGNORE_IGNORE_ENTRY = ".pm/*"  # Ignore contents of .pm
 GITIGNORE_ALLOW_GUIDELINES = "!.pm/guidelines/"  # Allow custom guidelines
+GITIGNORE_ALLOW_CONFIG = "!.pm/config.toml"   # Allow config file
 
 # --- Helper Functions for Gitignore ---
 
@@ -129,9 +130,10 @@ def init(ctx, yes):
             if git_root:
                 gitignore_path = git_root / ".gitignore"
                 # Combine ignore and allow entries with the comment
-                entries_to_add = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
+                entries_to_add = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
                 ignore_entry_exists = False
-                allow_entry_exists = False
+                allow_guidelines_exists = False  # Renamed for clarity
+                allow_config_exists = False     # Added for config check
 
                 try:
                     if gitignore_path.exists():
@@ -144,11 +146,13 @@ def init(ctx, yes):
                         # Let's check for the exact lines for more accuracy.
                         content_lines = content.splitlines()
                         ignore_entry_exists = GITIGNORE_IGNORE_ENTRY in content_lines
-                        allow_entry_exists = GITIGNORE_ALLOW_GUIDELINES in content_lines
+                        allow_guidelines_exists = GITIGNORE_ALLOW_GUIDELINES in content_lines
+                        allow_config_exists = GITIGNORE_ALLOW_CONFIG in content_lines  # Check for config rule
 
-                        if ignore_entry_exists and allow_entry_exists:
+                        # Check if all required entries exist
+                        if ignore_entry_exists and allow_guidelines_exists and allow_config_exists:
                             click.echo(
-                                f"Entries '{GITIGNORE_IGNORE_ENTRY}' and '{GITIGNORE_ALLOW_GUIDELINES}' already exist in {gitignore_path}.")
+                                f"Required PM entries already exist in {gitignore_path}.")
                         else:
                             # Append the full block if either entry is missing
                             append_content = entries_to_add

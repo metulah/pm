@@ -7,7 +7,7 @@ from click.testing import CliRunner
 # Import the main cli entry point
 from pm.cli.base import cli
 # Import constants from the module being tested
-from pm.cli.init import GITIGNORE_COMMENT, GITIGNORE_IGNORE_ENTRY, GITIGNORE_ALLOW_GUIDELINES
+from pm.cli.init import GITIGNORE_COMMENT, GITIGNORE_IGNORE_ENTRY, GITIGNORE_ALLOW_GUIDELINES, GITIGNORE_ALLOW_CONFIG
 
 # Define expected paths and messages
 PM_DIR_NAME = ".pm"
@@ -210,8 +210,9 @@ def test_init_git_repo_creates_gitignore(runner: CliRunner, tmp_path: Path):
         assert GITIGNORE_COMMENT in content
         assert GITIGNORE_IGNORE_ENTRY in content
         assert GITIGNORE_ALLOW_GUIDELINES in content
-        # Check structure (comment, newline, ignore, newline, allow, newline)
-        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
+        assert GITIGNORE_ALLOW_CONFIG in content  # Check for config rule
+        # Check structure (comment, newline, ignore, newline, allow guidelines, newline, allow config, newline)
+        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
         assert content == expected_content
 
     finally:
@@ -240,9 +241,10 @@ def test_init_git_repo_appends_gitignore(runner: CliRunner, tmp_path: Path):
         assert GITIGNORE_COMMENT in content
         assert GITIGNORE_IGNORE_ENTRY in content
         assert GITIGNORE_ALLOW_GUIDELINES in content
-        # Check structure (original, newline, comment, newline, ignore, newline, allow, newline)
+        assert GITIGNORE_ALLOW_CONFIG in content  # Check for config rule
+        # Check structure (original, newline, comment, newline, ignore, newline, allow guidelines, newline, allow config, newline)
         # Note: The implementation adds an extra newline before appending if content exists
-        expected_content = f"{initial_content}\n{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
+        expected_content = f"{initial_content}\n{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
         assert content == expected_content
 
     finally:
@@ -257,8 +259,8 @@ def test_init_git_repo_gitignore_already_has_entry(runner: CliRunner, tmp_path: 
         _init_git_repo(tmp_path)
         gitignore_path = tmp_path / ".gitignore"
         # Include the exact entry we expect pm init to add
-        # Include both entries we expect pm init to add
-        initial_content = f"# Existing rules\n*.pyc\n\n{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
+        # Include all entries we expect pm init to add
+        initial_content = f"# Existing rules\n*.pyc\n\n{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
         # Create existing file with entries
         gitignore_path.write_text(initial_content)
 
@@ -266,8 +268,8 @@ def test_init_git_repo_gitignore_already_has_entry(runner: CliRunner, tmp_path: 
         assert result.exit_code == 0
         assert SUCCESS_MSG_SNIPPET in result.stdout
         assert f"Checking {gitignore_path}..." in result.stdout
-        # Check for the message indicating both entries already exist
-        assert f"Entries '{GITIGNORE_IGNORE_ENTRY}' and '{GITIGNORE_ALLOW_GUIDELINES}' already exist in {gitignore_path}." in result.stdout
+        # Check for the message indicating all entries already exist
+        assert f"Required PM entries already exist in {gitignore_path}." in result.stdout
         # Ensure append/create messages are NOT present
         assert "Appended PM tool entries" not in result.stdout
         assert f"Creating {gitignore_path}" not in result.stdout
@@ -303,7 +305,8 @@ def test_init_interactive_confirm_handles_gitignore(runner: CliRunner, tmp_path:
         assert GITIGNORE_COMMENT in content
         assert GITIGNORE_IGNORE_ENTRY in content
         assert GITIGNORE_ALLOW_GUIDELINES in content
-        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
+        assert GITIGNORE_ALLOW_CONFIG in content  # Check for config rule
+        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
         assert content == expected_content
 
     finally:
