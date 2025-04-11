@@ -35,12 +35,13 @@ def test_guideline_show_success(runner):
     """Test `pm guideline show <name>` successfully displays a built-in guideline."""
     # Use isolated filesystem to ensure no custom guidelines interfere
     with runner.isolated_filesystem():
-        result = runner.invoke(cli, ['guideline', 'show', 'default'])
+        result = runner.invoke(cli, ['guideline', 'show', 'pm'])  # Use 'pm'
 
         assert result.exit_code == 0
         # Check for key content expected from welcome_guidelines_default.md
         # Note: Output is rendered by rich.markdown, not raw Markdown.
-        assert "Displaying Built-in Guideline: default" in result.output  # Check header
+        # Check header (changed 'default' to 'pm')
+        assert "Displaying Built-in Guideline: pm" in result.output
         assert "Welcome to the PM Tool!" in result.output
         assert "Core Commands" in result.output
         assert "Session Workflow" in result.output

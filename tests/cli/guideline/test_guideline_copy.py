@@ -35,10 +35,10 @@ def test_guideline_copy_success_from_builtin(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         result = runner.invoke(
-            cli, ['guideline', 'copy', 'default', 'my-default-copy'])
+            cli, ['guideline', 'copy', 'pm', 'my-default-copy'])  # Use 'pm'
 
         assert result.exit_code == 0
-        assert "Successfully copied 'default' (Built-in) to custom guideline 'my-default-copy'" in result.output
+        assert "Successfully copied 'pm' (Built-in) to custom guideline 'my-default-copy'" in result.output
 
         dest_path = fs_path / ".pm" / "guidelines" / "my-default-copy.md"
         assert dest_path.is_file()
@@ -95,7 +95,7 @@ def test_guideline_copy_error_destination_exists(runner):
 
         # Attempt to copy 'default' (or any valid source) to the existing destination
         result = runner.invoke(
-            cli, ['guideline', 'copy', 'default', 'existing-dest'])
+            cli, ['guideline', 'copy', 'pm', 'existing-dest'])  # Use 'pm'
 
         assert result.exit_code != 0
         assert "Error: Destination custom guideline 'existing-dest' already exists." in result.output

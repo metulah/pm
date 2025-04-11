@@ -32,7 +32,8 @@ def test_guideline_list_success(runner):
         assert "Available Guidelines:" in result.output
         # Check against actual descriptions from files (adjust if they change)
         assert "- coding [Built-in]: Standards and conventions for writing code within this project." in result.output
-        assert "- default [Built-in]: General usage guidelines, core commands, and session workflow for the PM tool." in result.output
+        # Changed 'default' to 'pm'
+        assert "- pm [Built-in]: General usage guidelines, core commands, and session workflow for the PM tool." in result.output
         assert "- testing [Built-in]: Best practices for writing and maintaining tests for the project." in result.output
         assert "- vcs [Built-in]: Guidelines for using version control (Git), including branching and commit strategies." in result.output
 
@@ -208,7 +209,8 @@ def test_guideline_list_shows_custom(runner):
         # Implementation reads description correctly now
         assert "- my-list-test [Custom]: Custom Desc" in result.output
         # Also check a built-in one is still listed (use partial match for flexibility)
-        assert "- default [Built-in]: General usage guidelines" in result.output
+        # Changed 'default' to 'pm'
+        assert "- pm [Built-in]: General usage guidelines" in result.output
 
 
 def test_guideline_list_custom_overrides_builtin_name(runner):
@@ -248,7 +250,8 @@ def test_guideline_list_multiple_custom_and_builtin(runner):
         assert "- testing [Custom]: Local Testing Rules" in output
 
         # Check remaining built-in ones (default, coding, vcs)
-        assert "- default [Built-in]: General usage guidelines" in output
+        # Changed 'default' to 'pm'
+        assert "- pm [Built-in]: General usage guidelines" in output
         assert "- coding [Built-in]: Standards and conventions" in output
         assert "- vcs [Built-in]: Guidelines for using version control" in output
 
@@ -257,7 +260,8 @@ def test_guideline_list_multiple_custom_and_builtin(runner):
 
         # Check sorting (alpha-custom, coding, default, testing (custom), vcs, zeta-custom)
         assert output.find("alpha-custom") < output.find("coding")
-        assert output.find("coding") < output.find("default")
+        assert output.find("coding") < output.find(
+            "pm")  # Changed 'default' to 'pm'
         assert output.find("default") < output.find("testing [Custom]")
         assert output.find("testing [Custom]") < output.find("vcs")
         assert output.find("vcs") < output.find("zeta-custom")
@@ -292,7 +296,8 @@ def test_guideline_list_no_custom(runner):
         assert result.exit_code == 0
         assert "[Custom]" not in result.output
         # Check for built-in ones
-        assert "- default [Built-in]: General usage guidelines" in result.output
+        # Changed 'default' to 'pm'
+        assert "- pm [Built-in]: General usage guidelines" in result.output
         assert "- coding [Built-in]: Standards and conventions" in result.output
         assert "- testing [Built-in]: Best practices for writing" in result.output
         assert "- vcs [Built-in]: Guidelines for using version control" in result.output
