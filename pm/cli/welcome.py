@@ -2,15 +2,21 @@
 import click
 import os
 import io
+import tomllib  # Added for TOML parsing (Python 3.11+)
+# If using Python < 3.11, replace `import tomllib` with `import tomli as tomllib`
+# and add `tomli` to pyproject.toml dependencies.
 from pathlib import Path
-import frontmatter  # Add import
+import frontmatter
 from rich.console import Console
 from rich.markdown import Markdown
-from .constants import RESOURCES_DIR  # Import from the new constants file
-DEFAULT_GUIDELINE_NAME = 'default'
-# Define path for custom guidelines
+# Removed incorrect import: from pm.storage.guideline import get_guideline_by_name_or_slug
+from .constants import RESOURCES_DIR
+# Import the utility function for resolving guideline paths
+from .guideline.utils import _resolve_guideline_path
+DEFAULT_GUIDELINE_NAME = 'pm'
 CUSTOM_GUIDELINES_DIR = Path(".pm") / "guidelines"
-SEPARATOR = "\n\n<<<--- GUIDELINE SEPARATOR --->>>\n\n"  # Use a unique separator
+SEPARATOR = "\n\n<<<--- GUIDELINE SEPARATOR --->>>\n\n"
+CONFIG_FILE_PATH = Path(".pm/config.toml")
 
 
 @click.command()
@@ -20,24 +26,64 @@ SEPARATOR = "\n\n<<<--- GUIDELINE SEPARATOR --->>>\n\n"  # Use a unique separato
 def welcome(ctx: click.Context, guideline_sources: tuple[str]):
     """Displays project guidelines, collating default and specified sources."""
     collated_content = []
-    sources_to_process = (DEFAULT_GUIDELINE_NAME,) + guideline_sources
+    default_sources = [DEFAULT_GUIDELINE_NAME]  # Default if config fails
+
+    # --- Read configuration ---
+    try:
+        if CONFIG_FILE_PATH.is_file():
+            with open(CONFIG_FILE_PATH, "rb") as f:
+                config_data = tomllib.load(f)
+                # Safely get the list, default to empty list if keys are missing
+                loaded_sources = config_data.get(
+                    "guidelines", {}).get("active", None)
+                if isinstance(loaded_sources, list):
+                    # Use config sources if valid list is found
+                    default_sources = loaded_sources
+                elif loaded_sources is not None:
+                    click.echo(
+                        f"Warning: Invalid format for '[guidelines].active' in {CONFIG_FILE_PATH}. Expected a list.", err=True)
+                    # Keep default_sources as [DEFAULT_GUIDELINE_NAME]
+                # If loaded_sources is None (key missing), keep default_sources
+        # If file doesn't exist, default_sources remains [DEFAULT_GUIDELINE_NAME]
+    except tomllib.TOMLDecodeError as e:
+        click.echo(
+            f"Warning: Error parsing {CONFIG_FILE_PATH}: {e}. Using default guidelines.", err=True)
+    except Exception as e:  # Catch other potential errors like permission issues
+        click.echo(
+            f"Warning: Could not read {CONFIG_FILE_PATH}: {e}. Using default guidelines.", err=True)
+    # --- End Read configuration ---
+
+    # Combine default sources from config (or fallback) with explicitly passed sources
+    # Use a set to handle potential duplicates gracefully
+    combined_sources = list(dict.fromkeys(
+        default_sources + list(guideline_sources)))
+    sources_to_process = combined_sources  # Rename for clarity in existing loop
+
     explicit_source_error = False  # Flag to track errors in non-default sources
 
     for idx, source in enumerate(sources_to_process):
-        is_default = (idx == 0 and source == DEFAULT_GUIDELINE_NAME)
+        # Reset state for each source
         guideline_path = None
         content = None
         error_occurred = False
+        # Check if it's the default guideline being processed when it's the only source expected
+        is_sole_default_source = (len(
+            sources_to_process) == 1 and source == DEFAULT_GUIDELINE_NAME and not guideline_sources)
 
         try:
-            if source.startswith('@'):
-                # User-provided file path
+            # Determine if the source looks like a path or a name
+            is_path_like = '/' in source or source.endswith('.md')
+            is_explicit_at_path = source.startswith('@')
+
+            if is_explicit_at_path:
+                # --- Handle explicit @file path ---
                 filepath_str = source[1:]
                 if not filepath_str:
                     click.echo(
                         f"Warning: Empty file path provided with '@'. Skipping.", err=True)
                     error_occurred = True
                 else:
+                    # Resolve relative to CWD
                     potential_user_path = Path(filepath_str).resolve()
                     if potential_user_path.is_file():
                         guideline_path = potential_user_path
@@ -45,51 +91,61 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
                         click.echo(
                             f"Warning: Could not find or read guideline source '{source}' (File not found or not a file: {potential_user_path}).", err=True)
                         error_occurred = True
-            else:
-                # Built-in name
-                potential_builtin_path = RESOURCES_DIR / \
-                    f"welcome_guidelines_{source}.md"
-                if potential_builtin_path.is_file():
-                    guideline_path = potential_builtin_path
+            elif is_path_like:
+                # --- Handle path-like string from config ---
+                # Assume relative to CWD (where .pm/config.toml resides)
+                potential_config_path = Path(source).resolve()
+                if potential_config_path.is_file():
+                    guideline_path = potential_config_path
                 else:
-                    # Check for custom guideline name
-                    potential_custom_path = CUSTOM_GUIDELINES_DIR / \
-                        f"{source}.md"
-                    if potential_custom_path.is_file():
-                        guideline_path = potential_custom_path
+                    # If path from config doesn't resolve, treat as error
+                    click.echo(
+                        f"Warning: Could not find guideline file specified in config: '{source}' (Resolved to: {potential_config_path}).", err=True)
+                    error_occurred = True  # Treat unresolved config path as an error for this source
+            else:
+                # --- Handle name (custom or built-in) ---
+                # Use the utility function to find the path based on name
+                # We don't need the type ('Custom'/'Built-in') here
+                resolved_path, _ = _resolve_guideline_path(source)
+                if resolved_path:
+                    guideline_path = resolved_path
+                else:
+                    # Guideline name not found as custom or built-in file
+                    if not is_sole_default_source:
+                        # Warn if it wasn't the default expected guideline
+                        click.echo(
+                            f"Warning: Could not find guideline source '{source}' (Not found as built-in or custom file name).", err=True)
                     else:
-                        # Only warn for non-default missing sources
-                        if not is_default:
-                            click.echo(
-                                f"Warning: Could not find or read guideline source '{source}' (Name not found as built-in or custom).", err=True)
-                        else:
-                            # Error specifically for missing default
-                            click.echo(
-                                f"Error: Default guideline file '{DEFAULT_GUIDELINE_NAME}' not found at expected location: {potential_builtin_path}", err=True)
-                        error_occurred = True  # Mark error even for missing default
+                        # Error specifically if the sole default guideline is missing
+                        click.echo(
+                            f"Error: Default guideline file '{DEFAULT_GUIDELINE_NAME}' not found.", err=True)
+                    error_occurred = True  # Mark error if name not resolved
 
-            # Read content if path was found
+            # --- Read content if path was determined ---
             if guideline_path and not error_occurred:
                 # Use frontmatter to load and extract only the content
                 post = frontmatter.load(guideline_path)
                 content = post.content
+
         except Exception as e:
+            # Catch any unexpected errors during processing
             click.echo(
-                f"Warning: Could not find or read guideline source '{source}' (Error: {e}).", err=True)
+                f"Warning: Error processing guideline source '{source}': {e}.", err=True)
             error_occurred = True
 
-        # Append content if successfully read
+        # --- Append content or handle errors ---
         if content is not None:
             if collated_content:  # Add separator if not the first piece of content
-                # Use the defined unique separator
                 collated_content.append(SEPARATOR)
             collated_content.append(content)
         elif error_occurred:
-            if not is_default:  # Error occurred for an explicitly requested source
+            # Check if the error was for a source explicitly passed via -g
+            is_explicit_source = source in guideline_sources
+            if is_explicit_source:
                 explicit_source_error = True
-            # If default failed to load (is_default and error_occurred), we've already printed an error.
-            # We will prevent output later if explicit_source_error is True or if collated_content is empty.
-            pass
+            # If the sole default failed (is_sole_default_source and error_occurred), we've already printed an error.
+            pass  # Continue processing other sources
+# Note: The original loop body from line 55 to 93 is replaced by the logic inserted above.
 
     # Output the final collated content
     # Only output if no errors occurred for explicitly requested sources
