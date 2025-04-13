@@ -12,7 +12,7 @@ from ..common_utils import get_db_connection, format_output, read_content_from_a
 @click.command("create")  # Add the click command decorator
 @click.option("--name", required=True, help="Project name")
 @click.option("--description", help="Project description (or @filepath to read from file).", callback=read_content_from_argument)
-@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus], case_sensitive=False),
               default=ProjectStatus.PROSPECTIVE.value, help="Initial project status (defaults to PROSPECTIVE)")
 @click.pass_context
 def project_create(ctx, name: str, description: Optional[str], status: str):

@@ -13,7 +13,7 @@ from ..common_utils import get_db_connection, format_output, resolve_project_ide
 @click.option("--project", required=True, help="Project identifier (ID or slug)")
 @click.option("--name", required=True, help="Task name")
 @click.option("--description", help="Task description (or @filepath to read from file).", callback=read_content_from_argument)
-@click.option("--status", type=click.Choice([s.value for s in TaskStatus]),
+@click.option("--status", type=click.Choice([s.value for s in TaskStatus], case_sensitive=False),
               default=TaskStatus.NOT_STARTED.value, help="Task status")
 @click.option("--depends-on", multiple=True, help="Dependency task identifier (ID or slug) within the same project.")
 @click.pass_context

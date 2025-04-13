@@ -85,3 +85,45 @@ def test_project_create_description_from_file(cli_runner_env, tmp_path):
     conn.close()
     assert project is not None
     assert project.description == desc_content
+
+
+def test_project_create_status_case_insensitive(cli_runner_env):
+    """Test creating projects with case-insensitive status values."""
+    runner, db_path = cli_runner_env
+
+    # 1. Test lowercase status: active
+    result_create_lower = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Case Test Proj Lower', '--status', 'active'])
+    assert result_create_lower.exit_code == 0, f"Create with lowercase status failed: {result_create_lower.output}"
+    response_lower = json.loads(result_create_lower.output)
+    assert response_lower['status'] == 'success'
+    assert response_lower['data']['status'] == 'ACTIVE', "Status should be stored as uppercase ACTIVE"
+    lower_id = response_lower['data']['id']
+
+    # Verify in DB
+    with init_db(db_path) as conn:
+        project_lower = get_project(conn, lower_id)
+        assert project_lower is not None
+        assert project_lower.status.value == "ACTIVE"
+
+    # 2. Test mixed-case status: COMPleted
+    result_create_mixed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Case Test Proj Mixed', '--status', 'COMPleted'])
+    assert result_create_mixed.exit_code == 0, f"Create with mixed-case status failed: {result_create_mixed.output}"
+    response_mixed = json.loads(result_create_mixed.output)
+    assert response_mixed['status'] == 'success'
+    assert response_mixed['data']['status'] == 'COMPLETED', "Status should be stored as uppercase COMPLETED"
+    mixed_id = response_mixed['data']['id']
+
+    # Verify in DB
+    with init_db(db_path) as conn:
+        project_mixed = get_project(conn, mixed_id)
+        assert project_mixed is not None
+        assert project_mixed.status.value == "COMPLETED"
+
+    # 3. Test invalid status value (should fail regardless of case)
+    result_create_invalid = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Case Test Proj Invalid', '--status', 'invalidStatus'])
+    assert result_create_invalid.exit_code != 0, "Create with invalid status should fail"
+    # Click's error message for invalid choice
+    assert "Invalid value for '--status'" in result_create_invalid.output or "Invalid value for '--status'" in result_create_invalid.stderr

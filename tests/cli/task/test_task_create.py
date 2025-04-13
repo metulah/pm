@@ -105,3 +105,46 @@ def test_task_create_description_from_file_not_found(task_cli_runner_env):
     assert result_create.exit_code != 0  # Should fail
     assert "Error: File not found" in result_create.stderr
     assert filepath in result_create.stderr
+
+
+def test_task_create_status_case_insensitive(task_cli_runner_env):
+    """Test creating tasks with case-insensitive status values."""
+    runner, db_path, project_info = task_cli_runner_env
+    project_slug = project_info['project_slug']
+
+    # 1. Test lowercase status: in_progress
+    result_create_lower = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_slug, '--name', 'Case Task Lower', '--status', 'in_progress'])
+    assert result_create_lower.exit_code == 0, f"Create with lowercase status failed: {result_create_lower.output}"
+    response_lower = json.loads(result_create_lower.output)
+    assert response_lower['status'] == 'success'
+    assert response_lower['data']['status'] == 'IN_PROGRESS', "Status should be stored as uppercase IN_PROGRESS"
+    lower_id = response_lower['data']['id']
+
+    # Verify in DB
+    with init_db(db_path) as conn:
+        task_lower = get_task(conn, lower_id)
+        assert task_lower is not None
+        assert task_lower.status == TaskStatus.IN_PROGRESS
+
+    # 2. Test mixed-case status: Blocked
+    result_create_mixed = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_slug, '--name', 'Case Task Mixed', '--status', 'Blocked'])
+    assert result_create_mixed.exit_code == 0, f"Create with mixed-case status failed: {result_create_mixed.output}"
+    response_mixed = json.loads(result_create_mixed.output)
+    assert response_mixed['status'] == 'success'
+    assert response_mixed['data']['status'] == 'BLOCKED', "Status should be stored as uppercase BLOCKED"
+    mixed_id = response_mixed['data']['id']
+
+    # Verify in DB
+    with init_db(db_path) as conn:
+        task_mixed = get_task(conn, mixed_id)
+        assert task_mixed is not None
+        assert task_mixed.status == TaskStatus.BLOCKED
+
+    # 3. Test invalid status value (should fail regardless of case)
+    result_create_invalid = runner.invoke(
+        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_slug, '--name', 'Case Task Invalid', '--status', 'invalidStatus'])
+    assert result_create_invalid.exit_code != 0, "Create with invalid status should fail"
+    # Click's error message for invalid choice
+    assert "Invalid value for '--status'" in result_create_invalid.output or "Invalid value for '--status'" in result_create_invalid.stderr

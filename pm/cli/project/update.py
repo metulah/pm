@@ -12,7 +12,7 @@ from ..common_utils import get_db_connection, format_output, resolve_project_ide
 @click.argument("identifier")
 @click.option("--name", help="New project name")
 @click.option("--description", help="New project description (or @filepath to read from file).", callback=read_content_from_argument)
-@click.option("--status", type=click.Choice([s.value for s in ProjectStatus]),
+@click.option("--status", type=click.Choice([s.value for s in ProjectStatus], case_sensitive=False),
               help="New project status (ACTIVE, PROSPECTIVE, COMPLETED, ARCHIVED, CANCELLED)")
 @click.pass_context
 def project_update(ctx, identifier: str, name: Optional[str], description: Optional[str], status: Optional[str]):
