@@ -93,16 +93,18 @@ def test_init_already_initialized_non_interactive(runner: CliRunner, tmp_path: P
         print("STDOUT (second run -y):", result2.stdout)
         print("STDERR (second run -y):", result2.stderr)
 
-        assert result2.exit_code == 1, "Second init -y should fail with exit code 1"
+        assert result2.exit_code == 0, "Second init -y should succeed"  # Changed from 1 to 0
+        # Added check for empty stderr
+        assert result2.stderr == "", "Stderr should be empty on successful re-run"
         # Ensure interactive/success messages are NOT printed
         assert SUCCESS_MSG_SNIPPET not in result2.stdout
         assert WELCOME_MSG_SNIPPET not in result2.stdout
         assert CONFIRM_PROMPT_SNIPPET not in result2.stdout
-        # Error message expected on stderr
-        assert ALREADY_INIT_MSG_SNIPPET in result2.stderr
-        # Check relative path mentioned in the error message
-        expected_path_in_error = f"{PM_DIR_NAME}/{DB_FILENAME}"
-        assert expected_path_in_error in result2.stderr
+        # Check for specific messages indicating a re-run
+        assert "PM database already exists" in result2.stdout
+        assert "Skipping guideline configuration" in result2.stdout  # Check for skip message
+        # Ensure next steps are still shown
+        assert NEXT_STEPS_MSG_SNIPPET in result2.stdout
 
     finally:
         os.chdir(original_cwd)  # Ensure we change back
