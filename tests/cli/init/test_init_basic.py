@@ -3,6 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 from click.testing import CliRunner
+# Note: Removed tomllib import as it's not needed for these tests
 
 # Import the main cli entry point
 from pm.cli.base import cli

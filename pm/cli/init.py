@@ -273,9 +273,12 @@ def init(ctx, yes):
                     click.echo(
                         f"Warning: Ignoring invalid slugs: {', '.join(invalid_slugs)}", err=True)
 
-                # Removed sorting to preserve user-specified order
-                set_active_guidelines(final_slugs)
+                # Echo the final list if it was derived from user input
                 click.echo(f"Set active guidelines to: {final_slugs}")
+
+            # Save the determined guidelines (always run after the if/else)
+            # Removed sorting to preserve user-specified order
+            set_active_guidelines(final_slugs)
 
     except Exception as e:
         click.echo(f"\nError during guideline configuration: {e}", err=True)
