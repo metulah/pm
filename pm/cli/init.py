@@ -21,7 +21,7 @@ from pm.core.config import (
 DEFAULT_PM_DIR = ".pm"
 DEFAULT_DB_FILENAME = "pm.db"
 GITIGNORE_COMMENT = "# PM Tool configuration directory"
-GITIGNORE_IGNORE_ENTRY = ".pm/*"  # Ignore contents of .pm
+GITIGNORE_IGNORE_ENTRY = ".pm/"  # Ignore the .pm directory (standard practice)
 GITIGNORE_ALLOW_GUIDELINES = "!.pm/guidelines/"  # Allow custom guidelines
 GITIGNORE_ALLOW_CONFIG = "!.pm/config.toml"   # Allow config file
 DEFAULT_ACTIVE_GUIDELINES = ["pm"]  # Default for non-interactive first run
@@ -144,37 +144,55 @@ def init(ctx, yes):
         git_root = _get_git_root()
         if git_root:
             gitignore_path = git_root / ".gitignore"
-            entries_to_add = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
-            ignore_entry_exists = False
-            allow_guidelines_exists = False
-            allow_config_exists = False
+            # Define the required lines
+            required_lines = [
+                GITIGNORE_COMMENT,
+                GITIGNORE_IGNORE_ENTRY,
+                GITIGNORE_ALLOW_CONFIG,
+                GITIGNORE_ALLOW_GUIDELINES,
+            ]
+            lines_to_add = []
+            needs_update = False
 
             try:
                 if gitignore_path.exists():
-                    # click.echo(f"Checking {gitignore_path}...") # Reduce verbosity
                     content = gitignore_path.read_text()
-                    content_lines = content.splitlines()
-                    ignore_entry_exists = GITIGNORE_IGNORE_ENTRY in content_lines
-                    allow_guidelines_exists = GITIGNORE_ALLOW_GUIDELINES in content_lines
-                    allow_config_exists = GITIGNORE_ALLOW_CONFIG in content_lines
+                    # Use set for efficient lookup
+                    content_lines = {line.strip()
+                                     for line in content.splitlines()}
 
-                    if ignore_entry_exists and allow_guidelines_exists and allow_config_exists:
-                        # click.echo(f"Required PM entries already exist in {gitignore_path}.") # Reduce verbosity
-                        pass  # Already up-to-date
-                    else:
-                        append_content = entries_to_add
-                        if content and not content.endswith("\n"):
-                            append_content = "\n" + append_content
-                        elif content:
-                            append_content = "\n" + append_content
+                    # Check which required lines are missing
+                    for line in required_lines:
+                        if line not in content_lines:
+                            lines_to_add.append(line)
+                            needs_update = True
+
+                    if needs_update:
+                        append_prefix = "\n"  # Add newline before appending by default
+                        if not content:  # File is empty
+                            append_prefix = ""
+                        # Already ends with double newline
+                        elif content.endswith("\n\n"):
+                            append_prefix = ""
+                        elif content.endswith("\n"):  # Ends with single newline
+                            append_prefix = "\n"  # Add one more for separation
+
+                        append_content = append_prefix + \
+                            "\n".join(lines_to_add) + "\n"
                         with gitignore_path.open("a") as f:
                             f.write(append_content)
                         click.echo(
                             f"Updated PM tool entries in {gitignore_path}.")
+                    # else: # Reduce verbosity
+                        # click.echo(f"Required PM entries already exist in {gitignore_path}.")
+
                 else:
+                    # File doesn't exist, create it with all required lines
                     click.echo(f"Creating {gitignore_path}...")
+                    # Ensure trailing newline
+                    content_to_write = "\n".join(required_lines) + "\n"
                     with gitignore_path.open("w") as f:
-                        f.write(entries_to_add)
+                        f.write(content_to_write)
                     click.echo(
                         f"Created {gitignore_path} and added PM tool entries.")
             except OSError as e:

@@ -215,7 +215,8 @@ def test_init_git_repo_creates_gitignore(runner: CliRunner, tmp_path: Path):
         assert GITIGNORE_ALLOW_GUIDELINES in content
         assert GITIGNORE_ALLOW_CONFIG in content  # Check for config rule
         # Check structure (comment, newline, ignore, newline, allow guidelines, newline, allow config, newline)
-        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
+        # Swapped order
+        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_CONFIG}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
         assert content == expected_content
 
     finally:
@@ -248,7 +249,8 @@ def test_init_git_repo_appends_gitignore(runner: CliRunner, tmp_path: Path):
         assert GITIGNORE_ALLOW_CONFIG in content  # Check for config rule
         # Check structure (original, newline, comment, newline, ignore, newline, allow guidelines, newline, allow config, newline)
         # Note: The implementation adds an extra newline before appending if content exists
-        expected_content = f"{initial_content}\n{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
+        # Swapped order
+        expected_content = f"{initial_content}\n{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_CONFIG}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
         assert content == expected_content
 
     finally:
@@ -311,7 +313,8 @@ def test_init_interactive_confirm_handles_gitignore(runner: CliRunner, tmp_path:
         assert GITIGNORE_IGNORE_ENTRY in content
         assert GITIGNORE_ALLOW_GUIDELINES in content
         assert GITIGNORE_ALLOW_CONFIG in content  # Check for config rule
-        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_GUIDELINES}\n{GITIGNORE_ALLOW_CONFIG}\n"
+        # Swapped order
+        expected_content = f"{GITIGNORE_COMMENT}\n{GITIGNORE_IGNORE_ENTRY}\n{GITIGNORE_ALLOW_CONFIG}\n{GITIGNORE_ALLOW_GUIDELINES}\n"
         assert content == expected_content
 
     finally:

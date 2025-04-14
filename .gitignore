@@ -17,7 +17,7 @@ pm.db
 .vscode/
 .idea/
 
-# PM Tool Specific
+# PM Tool configuration directory
 .pm/
-# Allow custom guidelines to be committed
+!.pm/config.toml
 !.pm/guidelines/
