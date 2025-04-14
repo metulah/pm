@@ -14,6 +14,7 @@ dependencies = [
     "python-frontmatter>=1.0.0",
     "sqlalchemy>=2.0.0",
     "rich>=13.0.0",
+    "toml>=0.10.2",              # Added for consistent TOML handling across Python 3.9+
 ]
 
 [project.scripts]
