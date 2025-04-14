@@ -217,7 +217,7 @@ def init(ctx, yes):
 
             click.echo(f"\nCurrently active: {current_active_slugs}")
 
-            prompt_text = "Enter slugs of guidelines to activate (comma-separated), or press Enter to keep current:"
+            prompt_text = "Enter slugs of guidelines to activate (comma-separated), or press Enter to keep current"
             # Use current list as default string for the prompt
             default_prompt_value = ",".join(current_active_slugs)
 
