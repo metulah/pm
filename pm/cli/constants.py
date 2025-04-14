@@ -1,11 +1,4 @@
 # pm/cli/constants.py
-from pathlib import Path
+# RESOURCES_DIR has been moved to pm.core.constants
 
-# Define RESOURCES_DIR centrally here
-# Path(__file__) -> pm/cli/constants.py
-# .parent -> pm/cli/
-# .parent -> pm/
-# / 'resources' -> pm/resources/
-RESOURCES_DIR = Path(__file__).parent.parent / 'resources'
-
-# Add other shared constants here if needed in the future
+# Add other CLI-specific shared constants here if needed in the future

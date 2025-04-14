@@ -10,7 +10,8 @@ import frontmatter
 from rich.console import Console
 from rich.markdown import Markdown
 # Removed incorrect import: from pm.storage.guideline import get_guideline_by_name_or_slug
-from .constants import RESOURCES_DIR
+# Import from the new core location
+from pm.core.constants import RESOURCES_DIR
 # Import the utility function for resolving guideline paths
 from .guideline.utils import _resolve_guideline_path
 DEFAULT_GUIDELINE_NAME = 'pm'

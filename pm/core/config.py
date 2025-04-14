@@ -5,7 +5,8 @@ import toml  # Use the added dependency
 from typing import Dict, Any, Optional, List
 
 # Correctly import the function from its actual location
-from pm.cli.common_utils import find_project_root
+# Import from new core location
+from .utils import find_project_root
 
 CONFIG_FILENAME = "config.toml"
 

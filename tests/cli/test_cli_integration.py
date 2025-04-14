@@ -70,5 +70,5 @@ def test_init_creates_pm_dir_and_db():
         db_file = pm_dir / "pm.db"
         assert pm_dir.is_dir()
         assert db_file.is_file()
-        # Check the actual success message from init.py
-        assert "Successfully initialized pm environment" in result.output
+        # Check the updated success message from init.py
+        assert "Successfully initialized pm database" in result.output

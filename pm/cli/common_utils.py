@@ -18,26 +18,9 @@ from ..storage.task import get_task, get_task_by_slug
 from ..storage.project import get_project, get_project_by_slug
 from ..storage import init_db
 
-import os  # Added for path operations
-
-
-def find_project_root() -> Optional[str]:
-    """
-    Search upwards from the current directory to find the project root
-    marked by a '.pm' directory.
-    Returns the path to the root directory if found, otherwise None.
-    """
-    current_dir = os.path.abspath(os.getcwd())
-    while True:
-        pm_dir_path = os.path.join(current_dir, '.pm')
-        if os.path.isdir(pm_dir_path):
-            return current_dir
-
-        parent_dir = os.path.dirname(current_dir)
-        if parent_dir == current_dir:
-            # Reached the filesystem root
-            return None
-        current_dir = parent_dir
+# find_project_root has been moved to pm.core.utils
+# Import it from the core layer where needed
+from pm.core.utils import find_project_root
 
 
 def get_db_connection() -> sqlite3.Connection:

@@ -2,6 +2,8 @@
 
 import re
 import unicodedata
+import os  # Added for find_project_root
+from typing import Optional  # Added for find_project_root
 
 
 def generate_slug(name: str) -> str:
@@ -38,3 +40,28 @@ def generate_slug(name: str) -> str:
         return "untitled"
 
     return slug
+
+
+def find_project_root() -> Optional[str]:
+    """
+    Search upwards from the current directory to find the project root
+    marked by a '.pm' directory.
+
+    Returns the path (as a string) to the root directory if found, otherwise None.
+    """
+    # Use pathlib for more modern path handling
+    # Local import to avoid potential top-level issues if utils is imported early
+    from pathlib import Path
+
+    current_dir = Path.cwd().resolve()  # Start with resolved absolute path
+    while True:
+        pm_dir_path = current_dir / '.pm'
+        if pm_dir_path.is_dir():
+            # Return as string to match original signature
+            return str(current_dir)
+
+        parent_dir = current_dir.parent
+        if parent_dir == current_dir:
+            # Reached the filesystem root
+            return None
+        current_dir = parent_dir
