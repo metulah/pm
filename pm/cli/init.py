@@ -232,7 +232,7 @@ def init(ctx, yes):
             click.echo("Available guidelines:")
             for g in available_guidelines:
                 click.echo(
-                    f"  - {g['slug']} ({g['type']}): {g.get('title', 'No Title')}")
+                    f"  - {g['slug']} ({g['type']}): {g.get('description', 'No Description')}")
 
             click.echo(f"\nCurrently active: {current_active_slugs}")
 
