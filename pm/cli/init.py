@@ -273,8 +273,7 @@ def init(ctx, yes):
                     click.echo(
                         f"Warning: Ignoring invalid slugs: {', '.join(invalid_slugs)}", err=True)
 
-                # Sort for consistency before saving
-                final_slugs.sort()
+                # Removed sorting to preserve user-specified order
                 set_active_guidelines(final_slugs)
                 click.echo(f"Set active guidelines to: {final_slugs}")
 
