@@ -21,7 +21,8 @@ from pm.core.config import (
 DEFAULT_PM_DIR = ".pm"
 DEFAULT_DB_FILENAME = "pm.db"
 GITIGNORE_COMMENT = "# PM Tool configuration directory"
-GITIGNORE_IGNORE_ENTRY = ".pm/"  # Ignore the .pm directory (standard practice)
+# Ignore contents of .pm (allows re-inclusion)
+GITIGNORE_IGNORE_ENTRY = ".pm/*"
 GITIGNORE_ALLOW_GUIDELINES = "!.pm/guidelines/"  # Allow custom guidelines
 GITIGNORE_ALLOW_CONFIG = "!.pm/config.toml"   # Allow config file
 DEFAULT_ACTIVE_GUIDELINES = ["pm"]  # Default for non-interactive first run
