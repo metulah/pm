@@ -20,7 +20,7 @@ dependencies = [
 pm = "pm.cli:cli"
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0.0", "black>=23.0.0", "isort>=5.0.0"]
+dev = ["pytest>=7.0.0", "black>=23.0.0", "isort>=5.0.0", "ruff>=0.1.0"]
 
 [tool.setuptools]
 packages = ["pm"]
