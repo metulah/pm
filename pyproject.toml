@@ -8,7 +8,30 @@ version = "0.1.0"
 description = "Project management CLI for AI assistants"
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
+authors = [{ name = "metulah", email = "metulah@proton.me" }]
+keywords = [
+    "cli",
+    "project management",
+    "task management",
+    "ai",
+    "assistant",
+    "developer tools",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Bug Tracking",
+    "Topic :: Utilities",
+]
 dependencies = [
     "click>=8.0.0",
     "python-frontmatter>=1.0.0",
@@ -16,17 +39,18 @@ dependencies = [
     "toml>=0.10.2",              # Added for consistent TOML handling across Python 3.9+
 ]
 
+[project.urls]
+Homepage = "https://github.com/metulah/pm"
+Repository = "https://github.com/metulah/pm"
 [project.scripts]
 pm = "pm.cli:cli"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0.0", "black>=23.0.0", "isort>=5.0.0", "ruff>=0.1.0"]
+publish = ["build>=1.2", "twine>=6.1"]
 
 [tool.setuptools]
 packages = ["pm"]
 
 [tool.setuptools.package-data]
 "pm" = ["man/pm.1"]
-
-[tool.setuptools.data-files]
-"share/man/man1" = ["man/pm.1"]

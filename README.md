@@ -27,10 +27,13 @@ python3 -m pip install -e ".[dev]"
 
 ## Documentation
 
-The PM tool comes with comprehensive documentation in the form of a man page. After installation, you can access it using:
+For quick help on specific commands, you can use the `--help` option:
 
-````bash
-man pm
+```bash
+pm --help
+pm project --help
+pm task --help
+```
 
 ## Project and Task Lifecycles
 
@@ -63,15 +66,8 @@ NOT_STARTED --> ABANDONED: Abandon task
 
 The project and task lifecycles illustrate the typical status transitions for projects and tasks in the PM tool. Understanding these lifecycles helps users navigate the tool more effectively.
 
-```
-
-For quick help on specific commands, you can also use the `--help` option:
-
-```bash
-pm --help
-pm project --help
-pm task --help
 ````
+
 
 ## Usage
 
@@ -101,7 +97,7 @@ pm project update <project_id_or_slug> --name "New Name" --description "New desc
 
 # Delete a project
 pm project delete <project_id_or_slug> [--force] # Use --force to delete project and its tasks
-```
+````
 
 ### Task Commands
 
