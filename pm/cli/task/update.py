@@ -72,10 +72,9 @@ def task_update(ctx, project_identifier: str, task_identifier: str, name: Option
             # Get format from context
             output_format = ctx.obj.get('FORMAT', 'json')
             # Use format_output for consistency, but also print to stderr and exit
-            click.echo(format_output(output_format, "error", message=str(e)))
-            # Optionally print simpler message to stderr as well for clarity
-            # nl=False because format_output adds newline
-            click.echo(f"Error: {e}", err=True, nl=False)
+            click.echo(format_output(output_format,
+                       "error", message=str(e)), err=True)
+            # Error is handled by format_output above
             ctx.exit(1)  # Exit with non-zero status ONLY for invalid transitions
         else:
             # For other ValueErrors (like "not found"), let the generic handler below deal with it
