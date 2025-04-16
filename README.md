@@ -18,7 +18,7 @@ This tool provides a standardized way for AI assistants to manage projects, task
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pm.git
+git clone https://github.com/metulah/pm.git
 cd pm
 
 # Install the package in development mode

@@ -6,5 +6,6 @@ active = [
     "testing",
     "development",
     "detailed-content-preference",
+    "ambiguity-resolution",
     "guideline-management",
 ]
