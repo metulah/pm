@@ -7,8 +7,6 @@ import tomllib  # Added for TOML parsing (Python 3.11+)
 # and add `tomli` to pyproject.toml dependencies.
 from pathlib import Path
 import frontmatter
-from rich.console import Console
-from rich.markdown import Markdown
 # Removed incorrect import: from pm.storage.guideline import get_guideline_by_name_or_slug
 # Import from the new core location
 from pm.core.constants import RESOURCES_DIR
@@ -151,8 +149,7 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
     # Output the final collated content
     # Only output if no errors occurred for explicitly requested sources
     if not explicit_source_error and collated_content:
-        console = Console()
-        console.print(Markdown("".join(collated_content)))
+        click.echo("".join(collated_content))
     elif explicit_source_error:
         # Optionally add a final summary error message to stderr
         click.echo(
