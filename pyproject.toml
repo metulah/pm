@@ -3,7 +3,7 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pm"
+name = "pm-cli"
 version = "0.1.0"
 description = "Project management CLI for AI assistants"
 readme = "README.md"
