@@ -1,2 +1,10 @@
 [guidelines]
-active = [ "pm", "coding", "vcs", "testing", "development",]
+active = [
+    "pm",
+    "coding",
+    "vcs",
+    "testing",
+    "development",
+    "detailed-content-preference",
+    "guideline-management",
+]
