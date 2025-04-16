@@ -1,8 +1,7 @@
 # pm/cli/guideline/show.py
 import click
 import frontmatter
-from rich.console import Console
-from rich.markdown import Markdown
+# Removed rich imports
 from . import utils  # Import helper functions from utils.py
 
 
@@ -11,7 +10,7 @@ from . import utils  # Import helper functions from utils.py
 @click.pass_context
 def show_guideline(ctx, name):
     """Shows the content of a specific guideline (custom or built-in)."""
-    console = Console()
+    # Removed rich Console instantiation
     try:
         guideline_path, guideline_type = utils._resolve_guideline_path(name)
 
@@ -23,8 +22,8 @@ def show_guideline(ctx, name):
         post = frontmatter.load(guideline_path)
         content = post.content
 
-        markdown = Markdown(content)
-        console.print(markdown)
+        # Print raw content instead of rendering Markdown
+        click.echo(content)
         click.echo(f"--- End of Guideline: {name} ---")
 
     except Exception as e:

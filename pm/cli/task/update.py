@@ -2,8 +2,7 @@
 from typing import Optional
 import click
 import textwrap
-from rich.console import Console
-from rich.markdown import Markdown
+# Removed rich imports
 
 from ...models import TaskStatus
 from ...storage import update_task
@@ -65,8 +64,8 @@ def task_update(ctx, project_identifier: str, task_identifier: str, name: Option
                 **When starting the next task/session:**
                 - Remember to set the task status to IN_PROGRESS!
              """)
-            console = Console(stderr=True)
-            console.print(Markdown(reminder.strip()))
+            # Print raw reminder to stderr instead of rendering Markdown
+            click.echo(reminder.strip(), err=True)
     except ValueError as e:  # Catch specific validation errors
         # Check if the error is specifically about invalid status transition
         if "Invalid status transition" in str(e):
