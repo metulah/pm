@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pm-cli"
-version = "0.1.1"
+version = "0.1.2"
 description = "Project management CLI for AI assistants"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -53,4 +53,4 @@ publish = ["build>=1.2", "twine>=6.1"]
 packages = { find = {} }
 
 [tool.setuptools.package-data]
-"pm" = ["man/pm.1"]
+"pm" = ["resources/*.md"]
