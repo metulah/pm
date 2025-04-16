@@ -2,7 +2,6 @@
 
 import re
 import unicodedata
-import os  # Added for find_project_root
 from typing import Optional  # Added for find_project_root
 
 

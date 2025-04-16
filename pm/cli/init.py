@@ -1,7 +1,6 @@
 """CLI command for initializing the PM tool in a project."""
 
 import click
-import os
 import pathlib
 import subprocess
 import sys
@@ -9,8 +8,6 @@ from pm.storage import db
 # --- New Imports ---
 from pm.core.guideline import get_available_guidelines
 from pm.core.config import (
-    load_config,
-    save_config,
     get_active_guidelines,
     set_active_guidelines,
     get_config_path,  # Needed to check config existence

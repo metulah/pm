@@ -2,7 +2,6 @@
 import frontmatter
 from pathlib import Path
 # import re  # No longer needed
-from typing import List, Dict, Any, Optional  # Added for type hints
 # Adjust relative import path to access constants from the parent directory
 # Import from the new core location
 from pm.core.constants import RESOURCES_DIR

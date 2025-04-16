@@ -1,5 +1,4 @@
 # tests/cli/welcome/test_welcome_default.py
-import pytest
 from click.testing import CliRunner
 from pathlib import Path
 import os

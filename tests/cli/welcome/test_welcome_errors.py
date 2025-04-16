@@ -1,5 +1,4 @@
 # tests/cli/welcome/test_welcome_errors.py
-import pytest
 from click.testing import CliRunner
 from pathlib import Path
 import os
@@ -10,14 +9,7 @@ from pm.cli.__main__ import cli
 # Import constants and fixtures from conftest
 from .conftest import (
     DEFAULT_CONTENT_SNIPPET,
-    CODING_CONTENT_SNIPPET,
-    VCS_CONTENT_SNIPPET,
-    TESTING_CONTENT_SNIPPET,
-    CUSTOM_FILE_CONTENT,
-    SEPARATOR,
-    runner,  # Import fixtures if needed directly
-    temp_guideline_file,
-    temp_pm_dir  # Needed for some error tests involving config
+    SEPARATOR  # Needed for some error tests involving config
 )
 
 

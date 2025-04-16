@@ -1,7 +1,6 @@
 """Tests for task storage operations."""
 
 import pytest
-import sqlite3
 import uuid  # For generating IDs
 from pm.models import Project, Task, Subtask, Note  # Remove MetadataValue import
 from pm.storage import init_db
@@ -11,7 +10,6 @@ from pm.storage.task import create_task, get_task, get_task_by_slug, list_tasks,
 from pm.storage.subtask import create_subtask  # Need subtask creation
 from pm.storage.note import create_note  # Need note creation
 from pm.storage.metadata import update_task_metadata  # Correct function name
-from pm.core.utils import generate_slug
 from pm.core.types import TaskStatus  # Import TaskStatus for tests
 
 

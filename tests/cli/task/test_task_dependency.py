@@ -1,10 +1,6 @@
-import pytest
 import json
-import sqlite3
-from pm.storage import init_db, get_task
+from pm.storage import init_db
 # Keep if needed for direct DB checks
-from pm.cli.common_utils import get_db_connection
-from pm.core.types import TaskStatus
 from pm.cli.__main__ import cli
 from pm.storage.task import get_task_dependencies  # Import for verification
 
@@ -59,7 +55,7 @@ def test_cli_task_create_with_dependencies(task_cli_runner_env):
     assert response_multi["status"] == "success"
     main_task_multi_slug = response_multi["data"]["slug"]
     main_task_multi_id = response_multi["data"]["id"]
-    assert f"Dependencies added: " in response_multi["message"]
+    assert "Dependencies added: " in response_multi["message"]
     assert dep1_slug in response_multi["message"]
     assert dep2_slug in response_multi["message"]
 

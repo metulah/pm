@@ -1,12 +1,9 @@
 import pytest
 import json
-import uuid  # Needed for creating tasks if models require it
 from click.testing import CliRunner
 
 from pm.cli.__main__ import cli  # Main CLI entry point
 from pm.storage import init_db  # For initializing the temp DB
-from pm.models import Project, Task  # Still needed for type hints potentially
-from pm.core.types import ProjectStatus, TaskStatus
 
 # --- Fixture for CLI Runner and DB Path ---
 

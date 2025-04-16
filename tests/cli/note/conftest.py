@@ -1,12 +1,9 @@
 import pytest
 import uuid
-import os
-from pathlib import Path
 from datetime import datetime
 from click.testing import CliRunner
 
 from pm.storage import init_db
-from pm.cli.__main__ import cli
 
 
 @pytest.fixture(scope="function")

@@ -85,7 +85,6 @@ def delete_task_metadata(conn: sqlite3.Connection, task_id: str, key: str) -> bo
 
 def query_tasks_by_metadata(conn: sqlite3.Connection, key: str, value: Any, value_type: Optional[str] = None) -> List[Task]:
     """Query tasks by metadata value."""
-    from .task import get_task  # Import here to avoid circular imports
 
     try:
         # Create a temporary metadata object to get the correct value field

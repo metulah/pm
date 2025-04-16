@@ -4,7 +4,7 @@ import sqlite3
 import uuid
 from typing import Optional, List
 
-from ..models import TaskTemplate, SubtaskTemplate, Task, Subtask, TaskStatus
+from ..models import TaskTemplate, SubtaskTemplate, Subtask, TaskStatus
 
 
 def create_task_template(conn: sqlite3.Connection, template: TaskTemplate) -> TaskTemplate:

@@ -1,6 +1,5 @@
 import uuid
 import pytest
-from datetime import datetime
 from pm.models import Project, Task, Subtask, TaskStatus
 from pm.storage import (
     init_db, create_project, create_task,

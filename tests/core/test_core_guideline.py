@@ -2,7 +2,7 @@
 import pytest
 import frontmatter
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Function to test
 from pm.core.guideline import get_available_guidelines

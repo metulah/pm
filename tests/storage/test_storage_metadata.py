@@ -1,13 +1,12 @@
 """Test metadata functionality."""
 
 import json
-from pathlib import Path
 from pm.models import Project, Task, TaskMetadata
 from pm.storage import (
     init_db, create_project, create_task,
     create_task_metadata, get_task_metadata,
     get_task_metadata_value, update_task_metadata,
-    delete_task_metadata, query_tasks_by_metadata
+    delete_task_metadata
 )
 
 

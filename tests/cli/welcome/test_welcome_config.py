@@ -1,5 +1,4 @@
 # tests/cli/welcome/test_welcome_config.py
-import pytest
 from click.testing import CliRunner
 from pathlib import Path
 import os
@@ -13,10 +12,7 @@ from .conftest import (
     CODING_CONTENT_SNIPPET,
     VCS_CONTENT_SNIPPET,
     TESTING_CONTENT_SNIPPET,
-    CUSTOM_FILE_CONTENT,
-    SEPARATOR,
-    runner,  # Import fixtures if needed directly (though pytest handles it)
-    temp_pm_dir
+    SEPARATOR
 )
 
 

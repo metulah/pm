@@ -1,4 +1,3 @@
-import pytest
 import json
 from pm.storage import init_db, get_task
 from pm.core.types import TaskStatus

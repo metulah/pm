@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from pm.storage import init_db
 from click.testing import CliRunner
 

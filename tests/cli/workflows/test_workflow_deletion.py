@@ -2,7 +2,6 @@
 
 import pytest
 import json
-import sqlite3  # Needed for direct DB checks
 from pm.storage import init_db
 from pm.cli import cli
 from click.testing import CliRunner

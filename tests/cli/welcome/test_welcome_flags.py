@@ -1,8 +1,6 @@
 # tests/cli/welcome/test_welcome_flags.py
-import pytest
 from click.testing import CliRunner
 from pathlib import Path
-import os
 
 # Import the main cli entry point
 from pm.cli.__main__ import cli
@@ -13,10 +11,7 @@ from .conftest import (
     CODING_CONTENT_SNIPPET,
     VCS_CONTENT_SNIPPET,
     TESTING_CONTENT_SNIPPET,
-    CUSTOM_FILE_CONTENT,
-    SEPARATOR,
-    runner,  # Import fixtures if needed directly
-    temp_guideline_file
+    CUSTOM_FILE_CONTENT
 )
 
 

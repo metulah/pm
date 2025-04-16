@@ -1,7 +1,6 @@
 """Tests for project storage operations."""
 
 import pytest
-import sqlite3
 from pm.models import Project
 from pm.storage import init_db
 from pm.storage.project import create_project, get_project, get_project_by_slug, list_projects, delete_project, ProjectNotEmptyError
@@ -10,7 +9,6 @@ from pm.storage.task import create_task
 # Need to create notes for deletion test
 from pm.storage.note import create_note
 from pm.models import Task, Note  # Need models for task/note creation
-from pm.core.utils import generate_slug
 import uuid  # For generating IDs
 
 

@@ -3,7 +3,7 @@ import uuid
 import pytest
 from pm.cli.__main__ import cli
 # For verification
-from pm.storage import init_db, get_subtask_template, list_subtask_templates
+from pm.storage import init_db, get_subtask_template
 
 # Helper function to create a template via CLI for setup
 

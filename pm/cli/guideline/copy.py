@@ -1,7 +1,6 @@
 # pm/cli/guideline/copy.py
 import click
 import frontmatter
-from pathlib import Path
 from . import utils  # Import helper functions from utils.py
 
 

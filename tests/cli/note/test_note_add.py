@@ -1,6 +1,5 @@
 import json
 import os
-from pathlib import Path
 
 from pm.storage import init_db, get_note
 from pm.cli.__main__ import cli

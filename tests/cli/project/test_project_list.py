@@ -1,6 +1,4 @@
-import pytest
 import json
-from pm.storage import init_db
 from pm.cli.__main__ import cli
 
 

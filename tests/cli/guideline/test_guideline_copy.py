@@ -3,7 +3,6 @@ import pytest
 from click.testing import CliRunner
 from pathlib import Path
 import frontmatter
-import shutil
 
 # Import the main cli entry point
 from pm.cli import cli

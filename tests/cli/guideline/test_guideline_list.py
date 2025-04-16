@@ -1,7 +1,7 @@
 # tests/cli/guideline/test_list.py
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 import frontmatter
 

@@ -3,7 +3,6 @@
 import pytest
 import json
 # Needed for direct DB checks in cascade tests (though cascades moved)
-import sqlite3
 from pm.storage import init_db
 from pm.cli import cli
 from click.testing import CliRunner

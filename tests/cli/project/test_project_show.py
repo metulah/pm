@@ -1,4 +1,3 @@
-import pytest
 import json
 from pm.cli.__main__ import cli
 

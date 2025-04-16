@@ -1,4 +1,3 @@
-import pytest
 import json
 from pm.storage import init_db, get_project, get_project_by_slug
 from pm.cli.__main__ import cli

@@ -1,4 +1,3 @@
-import pytest
 import json
 import sqlite3
 from pm.storage import init_db, get_task

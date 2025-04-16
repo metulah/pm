@@ -2,7 +2,6 @@
 import click
 
 from ...storage import list_projects
-from ...core.types import ProjectStatus
 from ..common_utils import get_db_connection, format_output
 
 

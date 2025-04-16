@@ -2,7 +2,6 @@
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
-import os
 
 # Define expected content snippets (adjust if actual content changes)
 # Assuming these files exist in pm/resources/

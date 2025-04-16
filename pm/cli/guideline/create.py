@@ -1,6 +1,5 @@
 # pm/cli/guideline/create.py
 import click
-from pathlib import Path
 from . import utils  # Import helper functions from utils.py
 
 
@@ -23,7 +22,7 @@ def create_guideline(ctx, name, description, content):
         guideline_content = utils._read_content_input(content)  # Use helper
         if guideline_content is None:
             # Should be caught by required=True, but good practice
-            click.echo(f"Error: Content cannot be empty.", err=True)
+            click.echo("Error: Content cannot be empty.", err=True)
             ctx.exit(1)
 
         metadata = {}

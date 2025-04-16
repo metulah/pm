@@ -1,7 +1,5 @@
 # pm/cli/welcome.py
 import click
-import os
-import io
 import tomllib  # Added for TOML parsing (Python 3.11+)
 # If using Python < 3.11, replace `import tomllib` with `import tomli as tomllib`
 # and add `tomli` to pyproject.toml dependencies.
@@ -9,7 +7,6 @@ from pathlib import Path
 import frontmatter
 # Removed incorrect import: from pm.storage.guideline import get_guideline_by_name_or_slug
 # Import from the new core location
-from pm.core.constants import RESOURCES_DIR
 # Import the utility function for resolving guideline paths
 from .guideline.utils import _resolve_guideline_path
 DEFAULT_GUIDELINE_NAME = 'pm'
@@ -79,7 +76,7 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
                 filepath_str = source[1:]
                 if not filepath_str:
                     click.echo(
-                        f"Warning: Empty file path provided with '@'. Skipping.", err=True)
+                        "Warning: Empty file path provided with '@'. Skipping.", err=True)
                     error_occurred = True
                 else:
                     # Resolve relative to CWD

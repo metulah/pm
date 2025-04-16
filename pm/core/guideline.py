@@ -1,7 +1,7 @@
 # pm/core/guideline.py
 import frontmatter
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 # Need to import RESOURCES_DIR and find_project_root
 # Import from new core locations
