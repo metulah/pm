@@ -70,8 +70,8 @@ def test_guideline_show_custom(runner):
         result = runner.invoke(cli, ['guideline', 'show', 'show-custom'])
         assert result.exit_code == 0
         assert "Displaying Custom Guideline: show-custom" in result.output
-        # Check for rendered content (rich might alter exact markdown)
-        assert "Custom Show Content" in result.output
+        # Check for raw content (rich rendering removed)
+        assert "Custom **Show** Content" in result.output
         # Ensure frontmatter isn't shown in content
         assert "description:" not in result.output
         assert "Show Desc" not in result.output
@@ -87,7 +87,7 @@ def test_guideline_show_prefers_custom_over_builtin(runner):
         result = runner.invoke(cli, ['guideline', 'show', 'default'])
         assert result.exit_code == 0
         assert "Displaying Custom Guideline: default" in result.output
-        assert "My Local Default Content" in result.output
+        assert "My **Local** Default Content" in result.output
         # Ensure built-in content isn't shown
         assert "Welcome to the PM Tool!" not in result.output
 
