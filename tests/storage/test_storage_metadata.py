@@ -16,12 +16,12 @@ def test_create_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    project = create_project(conn, Project(
+    create_project(conn, Project(
         id="test-project",
         name="Test Project"
     ))
 
-    task = create_task(conn, Task(
+    create_task(conn, Task(
         id="test-task",
         project_id="test-project",
         name="Test Task"
@@ -48,12 +48,12 @@ def test_get_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    project = create_project(conn, Project(
+    create_project(conn, Project(
         id="test-project",
         name="Test Project"
     ))
 
-    task = create_task(conn, Task(
+    create_task(conn, Task(
         id="test-task",
         project_id="test-project",
         name="Test Task"
@@ -95,12 +95,12 @@ def test_update_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    project = create_project(conn, Project(
+    create_project(conn, Project(
         id="test-project",
         name="Test Project"
     ))
 
-    task = create_task(conn, Task(
+    create_task(conn, Task(
         id="test-task",
         project_id="test-project",
         name="Test Task"
@@ -130,12 +130,12 @@ def test_delete_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    project = create_project(conn, Project(
+    create_project(conn, Project(
         id="test-project",
         name="Test Project"
     ))
 
-    task = create_task(conn, Task(
+    create_task(conn, Task(
         id="test-task",
         project_id="test-project",
         name="Test Task"
@@ -169,12 +169,12 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     conn = init_db(db_path)
 
     # Create a project and task
-    project = create_project(conn, Project(
+    create_project(conn, Project(
         id="cli-project",
         name="CLI Project"
     ))
 
-    task = create_task(conn, Task(
+    create_task(conn, Task(
         id="cli-task",
         project_id="cli-project",
         name="CLI Task"

@@ -26,7 +26,6 @@ jobs:
 
       - name: Run Ruff linter
         run: ruff check .
-        continue-on-error: true # Allow workflow to pass even if ruff finds issues initially
 
       - name: Run Pytest
         run: pytest

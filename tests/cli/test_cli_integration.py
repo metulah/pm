@@ -47,7 +47,7 @@ def test_run_from_subdirectory():
 def test_run_outside_project():
     """Test running a command from outside a project directory."""
     runner = CliRunner()
-    with runner.isolated_filesystem() as tmpdir:
+    with runner.isolated_filesystem():
         # Do NOT initialize a project here
 
         # Run a command

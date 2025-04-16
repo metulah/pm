@@ -41,24 +41,24 @@ def setup_projects_and_tasks_cli(runner_and_db):
     # Project 1 (ACTIVE)
     proj1_data = create_via_cli(
         ['project', 'create', '--name', 'Project Alpha', '--status', 'ACTIVE'], 'proj1')
-    task1_data = create_via_cli(['task', 'create', '--project', proj1_data['slug'],
-                                '--name', 'Alpha Task 1', '--status', 'NOT_STARTED'], 'task1')
-    task2_data = create_via_cli(['task', 'create', '--project', proj1_data['slug'],
-                                '--name', 'Alpha Task 2', '--status', 'IN_PROGRESS'], 'task2')
-    task3_data = create_via_cli(['task', 'create', '--project', proj1_data['slug'],
-                                '--name', 'Alpha Task 3', '--status', 'COMPLETED'], 'task3')
+    create_via_cli(['task', 'create', '--project', proj1_data['slug'],
+                    '--name', 'Alpha Task 1', '--status', 'NOT_STARTED'], 'task1')
+    create_via_cli(['task', 'create', '--project', proj1_data['slug'],
+                    '--name', 'Alpha Task 2', '--status', 'IN_PROGRESS'], 'task2')
+    create_via_cli(['task', 'create', '--project', proj1_data['slug'],
+                    '--name', 'Alpha Task 3', '--status', 'COMPLETED'], 'task3')
 
     # Project 2 (ACTIVE)
     proj2_data = create_via_cli(
         ['project', 'create', '--name', 'Project Beta', '--status', 'ACTIVE'], 'proj2')
-    task4_data = create_via_cli(['task', 'create', '--project', proj2_data['slug'],
-                                '--name', 'Beta Task 1', '--status', 'NOT_STARTED'], 'task4')
+    create_via_cli(['task', 'create', '--project', proj2_data['slug'],
+                    '--name', 'Beta Task 1', '--status', 'NOT_STARTED'], 'task4')
 
     # Project 3 (ARCHIVED)
     proj3_data = create_via_cli(
         ['project', 'create', '--name', 'Project Gamma', '--status', 'ARCHIVED'], 'proj3')
-    task5_data = create_via_cli(['task', 'create', '--project', proj3_data['slug'],
-                                '--name', 'Gamma Task 1', '--status', 'NOT_STARTED'], 'task5')
+    create_via_cli(['task', 'create', '--project', proj3_data['slug'],
+                    '--name', 'Gamma Task 1', '--status', 'NOT_STARTED'], 'task5')
 
     # Add runner and db_path to the returned dict for convenience in tests
     created_data['runner'] = runner

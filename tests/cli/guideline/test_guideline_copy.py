@@ -57,7 +57,7 @@ def test_guideline_copy_success_from_custom(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         # Create the source custom file correctly
-        source_path = _create_guideline_file(
+        _create_guideline_file(
             fs_path, "source-custom", "Source Content", {'description': 'Source Desc'})
 
         result = runner.invoke(

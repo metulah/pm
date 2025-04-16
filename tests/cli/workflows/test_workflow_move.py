@@ -41,7 +41,6 @@ def test_cli_task_move(cli_runner_env):
     result_task = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_a_slug, '--name', 'Task 1'])  # Use slug
     task_1_data = json.loads(result_task.output)['data']
-    task_1_id = task_1_data['id']
     task_1_slug = task_1_data['slug']
 
     # Verify Task 1 is in Project A (using slugs)

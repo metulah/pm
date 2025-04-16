@@ -308,7 +308,6 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
 
     # Process and format each row with wrapping
     for row in data:
-        wrapped_row_lines = []
         max_lines_in_row = 1
         cell_lines_dict = {}  # Store wrapped lines for each cell in the current row
 

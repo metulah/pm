@@ -29,12 +29,10 @@ def test_cli_project_delete_standard(cli_runner_env):
     result_proj = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Delete Test Project'])
     project_data = json.loads(result_proj.output)['data']
-    project_id = project_data['id']
     project_slug = project_data['slug']
     result_task = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
                                       '--project', project_slug, '--name', 'Task In Delete Project'])  # Use slug
     task_data = json.loads(result_task.output)['data']
-    task_id = task_data['id']
     task_slug = task_data['slug']
 
     # Test deleting project (using slug) with task (should fail because --force is missing)
@@ -76,17 +74,14 @@ def test_cli_project_delete_force(cli_runner_env):
     result_c = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Project C'])
     project_c_data = json.loads(result_c.output)['data']
-    project_c_id = project_c_data['id']
     project_c_slug = project_c_data['slug']
     result_task2 = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_c_slug, '--name', 'Task 2'])
     task_2_data = json.loads(result_task2.output)['data']
-    task_2_id = task_2_data['id']
     task_2_slug = task_2_data['slug']
     result_task3 = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_c_slug, '--name', 'Task 3'])
     task_3_data = json.loads(result_task3.output)['data']
-    task_3_id = task_3_data['id']
     task_3_slug = task_3_data['slug']
 
     # Attempt delete without force (using slug) (should fail)

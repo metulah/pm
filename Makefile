@@ -1,6 +1,6 @@
 # Makefile for PM tool
 
-.PHONY: install-man test-man clean test guidelines help setup-dev install-global
+.PHONY: install-man test-man clean test lint check guidelines help setup-dev install-global
 
 # Default target
 all: install-man
@@ -29,14 +29,14 @@ test:
 	@pytest
 	@echo "Tests completed."
 
-# Show relevant project guidelines
-welcome:
-	@echo "Displaying project development guidelines..."
-	@pm welcome \
-		-g coding \
-		-g vcs \
-		-g testing \
-		-g development
+# Run Ruff linter
+lint:
+	@echo "Running Ruff linter..."
+	@ruff check .
+	@echo "Linting completed."
+
+# Run linters and tests
+check: lint test
 
 # Set up development environment
 setup-dev:
@@ -60,7 +60,9 @@ help:
 	@echo "  test-man     - Test man page formatting"
 	@echo "  clean        - Remove installed man page"
 	@echo "  test         - Run all Python tests"
-	@echo "  guidelines    - Display relevant project development guidelines"
+	@echo "  lint         - Run Ruff linter"
+	@echo "  check        - Run linters and tests"
+	@echo "  welcome      - Display relevant project development guidelines (alias for guidelines)"
 	@echo "  setup-dev     - Set up development environment (create venv, install package)"
 	@echo "  install-global - Install PM tool globally (requires sudo)"
 	@echo "  help          - Show this help message"

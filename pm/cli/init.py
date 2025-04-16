@@ -78,7 +78,6 @@ def init(ctx, yes):
     """Initializes the PM tool environment and configures guidelines."""
     pm_dir_path = pathlib.Path(DEFAULT_PM_DIR)
     db_path = pm_dir_path / DEFAULT_DB_FILENAME
-    config_path = get_config_path()  # Get expected config path
 
     # Check dir path
     click.echo(f"Checking for existing initialization at {pm_dir_path}...")
@@ -86,8 +85,7 @@ def init(ctx, yes):
     # --- Determine if already initialized ---
     db_existed_before = db_path.exists()
     # Use the function to get Path object or None
-    config_path_obj = get_config_path()
-    config_existed_before = config_path_obj is not None and config_path_obj.exists()
+    get_config_path()  # Check if config exists, ignore result for now
 
     if db_existed_before:
         click.echo(f"PM database already exists at {db_path}.")

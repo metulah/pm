@@ -30,7 +30,6 @@ def test_cli_simple_messages(cli_runner_env):
     result_proj = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Message Test Proj'])
     project_data = json.loads(result_proj.output)['data']
-    project_id = project_data['id']
     project_slug = project_data['slug']
 
     # Test delete success message (Text format) using slug - REQUIRES --force now

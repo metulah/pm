@@ -35,7 +35,6 @@ def test_cli_task_create_with_dependencies(task_cli_runner_env):
     assert result_create_single.exit_code == 0, f"Output: {result_create_single.output}"
     response_single = json.loads(result_create_single.output)
     assert response_single["status"] == "success"
-    main_task_single_slug = response_single["data"]["slug"]
     main_task_single_id = response_single["data"]["id"]
     assert f"Dependencies added: {dep1_slug}" in response_single["message"]
 
@@ -54,7 +53,6 @@ def test_cli_task_create_with_dependencies(task_cli_runner_env):
     response_multi = json.loads(result_create_multi.output)
     assert response_multi["status"] == "success"
     main_task_multi_slug = response_multi["data"]["slug"]
-    main_task_multi_id = response_multi["data"]["id"]
     assert "Dependencies added: " in response_multi["message"]
     assert dep1_slug in response_multi["message"]
     assert dep2_slug in response_multi["message"]

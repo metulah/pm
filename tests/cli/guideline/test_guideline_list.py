@@ -115,7 +115,6 @@ def test_guideline_list_parsing_error(mock_find_root, mock_resources_dir, runner
 
         assert result.exit_code == 0  # Command should still succeed overall
         # Check that the warning is printed, including the exception message
-        expected_warning = f"[yellow]Warning:[/yellow] Could not parse metadata from built-in {mock_invalid_path.name}: {mock_exception}"
         # Use partial match as rich might add extra formatting/newlines
         assert "Could not parse metadata from built-in welcome_guidelines_invalid.md" in result.output
         assert "Mock parsing error" in result.output
@@ -164,7 +163,6 @@ def test_guideline_list_mixed_success_and_error(mock_find_root, mock_resources_d
 
         assert result.exit_code == 0
         # Check warning for the invalid file, including exception message
-        expected_warning = f"[yellow]Warning:[/yellow] Could not parse metadata from built-in {mock_invalid_path.name}: {mock_exception}"
         assert "Could not parse metadata from built-in welcome_guidelines_invalid.md" in result.output
         assert "Mock YAML parsing error" in result.output
         # Check the header is present because one file succeeded

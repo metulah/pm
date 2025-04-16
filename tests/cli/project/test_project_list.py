@@ -21,7 +21,6 @@ def test_project_list_default_and_prospective_flag(cli_runner_env):
     result_create = runner.invoke(
         cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Prospective Proj 1'])
     assert result_create.exit_code == 0
-    project_id_1 = json.loads(result_create.output)["data"]["id"]
     project_slug_1 = json.loads(result_create.output)["data"]["slug"]
 
     # Create one ACTIVE project
