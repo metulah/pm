@@ -17,12 +17,7 @@ This tool provides a standardized way for AI assistants to manage projects, task
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/metulah/pm.git
-cd pm
-
-# Install the package in development mode
-python3 -m pip install -e ".[dev]"
+pip install pm-cli
 ```
 
 ## Documentation
