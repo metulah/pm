@@ -20,7 +20,7 @@ Thank you for your interest in contributing!
 python3 -m pytest
 ```
 
-## Release Process (Publishing to PyPI)
+## Release Process (Publishing)
 
 This project uses GitHub Actions to automate publishing to PyPI.
 
@@ -33,6 +33,23 @@ This project uses GitHub Actions to automate publishing to PyPI.
     git tag vx.y.z
     git push origin vx.y.z
     ```
-6.  **Monitor Workflow:** Pushing the tag triggers the `publish.yml` workflow in GitHub Actions. Monitor its progress to ensure the package is successfully built and published to PyPI.
+6.  **Monitor Workflow:** Pushing the tag triggers the `publish.yml` workflow in GitHub Actions. Monitor its progress to ensure the package is successfully built and published to PyPI and the Docker image is pushed to Docker Hub.
 
-**Note:** Ensure you have the necessary permissions and that the `PYPI_API_TOKEN` secret is correctly configured in the repository settings for the workflow to succeed.
+**Note:** Ensure you have the necessary permissions and that the `PYPI_API_TOKEN`, `DOCKERHUB_USERNAME`, and `DOCKERHUB_TOKEN` secrets are correctly configured in the repository settings for the workflow to succeed.
+
+## Docker Image
+
+This tool is also distributed as a multi-platform Docker image on Docker Hub.
+
+- **Pull the latest image:**
+  ```bash
+  docker pull metulah/pm-tool:latest
+  ```
+- **Run the image:**
+  ```bash
+  docker run --rm -it metulah/pm-tool:latest --help
+  ```
+- **Pull a specific version:**
+  ```bash
+  docker pull metulah/pm-tool:vx.y.z
+  ```
