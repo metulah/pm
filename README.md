@@ -17,7 +17,7 @@ This tool provides a standardized way for AI assistants to manage projects, task
 ## Installation
 
 ```bash
-pip install pm-cli
+pip install pm-tool
 ```
 
 ## Documentation
