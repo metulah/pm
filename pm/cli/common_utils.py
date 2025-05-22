@@ -32,7 +32,7 @@ def get_db_connection() -> sqlite3.Connection:
     """
     # Prioritize explicit path from context (e.g., --db-path global option)
     ctx = click.get_current_context(silent=True)
-    explicit_db_path = ctx.obj.get('DB_PATH') if ctx and ctx.obj else None
+    explicit_db_path = ctx.obj.get("DB_PATH") if ctx and ctx.obj else None
 
     if explicit_db_path:
         try:
@@ -42,19 +42,21 @@ def get_db_connection() -> sqlite3.Connection:
         except sqlite3.OperationalError as e:
             # Handle errors even with explicit path
             raise click.ClickException(
-                f"Error connecting to specified database at '{explicit_db_path}': {e}")
+                f"Error connecting to specified database at '{explicit_db_path}': {e}"
+            )
     else:
         # If no explicit path, search upwards for the project root
         project_root = find_project_root()
         if project_root:
-            db_path = os.path.join(project_root, '.pm', 'pm.db')
+            db_path = os.path.join(project_root, ".pm", "pm.db")
             try:
                 conn = init_db(db_path)
                 return conn
             except sqlite3.OperationalError as e:
                 # Catch potential errors during connection even if path seems valid
                 raise click.ClickException(
-                    f"Error connecting to database at '{db_path}': {e}")
+                    f"Error connecting to database at '{db_path}': {e}"
+                )
         else:
             # This 'else' corresponds to 'if project_root:' (when upward search fails)
             raise click.ClickException(
@@ -68,7 +70,8 @@ def _format_relative_time(dt_input: Any) -> str:
     if isinstance(dt_input, str):
         try:
             dt = datetime.datetime.fromisoformat(
-                dt_input.replace('Z', '+00:00'))  # Handle Z for UTC
+                dt_input.replace("Z", "+00:00")
+            )  # Handle Z for UTC
         except ValueError:
             return dt_input  # Return original string if parsing fails
     elif isinstance(dt_input, datetime.datetime):
@@ -153,12 +156,13 @@ def resolve_project_identifier(conn: sqlite3.Connection, identifier: str) -> Pro
         project = get_project_by_slug(conn, identifier)
 
     if project is None:
-        raise click.UsageError(
-            f"Project not found with identifier: '{identifier}'")
+        raise click.UsageError(f"Project not found with identifier: '{identifier}'")
     return project
 
 
-def resolve_task_identifier(conn: sqlite3.Connection, project: Project, task_identifier: str) -> Task:
+def resolve_task_identifier(
+    conn: sqlite3.Connection, project: Project, task_identifier: str
+) -> Task:
     """Resolve a task identifier (UUID or slug) within a given project to a Task object."""
     task = None
     if is_valid_uuid(task_identifier):
@@ -172,50 +176,61 @@ def resolve_task_identifier(conn: sqlite3.Connection, project: Project, task_ide
 
     if task is None:
         raise click.UsageError(
-            f"Task not found with identifier '{task_identifier}' in project '{project.name}' (ID: {project.id})")
+            f"Task not found with identifier '{task_identifier}' in project '{project.name}' (ID: {project.id})"
+        )
     return task
 
 
-def read_content_from_argument(ctx: click.Context, param: click.Parameter, value: Optional[str]) -> Optional[str]:
+def read_content_from_argument(
+    ctx: click.Context, param: click.Parameter, value: Optional[str]
+) -> Optional[str]:
     """
     Click callback to read argument content from a file if prefixed with '@'.
     Handles file reading errors and returns original value if not prefixed.
     """
-    if value and value.startswith('@'):
+    if value and value.startswith("@"):
         filepath = value[1:]
         if not filepath:
             raise click.UsageError(
-                f"File path cannot be empty when using '@' prefix for option '{param.name}'.")
+                f"File path cannot be empty when using '@' prefix for option '{param.name}'."
+            )
 
         # Try to resolve relative paths based on CWD
         # Note: Consider security implications if paths could be malicious
         abs_filepath = os.path.abspath(filepath)
 
         try:
-            with io.open(abs_filepath, 'r', encoding='utf-8') as f:
+            with io.open(abs_filepath, "r", encoding="utf-8") as f:
                 return f.read()
         except FileNotFoundError:
             raise click.UsageError(
-                f"File not found for option '{param.name}': {filepath} (Resolved: {abs_filepath})")
+                f"File not found for option '{param.name}': {filepath} (Resolved: {abs_filepath})"
+            )
         except PermissionError:
             raise click.UsageError(
-                f"Permission denied for option '{param.name}': {filepath} (Resolved: {abs_filepath})")
+                f"Permission denied for option '{param.name}': {filepath} (Resolved: {abs_filepath})"
+            )
         except IsADirectoryError:
             raise click.UsageError(
-                f"Path is a directory, not a file, for option '{param.name}': {filepath} (Resolved: {abs_filepath})")
+                f"Path is a directory, not a file, for option '{param.name}': {filepath} (Resolved: {abs_filepath})"
+            )
         except UnicodeDecodeError as e:
             raise click.UsageError(
-                f"Error decoding file for option '{param.name}' (expected UTF-8): {filepath} (Resolved: {abs_filepath}) - {e}")
+                f"Error decoding file for option '{param.name}' (expected UTF-8): {filepath} (Resolved: {abs_filepath}) - {e}"
+            )
         except Exception as e:
             # Catch other potential OS errors during file access
             raise click.UsageError(
-                f"Could not read file for option '{param.name}': {filepath} (Resolved: {abs_filepath}) - {e}")
+                f"Could not read file for option '{param.name}': {filepath} (Resolved: {abs_filepath}) - {e}"
+            )
     else:
         # Return the original value if it doesn't start with '@' or is None
         return value
 
 
-def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = None) -> str:
+def _format_list_as_text(
+    data: List[Dict[str, Any]], data_type: Optional[str] = None
+) -> str:
     """Formats a list of dictionaries (representing objects) as a text table with wrapping, respecting context flags."""
     if not data:
         return "No items found."
@@ -223,26 +238,61 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
     # Define preferred column orders - adjust as needed for other types (slug before name)
     # Define preferred column orders - status after description, project_slug for tasks
     PREFERRED_ORDERS = {
-        'project': ['id', 'slug', 'name', 'description', 'status', 'created_at', 'updated_at'],
+        "project": [
+            "id",
+            "slug",
+            "name",
+            "description",
+            "status",
+            "created_at",
+            "updated_at",
+        ],
         # Status should be after description
         # project_slug after description, status after project_slug
         # project_slug first
-        'task': ['project_slug', 'id', 'slug', 'name', 'description', 'status', 'created_at', 'updated_at'],
+        "task": [
+            "project_slug",
+            "id",
+            "slug",
+            "name",
+            "description",
+            "status",
+            "created_at",
+            "updated_at",
+        ],
         # Status not typical for notes
-        'note': ['id', 'project_id', 'task_id', 'content', 'created_at', 'updated_at'],
+        "note": ["id", "project_id", "task_id", "content", "created_at", "updated_at"],
         # Added slug assumption, status after desc
-        'subtask': ['id', 'slug', 'name', 'task_id', 'parent_subtask_id', 'description', 'status', 'created_at', 'updated_at'],
+        "subtask": [
+            "id",
+            "slug",
+            "name",
+            "task_id",
+            "parent_subtask_id",
+            "description",
+            "status",
+            "created_at",
+            "updated_at",
+        ],
         # No status for templates
-        'template': ['id', 'name', 'template_type', 'content', 'created_at', 'updated_at']
+        "template": [
+            "id",
+            "name",
+            "template_type",
+            "content",
+            "created_at",
+            "updated_at",
+        ],
         # Add more types if needed
     }
 
     # Get context to check for flags like SHOW_ID
     ctx = click.get_current_context(silent=True)
     # Default flags to False if context or flag isn't available
-    show_id = ctx.obj.get('SHOW_ID', False) if ctx and ctx.obj else False
-    show_description = ctx.obj.get(
-        'SHOW_DESCRIPTION', False) if ctx and ctx.obj else False
+    show_id = ctx.obj.get("SHOW_ID", False) if ctx and ctx.obj else False
+    show_description = (
+        ctx.obj.get("SHOW_DESCRIPTION", False) if ctx and ctx.obj else False
+    )
     # Type detection is now done in format_output and passed in
 
     # Get the actual keys present in the data (using the first item as representative)
@@ -254,7 +304,8 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
         potential_headers = [h for h in preferred_order if h in actual_keys]
         # Add any remaining actual keys that weren't in the preferred order (sorted for consistency)
         potential_headers.extend(
-            sorted([h for h in actual_keys if h not in potential_headers]))
+            sorted([h for h in actual_keys if h not in potential_headers])
+        )
     else:
         # Fallback to using the actual keys if type unknown
         potential_headers = actual_keys
@@ -264,9 +315,9 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
     headers = []
     for h in potential_headers:
         # Conditionally skip columns based on flags
-        if h == 'id' and not show_id:
+        if h == "id" and not show_id:
             continue
-        if h == 'description' and not show_description:
+        if h == "description" and not show_description:
             continue
         headers.append(h)
 
@@ -275,10 +326,15 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
         return "No columns to display based on current flags."
 
     # Define max widths for specific columns that tend to be long
-    MAX_WIDTHS = {'name': 40, 'description': 60}
+    MAX_WIDTHS = {"name": 40, "description": 60}
     # Define minimum widths to prevent excessive squashing
-    MIN_WIDTHS = {'id': 36, 'project_id': 36, 'project_slug': 20,
-                  'task_id': 36, 'template_id': 36}  # Added project_slug min width
+    MIN_WIDTHS = {
+        "id": 36,
+        "project_id": 36,
+        "project_slug": 20,
+        "task_id": 36,
+        "template_id": 36,
+    }  # Added project_slug min width
 
     # Calculate initial widths based on the final `headers` list
     col_widths = {h: len(h) for h in headers}
@@ -286,7 +342,7 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
     # Calculate max content width for each column, respecting MAX/MIN_WIDTHS
     for row in data:
         for h in headers:
-            content_len = len(str(row.get(h, '')))
+            content_len = len(str(row.get(h, "")))
             max_w = MAX_WIDTHS.get(h.lower())
             # Default min width if not specified
             min_w = MIN_WIDTHS.get(h.lower(), 5)
@@ -313,14 +369,22 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
 
         # Wrap necessary columns and find max number of lines needed for this row
         for h in headers:
-            content = str(row.get(h, ''))
+            content = str(row.get(h, ""))
             width = col_widths[h]
             # Wrap if content exceeds width OR if a max width was defined (to enforce it)
             if len(content) > width or h.lower() in MAX_WIDTHS:
                 # Use textwrap.fill for simpler handling, join lines later if needed
                 # Or use textwrap.wrap if multi-line cell output is desired
-                wrapped_lines = textwrap.wrap(
-                    content, width=width, break_long_words=False, replace_whitespace=False) if content else ['']
+                wrapped_lines = (
+                    textwrap.wrap(
+                        content,
+                        width=width,
+                        break_long_words=False,
+                        replace_whitespace=False,
+                    )
+                    if content
+                    else [""]
+                )
                 cell_lines_dict[h] = wrapped_lines
                 max_lines_in_row = max(max_lines_in_row, len(wrapped_lines))
             else:
@@ -333,8 +397,7 @@ def _format_list_as_text(data: List[Dict[str, Any]], data_type: Optional[str] = 
             for h in headers:
                 lines_for_cell = cell_lines_dict[h]
                 # Get the i-th line for the cell, or empty string if it doesn't exist
-                line_part = lines_for_cell[i] if i < len(
-                    lines_for_cell) else ""
+                line_part = lines_for_cell[i] if i < len(lines_for_cell) else ""
                 line_parts.append(f"{line_part:<{col_widths[h]}}")
             output_lines.append("   ".join(line_parts))
 
@@ -347,33 +410,57 @@ def _format_dict_as_text(data: Dict[str, Any]) -> str:
         return "No data found."
 
     # Define preferred order for single object display
-    preferred_order = ['id', 'slug', 'name', 'project_id', 'project_slug', 'task_id', 'parent_subtask_id',
-                       'description', 'status', 'note_count', 'content', 'author', 'entity_type', 'entity_id',
-                       'created_at', 'updated_at']  # Add note_count here
+    # Define preferred order for single object display, excluding 'content' for special handling
+    preferred_order = [
+        "id",
+        "slug",
+        "name",
+        "project_id",
+        "project_slug",
+        "task_id",
+        "parent_subtask_id",
+        "description",
+        "status",
+        "note_count",
+        "author",
+        "entity_type",
+        "entity_id",
+        "created_at",
+        "updated_at",
+    ]
+
+    # Extract content if present, and remove it from the data dict for separate handling
+    content_to_display = data.pop("content", None)
 
     # Filter keys based on preferred order and what's actually in the data
     display_keys = [key for key in preferred_order if key in data]
-    # Add any keys from data not in preferred_order (sorted for consistency)
-    display_keys.extend(
-        sorted([key for key in data if key not in display_keys]))
+    # Add any remaining keys from data not in preferred_order (sorted for consistency)
+    display_keys.extend(sorted([key for key in data if key not in display_keys]))
 
     # Calculate labels and max length based on the keys we will display
-    temp_labels = [key.replace('_', ' ').title() + ':' for key in display_keys]
-    max_label_len = max(len(label)
-                        for label in temp_labels) if temp_labels else 0
+    temp_labels = [key.replace("_", " ").title() + ":" for key in display_keys]
+    max_label_len = max(len(label) for label in temp_labels) if temp_labels else 0
 
     output = []
     for key in display_keys:  # Iterate using the ordered display_keys
         value = data[key]
         # Regenerate the label for the current key
-        label_with_colon = key.replace('_', ' ').title() + ':'
+        label_with_colon = key.replace("_", " ").title() + ":"
         # Pad based on the calculated max length
         output.append(f"{label_with_colon:<{max_label_len}} {value}")
+
+    # Append content as a separate paragraph if it exists
+    if content_to_display:
+        # Add a blank line before the content for separation
+        output.append("")
+        output.append(content_to_display)
 
     return "\n".join(output)
 
 
-def format_output(format: str, status: str, data: Optional[Any] = None, message: Optional[str] = None) -> str:
+def format_output(
+    format: str, status: str, data: Optional[Any] = None, message: Optional[str] = None
+) -> str:
     """Create a standardized response in the specified format (json or text)."""
 
     # Prepare data for JSON/Text (convert objects/enums/datetimes to serializable types)
@@ -389,22 +476,23 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
 
         processed_list = []
         for item in items_to_process:
-            if hasattr(item, '__dict__'):
+            if hasattr(item, "__dict__"):
                 # Convert object to dict and process specific types
                 item_dict = item.__dict__.copy()  # Work on a copy
                 for key, value in item_dict.items():
                     if isinstance(value, enum.Enum):
                         # Special handling for status in text format
-                        if format == 'text' and key == 'status':
+                        if format == "text" and key == "status":
                             # Replace underscore with space and capitalize first letter
-                            item_dict[key] = value.value.replace(
-                                '_', ' ').capitalize()
+                            item_dict[key] = value.value.replace("_", " ").capitalize()
                         else:
                             # Otherwise, just use the raw value (for JSON or other enums)
                             item_dict[key] = value.value
-                    elif isinstance(value, datetime.datetime) or (isinstance(value, str) and key in ('created_at', 'updated_at')):
+                    elif isinstance(value, datetime.datetime) or (
+                        isinstance(value, str) and key in ("created_at", "updated_at")
+                    ):
                         # Process datetimes or potential datetime strings for specific keys
-                        if format == 'text' and key in ('created_at', 'updated_at'):
+                        if format == "text" and key in ("created_at", "updated_at"):
                             # Pass the original value (datetime or string) to the helper
                             item_dict[key] = _format_relative_time(value)
                         elif isinstance(value, datetime.datetime):
@@ -429,7 +517,7 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
         else:
             processed_data = data
 
-    if format == 'json':
+    if format == "json":
         response = {"status": status}
         if processed_data is not None:
             response["data"] = processed_data
@@ -438,8 +526,8 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
         # Use default=str to handle potential non-serializable types like datetime
         return json.dumps(response, indent=2, default=str)
 
-    elif format == 'text':
-        if status == 'success':
+    elif format == "text":
+        if status == "success":
             if message:
                 # Simple success message (e.g., delete, update)
                 return f"Success: {message}"
@@ -452,17 +540,32 @@ def format_output(format: str, status: str, data: Optional[Any] = None, message:
                         keys_sample = set(processed_data[0].keys())
                         # Heuristics for type detection - might need refinement based on actual models
                         # Note: project_id should have been removed from task data by now if text format
-                        if 'project_slug' not in keys_sample and 'slug' in keys_sample and 'status' in keys_sample and 'description' in keys_sample:
-                            data_type = 'project'
+                        if (
+                            "project_slug" not in keys_sample
+                            and "slug" in keys_sample
+                            and "status" in keys_sample
+                            and "description" in keys_sample
+                        ):
+                            data_type = "project"
                         # Adjusted task detection to look for project_slug and other characteristic task keys
-                        elif 'project_slug' in keys_sample and 'slug' in keys_sample and 'status' in keys_sample and 'description' in keys_sample:
-                            data_type = 'task'
-                        elif 'content' in keys_sample and ('task_id' in keys_sample or 'project_id' in keys_sample):
-                            data_type = 'note'  # Assuming project_id might still exist if note is directly on project
-                        elif 'task_id' in keys_sample and 'parent_subtask_id' in keys_sample:
-                            data_type = 'subtask'
-                        elif 'template_type' in keys_sample:
-                            data_type = 'template'
+                        elif (
+                            "project_slug" in keys_sample
+                            and "slug" in keys_sample
+                            and "status" in keys_sample
+                            and "description" in keys_sample
+                        ):
+                            data_type = "task"
+                        elif "content" in keys_sample and (
+                            "task_id" in keys_sample or "project_id" in keys_sample
+                        ):
+                            data_type = "note"  # Assuming project_id might still exist if note is directly on project
+                        elif (
+                            "task_id" in keys_sample
+                            and "parent_subtask_id" in keys_sample
+                        ):
+                            data_type = "subtask"
+                        elif "template_type" in keys_sample:
+                            data_type = "template"
                     # --- End Type Detection ---
                     # Pass detected type
                     return _format_list_as_text(processed_data, data_type=data_type)
