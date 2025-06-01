@@ -24,7 +24,7 @@ CONFIG_FILE_PATH = Path(".pm/config.toml")
     multiple=True,
     help="Specify guideline name or @filepath to append. Can be used multiple times.",
 )
-@click.pass_context  # Need context to exit
+@click.pass_context
 def welcome(ctx: click.Context, guideline_sources: tuple[str]):
     """Displays project guidelines, collating default and specified sources."""
     collated_content = []
@@ -53,11 +53,19 @@ def welcome(ctx: click.Context, guideline_sources: tuple[str]):
             f"Warning: Error parsing {CONFIG_FILE_PATH}: {e}. Using default guidelines.",
             err=True,
         )
+        # Reset to default sources since config is invalid
+        default_sources = [DEFAULT_GUIDELINE_NAME]
+        # Clear any sources from the malformed config
+        sources_to_process = default_sources
     except Exception as e:  # Catch other potential errors like permission issues
         click.echo(
             f"Warning: Could not read {CONFIG_FILE_PATH}: {e}. Using default guidelines.",
             err=True,
         )
+        # Reset to default sources since config is invalid
+        default_sources = [DEFAULT_GUIDELINE_NAME]
+        # Clear any sources from the malformed config
+        sources_to_process = default_sources
     # --- End Read configuration ---
 
     # Combine default sources from config (or fallback) with explicitly passed sources

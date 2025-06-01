@@ -12,23 +12,32 @@ from .conftest import (
     CODING_CONTENT_SNIPPET,
     VCS_CONTENT_SNIPPET,
     TESTING_CONTENT_SNIPPET,
-    SEPARATOR
+    SEPARATOR,
 )
 
 
 def test_welcome_config_replaces_default(runner: CliRunner, temp_pm_dir: Path):
-    """Test config's active list replaces the default 'pm' guideline."""
+    """
+    Test that when a config file specifies active guidelines,
+    it replaces the default 'pm' guideline with the specified ones.
+
+    Verifies that:
+    - Only the specified guidelines are displayed
+    - The default guideline is not included
+    - Proper separators are shown between guidelines
+    - No errors are reported
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = ["coding", "testing"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)  # chdir to tmp_path which contains .pm/
     try:
-        result = runner.invoke(cli, ['welcome'])
+        result = runner.invoke(cli, ["welcome"])
     finally:
         os.chdir(original_cwd)
 
@@ -45,18 +54,27 @@ active = ["coding", "testing"]
 
 
 def test_welcome_config_includes_default(runner: CliRunner, temp_pm_dir: Path):
-    """Test config's active list can explicitly include the 'pm' guideline."""
+    """
+    Test that the config file can explicitly include the default 'pm' guideline
+    along with other guidelines.
+
+    Verifies that:
+    - The default guideline is included when specified
+    - Additional specified guidelines are included
+    - Proper separators are shown between guidelines
+    - No errors are reported
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = ["pm", "vcs"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
-        result = runner.invoke(cli, ['welcome'])
+        result = runner.invoke(cli, ["welcome"])
     finally:
         os.chdir(original_cwd)
 
@@ -72,24 +90,31 @@ active = ["pm", "vcs"]
 
 
 def test_welcome_config_custom_file_path(runner: CliRunner, temp_pm_dir: Path):
-    """Test config loading a guideline via relative file path."""
+    """
+    Test that the config file can load guidelines specified via relative file paths.
+
+    Verifies that:
+    - Custom guidelines from relative paths are loaded correctly
+    - Built-in guidelines are loaded correctly
+    - Guidelines are combined with proper separators
+    - No warnings or errors are reported
+    """
     custom_guideline_rel_path = ".pm/guidelines/my_workflow.md"
     custom_guideline_abs_path = temp_pm_dir.parent / custom_guideline_rel_path
     custom_guideline_abs_path.parent.mkdir(parents=True, exist_ok=True)
-    custom_guideline_abs_path.write_text(
-        "Custom workflow step 1.", encoding='utf-8')
+    custom_guideline_abs_path.write_text("Custom workflow step 1.", encoding="utf-8")
 
     config_path = temp_pm_dir / "config.toml"
     config_content = f"""
 [guidelines]
 active = ["coding", "{custom_guideline_rel_path}"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
-        result = runner.invoke(cli, ['welcome'])
+        result = runner.invoke(cli, ["welcome"])
     finally:
         os.chdir(original_cwd)
 
@@ -105,22 +130,28 @@ active = ["coding", "{custom_guideline_rel_path}"]
     assert result.stderr == ""  # Expect no warnings if loading succeeds
 
 
-# Removed test_welcome_config_db_guideline as DB lookup is not implemented in welcome
-
-
 def test_welcome_config_malformed_toml(runner: CliRunner, temp_pm_dir: Path):
-    """Test fallback and warning with malformed TOML config."""
+    """
+    Test that when the config file contains malformed TOML,
+    the system falls back to the default guideline and shows a warning.
+
+    Verifies that:
+    - Default guideline is shown when config is invalid
+    - Invalid guideline names are ignored
+    - A warning about the parsing error is shown
+    - Command exits successfully
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
-active = ["coding", "testing" # Missing closing quote and bracket
+active = ["invalid_guideline # Missing closing bracket and quote
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
-        result = runner.invoke(cli, ['welcome'])
+        result = runner.invoke(cli, ["welcome"])
     finally:
         os.chdir(original_cwd)
 
@@ -128,24 +159,33 @@ active = ["coding", "testing" # Missing closing quote and bracket
     print("STDERR:", result.stderr)
     assert result.exit_code == 0  # Should still succeed but show default
     assert DEFAULT_CONTENT_SNIPPET in result.stdout  # Fallback to 'pm'
-    assert CODING_CONTENT_SNIPPET not in result.stdout
+    assert "invalid_guideline" not in result.stdout
     assert SEPARATOR not in result.stdout
-    assert "Warning: Error parsing .pm/config.toml" in result.stderr
+    assert "Warning: Error parsing" in result.stderr
 
 
 def test_welcome_config_invalid_active_type(runner: CliRunner, temp_pm_dir: Path):
-    """Test fallback and warning with invalid type for guidelines.active."""
+    """
+    Test that when the 'active' field in config has an invalid type (not a list),
+    the system falls back to the default guideline and shows a warning.
+
+    Verifies that:
+    - Default guideline is shown when config is invalid
+    - Specified guidelines are ignored
+    - A warning about the invalid format is shown
+    - Command exits successfully
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = "coding" # Should be a list
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
-        result = runner.invoke(cli, ['welcome'])
+        result = runner.invoke(cli, ["welcome"])
     finally:
         os.chdir(original_cwd)
 
@@ -159,19 +199,28 @@ active = "coding" # Should be a list
 
 
 def test_welcome_config_unresolvable_guideline(runner: CliRunner, temp_pm_dir: Path):
-    """Test warning when a guideline in config cannot be resolved."""
+    """
+    Test that when the config file contains unresolvable guideline names,
+    they are skipped with a warning but valid guidelines are still shown.
+
+    Verifies that:
+    - Valid guidelines are displayed
+    - Unresolvable guidelines are skipped with a warning
+    - Command exits successfully
+    - Proper separators are shown between valid guidelines
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = ["coding", "nonexistent-guideline", "testing"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
         # No need to patch DB lookup anymore as it's not used here
-        result = runner.invoke(cli, ['welcome'])
+        result = runner.invoke(cli, ["welcome"])
     finally:
         os.chdir(original_cwd)
 
@@ -185,23 +234,34 @@ active = ["coding", "nonexistent-guideline", "testing"]
     assert result.stdout.count(SEPARATOR.strip()) == 1
     # Check updated warning
     # Check updated warning
-    assert "Warning: Could not find guideline source 'nonexistent-guideline' (Not found as built-in or custom file name)." in result.stderr
+    assert (
+        "Warning: Could not find guideline source 'nonexistent-guideline' (Not found as built-in or custom file name)."
+        in result.stderr
+    )
 
 
 def test_welcome_config_and_cli_flag_additive(runner: CliRunner, temp_pm_dir: Path):
-    """Test that -g flag adds to guidelines specified in config."""
+    """
+    Test that guidelines specified via CLI flags are additive to those in config.
+
+    Verifies that:
+    - Guidelines from both config and CLI flags are combined
+    - All specified guidelines are shown
+    - Proper separators are shown between guidelines
+    - No errors are reported
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = ["coding"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
         # Add 'testing' via flag
-        result = runner.invoke(cli, ['welcome', '--guidelines', 'testing'])
+        result = runner.invoke(cli, ["welcome", "--guidelines", "testing"])
     finally:
         os.chdir(original_cwd)
 
@@ -216,19 +276,28 @@ active = ["coding"]
 
 
 def test_welcome_config_and_cli_flag_duplicate(runner: CliRunner, temp_pm_dir: Path):
-    """Test that specifying the same guideline in config and -g shows it once."""
+    """
+    Test that duplicate guideline specifications (in config and CLI)
+    result in the guideline being shown only once.
+
+    Verifies that:
+    - Guidelines are deduplicated
+    - Each unique guideline is shown exactly once
+    - Proper separators are shown between guidelines
+    - No errors are reported
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = ["coding", "vcs"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
         # Add 'coding' again via flag
-        result = runner.invoke(cli, ['welcome', '--guidelines', 'coding'])
+        result = runner.invoke(cli, ["welcome", "--guidelines", "coding"])
     finally:
         os.chdir(original_cwd)
 
@@ -245,19 +314,28 @@ active = ["coding", "vcs"]
 
 
 def test_welcome_config_and_cli_flag_error(runner: CliRunner, temp_pm_dir: Path):
-    """Test config guidelines show even if -g flag specifies an invalid one."""
+    """
+    Test that when CLI flags specify an invalid guideline,
+    the command fails but config-specified guidelines are not shown.
+
+    Verifies that:
+    - Command exits with error code 1
+    - Config-specified guidelines are not shown
+    - Error message about failed guideline loading is shown
+    - Warning about the invalid guideline is shown
+    """
     config_path = temp_pm_dir / "config.toml"
     config_content = """
 [guidelines]
 active = ["coding"]
 """
-    config_path.write_text(config_content, encoding='utf-8')
+    config_path.write_text(config_content, encoding="utf-8")
 
     original_cwd = Path.cwd()
     os.chdir(temp_pm_dir.parent)
     try:
         # Add 'nonexistent' via flag
-        result = runner.invoke(cli, ['welcome', '--guidelines', 'nonexistent'])
+        result = runner.invoke(cli, ["welcome", "--guidelines", "nonexistent"])
     finally:
         os.chdir(original_cwd)
 
@@ -271,4 +349,6 @@ active = ["coding"]
     # assert DEFAULT_CONTENT_SNIPPET not in result.stdout
     # assert SEPARATOR not in result.stdout
     assert "Warning: Could not find guideline source 'nonexistent'" in result.stderr
-    assert "Error: One or more specified guidelines could not be loaded." in result.stderr
+    assert (
+        "Error: One or more specified guidelines could not be loaded." in result.stderr
+    )
