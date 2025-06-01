@@ -1,6 +1,8 @@
 # pm/cli/guideline/utils.py
 import frontmatter
 from pathlib import Path
+from typing import Union
+
 # import re  # No longer needed
 # Adjust relative import path to access constants from the parent directory
 # Import from the new core location
@@ -18,7 +20,7 @@ def _ensure_custom_dir():
     return custom_dir  # Return the path for potential reuse
 
 
-def _resolve_guideline_path(name: str) -> tuple[Path | None, str | None]:
+def _resolve_guideline_path(name: str) -> tuple[Union[Path, None], Union[str, None]]:
     """
     Resolves the path to a guideline, checking custom dir first, then built-in.
     Uses Path.cwd() to determine the custom directory location dynamically.
@@ -39,7 +41,7 @@ def _resolve_guideline_path(name: str) -> tuple[Path | None, str | None]:
     return None, None
 
 
-def _read_content_input(content_input: str | None) -> str | None:
+def _read_content_input(content_input: Union[str, None]) -> Union[str, None]:
     """
     Reads content, handling inline text or '@<path>' syntax.
     Returns the content string or None if input is None.
@@ -47,28 +49,28 @@ def _read_content_input(content_input: str | None) -> str | None:
     """
     if content_input is None:
         return None
-    if content_input.startswith('@'):
+    if content_input.startswith("@"):
         file_path_str = content_input[1:]
         # Resolve relative to CWD
         file_path = Path.cwd() / file_path_str
         if not file_path.is_file():
-            raise FileNotFoundError(
-                f"File specified by '@' not found: {file_path}")
+            raise FileNotFoundError(f"File specified by '@' not found: {file_path}")
         # Read with UTF-8 encoding
-        return file_path.read_text(encoding='utf-8')
+        return file_path.read_text(encoding="utf-8")
     else:
         return content_input
 
 
-def _write_guideline(path: Path, content: str, metadata: dict | None = None):
+def _write_guideline(path: Path, content: str, metadata: Union[dict, None] = None):
     """Writes guideline content and metadata using frontmatter."""
     # Create the Post object with the direct metadata
     post = frontmatter.Post(content=content, metadata=metadata or {})
     # Ensure the directory exists before writing
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as f:
+    with open(path, "w", encoding="utf-8") as f:
         # Use dumps to get string, then write to text file handle
         f.write(frontmatter.dumps(post))
+
 
 # --- discover_available_guidelines function removed (redundant) ---
 # Use pm.core.guideline.get_available_guidelines instead.
