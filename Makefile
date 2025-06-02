@@ -1,6 +1,6 @@
-# Makefile for PM tool
+# Makefile for PM tool with uv
 
-.PHONY: install-man test-man clean test lint check guidelines help setup-dev install-global
+.PHONY: install-man test-man clean test lint check setup help
 
 # Default target
 all: install-man
@@ -23,35 +23,27 @@ clean:
 	@rm -f $(HOME)/.local/share/man/man1/pm.1
 	@echo "Man page removed."
 
-# Run all Python tests
+# Run all Python tests using uv
 test:
 	@echo "Running Python tests..."
-	@pytest
+	@uv run pytest
 	@echo "Tests completed."
 
-# Run Ruff linter
+# Run Ruff linter using uv
 lint:
 	@echo "Running Ruff linter..."
-	@ruff check .
+	@uv run ruff check .
 	@echo "Linting completed."
 
 # Run linters and tests
 check: lint test
 
-# Set up development environment
-setup-dev:
-	@echo "Setting up development environment..."
-	@test -d .venv || python -m venv .venv
-	@. .venv/bin/activate && pip install -e .
+# Set up development environment with uv
+setup:
+	@echo "Setting up development environment with uv..."
+	@uv sync --extra dev
 	@$(MAKE) install-man
-	@echo "Development environment setup complete. Activate it with: source .venv/bin/activate"
-
-# Install globally (requires sudo)
-install-global:
-	@echo "Installing PM tool globally..."
-	@sudo rm -rf build dist pm.egg-info
-	@sudo -H pip install -e .
-	@echo "PM tool installed globally. You can now use 'pm' from anywhere."
+	@echo "Development environment setup complete. Use 'uv run ...' to execute commands."
 
 # Help target
 help:
@@ -59,10 +51,8 @@ help:
 	@echo "  install-man  - Install man page to local man directory"
 	@echo "  test-man     - Test man page formatting"
 	@echo "  clean        - Remove installed man page"
-	@echo "  test         - Run all Python tests"
-	@echo "  lint         - Run Ruff linter"
+	@echo "  test         - Run all Python tests (uv run pytest)"
+	@echo "  lint         - Run Ruff linter (uv run ruff check .)"
 	@echo "  check        - Run linters and tests"
-	@echo "  welcome      - Display relevant project development guidelines (alias for guidelines)"
-	@echo "  setup-dev     - Set up development environment (create venv, install package)"
-	@echo "  install-global - Install PM tool globally (requires sudo)"
-	@echo "  help          - Show this help message"
+	@echo "  setup        - Set up development environment with uv"
+	@echo "  help         - Show this help message"

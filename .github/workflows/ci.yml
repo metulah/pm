@@ -1,31 +1,39 @@
-name: Basic CI
+name: Continuous Integration
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    env:
+      UV_PYTHON: ${{ matrix.python-version }} # Set Python version for uv
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Check out repository code
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
+      # Install latest uv version
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true # Enable caching for faster installs
+
+      # Set up the specific Python version for this matrix job
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11" # Matches requires-python >=3.9 and provides a specific version
+          python-version: ${{ matrix.python-version }}
 
+      # Install dependencies using uv's automatic virtual environment
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev]
+        run: uv sync --locked --extra dev
 
-      - name: Run Ruff linter
-        run: ruff check .
-
-      - name: Run Pytest
-        run: pytest
+      # Run tests using uv's automatic environment management
+      - name: Run tests
+        run: uv run pytest

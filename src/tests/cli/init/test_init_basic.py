@@ -3,12 +3,17 @@ import os
 import subprocess
 from pathlib import Path
 from click.testing import CliRunner
-# Note: Removed tomllib import as it's not needed for these tests
 
 # Import the main cli entry point
 from pm.cli.base import cli
+
 # Import constants from the module being tested
-from pm.cli.init import GITIGNORE_COMMENT, GITIGNORE_IGNORE_ENTRY, GITIGNORE_ALLOW_GUIDELINES, GITIGNORE_ALLOW_CONFIG
+from pm.cli.init import (
+    GITIGNORE_COMMENT,
+    GITIGNORE_IGNORE_ENTRY,
+    GITIGNORE_ALLOW_GUIDELINES,
+    GITIGNORE_ALLOW_CONFIG,
+)
 
 # Define expected paths and messages
 PM_DIR_NAME = ".pm"
@@ -24,21 +29,26 @@ NEXT_STEPS_MSG_SNIPPET = "Try running `pm welcome`."  # Removed " for guidance."
 
 # --- Helper Function for Tests ---
 
+
 def _init_git_repo(path: Path):
     """Initializes a Git repository in the given path."""
     try:
-        subprocess.run(["git", "init", "-b", "main"], cwd=path,
-                       check=True, capture_output=True)
+        subprocess.run(
+            ["git", "init", "-b", "main"], cwd=path, check=True, capture_output=True
+        )
         # Configure dummy user for commits if needed, avoids warnings/errors
-        subprocess.run(["git", "config", "user.email",
-                       "test@example.com"], cwd=path, check=True)
-        subprocess.run(["git", "config", "user.name",
-                       "Test User"], cwd=path, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.com"], cwd=path, check=True
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test User"], cwd=path, check=True
+        )
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         pytest.fail(f"Failed to initialize Git repository at {path}: {e}")
 
 
 # --- Fixtures ---
+
 
 @pytest.fixture(scope="module")
 def runner():
@@ -53,7 +63,7 @@ def test_init_success_non_interactive(runner: CliRunner, tmp_path: Path):
     os.chdir(tmp_path)
     try:
         # Use -y flag
-        result = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
 
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
@@ -83,18 +93,21 @@ def test_init_already_initialized_non_interactive(runner: CliRunner, tmp_path: P
     os.chdir(tmp_path)
     try:
         # First run (non-interactive, should succeed)
-        result1 = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result1 = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
         assert result1.exit_code == 0, "First init -y failed unexpectedly"
-        assert (tmp_path / PM_DIR_NAME /
-                DB_FILENAME).is_file(), "DB file not created on first run"
+        assert (
+            tmp_path / PM_DIR_NAME / DB_FILENAME
+        ).is_file(), "DB file not created on first run"
 
         # Second run (non-interactive, should fail)
-        result2 = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result2 = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
 
         print("STDOUT (second run -y):", result2.stdout)
         print("STDERR (second run -y):", result2.stderr)
 
-        assert result2.exit_code == 0, "Second init -y should succeed"  # Changed from 1 to 0
+        assert (
+            result2.exit_code == 0
+        ), "Second init -y should succeed"  # Changed from 1 to 0
         # Added check for empty stderr
         assert result2.stderr == "", "Stderr should be empty on successful re-run"
         # Ensure interactive/success messages are NOT printed
@@ -103,7 +116,9 @@ def test_init_already_initialized_non_interactive(runner: CliRunner, tmp_path: P
         assert CONFIRM_PROMPT_SNIPPET not in result2.stdout
         # Check for specific messages indicating a re-run
         assert "PM database already exists" in result2.stdout
-        assert "Skipping guideline configuration" in result2.stdout  # Check for skip message
+        assert (
+            "Skipping guideline configuration" in result2.stdout
+        )  # Check for skip message
         # Ensure next steps are still shown
         assert NEXT_STEPS_MSG_SNIPPET in result2.stdout
 
@@ -117,8 +132,7 @@ def test_init_success_interactive_confirm(runner: CliRunner, tmp_path: Path):
     os.chdir(tmp_path)
     try:
         # Provide 'y' and newline as input
-        result = runner.invoke(
-            cli, ['init'], input='y\n', catch_exceptions=False)
+        result = runner.invoke(cli, ["init"], input="y\n", catch_exceptions=False)
 
         print("STDOUT (interactive y):", result.stdout)
         print("STDERR (interactive y):", result.stderr)
@@ -148,8 +162,7 @@ def test_init_success_interactive_default(runner: CliRunner, tmp_path: Path):
     os.chdir(tmp_path)
     try:
         # Provide just newline as input (defaults to 'Y')
-        result = runner.invoke(
-            cli, ['init'], input='\n', catch_exceptions=False)
+        result = runner.invoke(cli, ["init"], input="\n", catch_exceptions=False)
 
         print("STDOUT (interactive default):", result.stdout)
         print("STDERR (interactive default):", result.stderr)
@@ -172,6 +185,7 @@ def test_init_success_interactive_default(runner: CliRunner, tmp_path: Path):
     finally:
         os.chdir(original_cwd)
 
+
 # --- Tests for .gitignore Handling ---
 
 
@@ -183,7 +197,7 @@ def test_init_no_git_repo_skips_gitignore(runner: CliRunner, tmp_path: Path):
         # Ensure no .git directory exists
         assert not (tmp_path / ".git").exists()
 
-        result = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
         assert result.exit_code == 0
         assert SUCCESS_MSG_SNIPPET in result.stdout
         # Check that .gitignore was NOT created
@@ -204,7 +218,7 @@ def test_init_git_repo_creates_gitignore(runner: CliRunner, tmp_path: Path):
         gitignore_path = tmp_path / ".gitignore"
         assert not gitignore_path.exists()  # Pre-condition
 
-        result = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
         assert result.exit_code == 0
         assert SUCCESS_MSG_SNIPPET in result.stdout
         assert f"Creating {gitignore_path}..." in result.stdout
@@ -234,7 +248,7 @@ def test_init_git_repo_appends_gitignore(runner: CliRunner, tmp_path: Path):
         initial_content = "# Existing rules\n*.log\n"
         gitignore_path.write_text(initial_content)  # Create existing file
 
-        result = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
         assert result.exit_code == 0
         assert SUCCESS_MSG_SNIPPET in result.stdout
         # Checking message was removed for verbosity
@@ -271,7 +285,7 @@ def test_init_git_repo_gitignore_already_has_entry(runner: CliRunner, tmp_path: 
         # Create existing file with entries
         gitignore_path.write_text(initial_content)
 
-        result = runner.invoke(cli, ['init', '-y'], catch_exceptions=False)
+        result = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
         assert result.exit_code == 0
         assert SUCCESS_MSG_SNIPPET in result.stdout
         # Checking message was removed for verbosity
@@ -300,8 +314,7 @@ def test_init_interactive_confirm_handles_gitignore(runner: CliRunner, tmp_path:
         assert not gitignore_path.exists()  # Pre-condition
 
         # Provide 'y' and newline as input
-        result = runner.invoke(
-            cli, ['init'], input='y\n', catch_exceptions=False)
+        result = runner.invoke(cli, ["init"], input="y\n", catch_exceptions=False)
 
         assert result.exit_code == 0, f"CLI Error: {result.stderr or result.stdout}"
         assert SUCCESS_MSG_SNIPPET in result.stdout
@@ -328,8 +341,7 @@ def test_init_interactive_abort(runner: CliRunner, tmp_path: Path):
     os.chdir(tmp_path)
     try:
         # Provide 'n' and newline as input
-        result = runner.invoke(
-            cli, ['init'], input='n\n', catch_exceptions=False)
+        result = runner.invoke(cli, ["init"], input="n\n", catch_exceptions=False)
 
         print("STDOUT (interactive n):", result.stdout)
         # click.confirm(abort=True) prints "Aborted!" to stderr
