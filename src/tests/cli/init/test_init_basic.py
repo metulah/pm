@@ -53,8 +53,7 @@ def _init_git_repo(path: Path):
 @pytest.fixture(scope="module")
 def runner():
     """Provides a Click CliRunner with separated stderr."""
-    # mix_stderr=False is important to capture stderr separately for errors
-    return CliRunner(mix_stderr=False)
+    return CliRunner()
 
 
 def test_init_success_non_interactive(runner: CliRunner, tmp_path: Path):

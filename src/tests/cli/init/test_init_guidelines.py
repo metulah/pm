@@ -18,8 +18,7 @@ SUCCESS_MSG_SNIPPET = "Successfully initialized pm database"
 @pytest.fixture(scope="module")
 def runner():
     """Provides a Click CliRunner with separated stderr."""
-    # mix_stderr=False is important to capture stderr separately for errors
-    return CliRunner(mix_stderr=False)
+    return CliRunner()
 
 
 # --- Guideline Selection Tests ---

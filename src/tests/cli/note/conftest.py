@@ -19,15 +19,37 @@ def cli_runner_env(tmp_path):
     with conn:
         conn.execute(
             "INSERT INTO projects (id, name, slug, created_at, updated_at, status) VALUES (?, ?, ?, ?, ?, ?)",
-            (project_id, "CLINoteProject", project_slug,
-             datetime.now(), datetime.now(), "ACTIVE")
+            (
+                project_id,
+                "CLINoteProject",
+                project_slug,
+                datetime.now(),
+                datetime.now(),
+                "ACTIVE",
+            ),
         )
         conn.execute(
             "INSERT INTO tasks (id, project_id, name, slug, created_at, updated_at, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (task_id, project_id, "CLINoteTask", task_slug,
-             datetime.now(), datetime.now(), "NOT_STARTED")
+            (
+                task_id,
+                project_id,
+                "CLINoteTask",
+                task_slug,
+                datetime.now(),
+                datetime.now(),
+                "NOT_STARTED",
+            ),
         )
     conn.close()
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     # Return runner, db_path, and identifiers for use in tests
-    return runner, db_path, {"project_id": project_id, "project_slug": project_slug, "task_id": task_id, "task_slug": task_slug}
+    return (
+        runner,
+        db_path,
+        {
+            "project_id": project_id,
+            "project_slug": project_slug,
+            "task_id": task_id,
+            "task_slug": task_slug,
+        },
+    )

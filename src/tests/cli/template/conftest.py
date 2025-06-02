@@ -11,5 +11,5 @@ def cli_runner_env(tmp_path):
     db_path = str(tmp_path / "test_template.db")  # Use a distinct name
     conn = init_db(db_path)  # Initialize the db file
     conn.close()  # Close initial connection
-    runner = CliRunner(mix_stderr=False)  # Don't mix stdout/stderr
+    runner = CliRunner()
     return runner, db_path
