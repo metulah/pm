@@ -40,7 +40,7 @@ def test_project_status_transitions(cli_runner_env):
             "Transition Test Proj",
         ],
     )
-    proj_data = json.loads(result_active.output)["data"]
+    proj_data = json.loads(result_active.stdout)["data"]
     proj_slug = proj_data["slug"]
     assert proj_data["status"] == "PROSPECTIVE"  # Default is now PROSPECTIVE
 
@@ -83,7 +83,7 @@ def test_project_status_transitions(cli_runner_env):
         ],
     )
     assert result_make_active.exit_code == 0, "Failed to make project ACTIVE first"
-    assert json.loads(result_make_active.output)["data"]["status"] == "ACTIVE"
+    assert json.loads(result_make_active.stdout)["data"]["status"] == "ACTIVE"
 
     # Now create an incomplete task
     runner.invoke(
@@ -155,8 +155,8 @@ def test_project_status_transitions(cli_runner_env):
         ],
     )
     assert result_valid_1.exit_code == 0
-    assert json.loads(result_valid_1.output)["status"] == "success"
-    assert json.loads(result_valid_1.output)["data"]["status"] == "COMPLETED"
+    assert json.loads(result_valid_1.stdout)["status"] == "success"
+    assert json.loads(result_valid_1.stdout)["data"]["status"] == "COMPLETED"
 
     # 4. Test invalid transition: COMPLETED -> ACTIVE (not currently allowed)
     result_invalid_2 = runner.invoke(
@@ -195,8 +195,8 @@ def test_project_status_transitions(cli_runner_env):
         ],
     )
     assert result_valid_2.exit_code == 0
-    assert json.loads(result_valid_2.output)["status"] == "success"
-    assert json.loads(result_valid_2.output)["data"]["status"] == "ARCHIVED"
+    assert json.loads(result_valid_2.stdout)["status"] == "success"
+    assert json.loads(result_valid_2.stdout)["data"]["status"] == "ARCHIVED"
 
     # 6. Test invalid transition: ARCHIVED -> COMPLETED (not currently allowed)
     result_invalid_3 = runner.invoke(
@@ -233,7 +233,7 @@ def test_project_status_transitions(cli_runner_env):
             "Cancel Test Proj",
         ],
     )
-    proj_data_2 = json.loads(result_active_2.output)["data"]
+    proj_data_2 = json.loads(result_active_2.stdout)["data"]
     proj_slug_2 = proj_data_2["slug"]
 
     # 8. Test valid transition: ACTIVE -> CANCELLED
@@ -252,8 +252,8 @@ def test_project_status_transitions(cli_runner_env):
         ],
     )
     assert result_valid_3.exit_code == 0
-    assert json.loads(result_valid_3.output)["status"] == "success"
-    assert json.loads(result_valid_3.output)["data"]["status"] == "CANCELLED"
+    assert json.loads(result_valid_3.stdout)["status"] == "success"
+    assert json.loads(result_valid_3.stdout)["data"]["status"] == "CANCELLED"
 
     # 9. Test valid transition: CANCELLED -> ARCHIVED
     result_valid_4 = runner.invoke(
@@ -271,5 +271,5 @@ def test_project_status_transitions(cli_runner_env):
         ],
     )
     assert result_valid_4.exit_code == 0
-    assert json.loads(result_valid_4.output)["status"] == "success"
-    assert json.loads(result_valid_4.output)["data"]["status"] == "ARCHIVED"
+    assert json.loads(result_valid_4.stdout)["status"] == "success"
+    assert json.loads(result_valid_4.stdout)["data"]["status"] == "ARCHIVED"

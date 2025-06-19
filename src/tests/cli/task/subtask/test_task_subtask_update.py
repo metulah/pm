@@ -9,26 +9,39 @@ from pm.models import TaskStatus  # For status values
 # (Consider moving to conftest if used across more files)
 
 
-def _create_subtask_cli(runner, db_path, task_id, name, status=None, required=True, description=None):
+def _create_subtask_cli(
+    runner, db_path, task_id, name, status=None, required=True, description=None
+):
     args = [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'subtask', 'create', task_id,
-        '--name', name
+        "--db-path",
+        db_path,
+        "--format",
+        "json",
+        "task",
+        "subtask",
+        "create",
+        task_id,
+        "--name",
+        name,
     ]
     if status:
-        args.extend(['--status', status])
+        args.extend(["--status", status])
     if not required:
-        args.append('--optional')
+        args.append("--optional")
     if description:
-        args.extend(['--description', description])
+        args.extend(["--description", description])
 
     result = runner.invoke(cli, args)
-    assert result.exit_code == 0, f"Helper failed to create subtask '{name}': {result.output}"
+    assert (
+        result.exit_code == 0
+    ), f"Helper failed to create subtask '{name}': {result.stdout}"
     try:
-        return json.loads(result.output)["data"]
+        return json.loads(result.stdout)["data"]
     except (json.JSONDecodeError, KeyError) as e:
         pytest.fail(
-            f"Helper error parsing subtask create output: {e}\nOutput: {result.output}")
+            f"Helper error parsing subtask create output: {e}\nOutput: {result.stdout}"
+        )
+
 
 # --- Test Cases ---
 
@@ -45,16 +58,26 @@ def test_subtask_update_name(subtask_cli_runner_env):
 
     # Run the update command
     new_name = "Updated Subtask Name"
-    result = runner.invoke(cli, [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'subtask', 'update', subtask_id,
-        '--name', new_name
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "subtask",
+            "update",
+            subtask_id,
+            "--name",
+            new_name,
+        ],
+    )
 
     # Check CLI output
-    assert result.exit_code == 0, f"CLI Error: {result.output}"
+    assert result.exit_code == 0, f"CLI Error: {result.stdout}"
     try:
-        output_data = json.loads(result.output)
+        output_data = json.loads(result.stdout)
         assert output_data["status"] == "success"
         assert "data" in output_data
         assert output_data["data"]["id"] == subtask_id
@@ -64,7 +87,7 @@ def test_subtask_update_name(subtask_cli_runner_env):
         assert output_data["data"]["status"] == TaskStatus.NOT_STARTED.value
         assert output_data["data"]["required_for_completion"] is True
     except (json.JSONDecodeError, KeyError) as e:
-        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.output}")
+        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.stdout}")
 
     # Verify directly in DB
     with init_db(db_path) as conn:
@@ -85,17 +108,27 @@ def test_subtask_update_status_and_optional(subtask_cli_runner_env):
 
     # Run the update command
     new_status = TaskStatus.COMPLETED.value
-    result = runner.invoke(cli, [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'subtask', 'update', subtask_id,
-        '--status', new_status,
-        '--optional'  # Change required to False
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "subtask",
+            "update",
+            subtask_id,
+            "--status",
+            new_status,
+            "--optional",  # Change required to False
+        ],
+    )
 
     # Check CLI output
-    assert result.exit_code == 0, f"CLI Error: {result.output}"
+    assert result.exit_code == 0, f"CLI Error: {result.stdout}"
     try:
-        output_data = json.loads(result.output)
+        output_data = json.loads(result.stdout)
         assert output_data["status"] == "success"
         assert "data" in output_data
         assert output_data["data"]["id"] == subtask_id
@@ -104,7 +137,7 @@ def test_subtask_update_status_and_optional(subtask_cli_runner_env):
         # Updated
         assert output_data["data"]["required_for_completion"] is False
     except (json.JSONDecodeError, KeyError) as e:
-        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.output}")
+        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.stdout}")
 
     # Verify directly in DB
     with init_db(db_path) as conn:
@@ -127,22 +160,32 @@ def test_subtask_update_description(subtask_cli_runner_env):
 
     # Run the update command
     new_description = "This is the new description."
-    result = runner.invoke(cli, [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'subtask', 'update', subtask_id,
-        '--description', new_description
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "subtask",
+            "update",
+            subtask_id,
+            "--description",
+            new_description,
+        ],
+    )
 
     # Check CLI output
-    assert result.exit_code == 0, f"CLI Error: {result.output}"
+    assert result.exit_code == 0, f"CLI Error: {result.stdout}"
     try:
-        output_data = json.loads(result.output)
+        output_data = json.loads(result.stdout)
         assert output_data["status"] == "success"
         assert output_data["data"]["id"] == subtask_id
         # Verify new description
         assert output_data["data"]["description"] == new_description
     except (json.JSONDecodeError, KeyError) as e:
-        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.output}")
+        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.stdout}")
 
     # Verify directly in DB
     with init_db(db_path) as conn:
@@ -156,22 +199,31 @@ def test_subtask_update_not_found(subtask_cli_runner_env):
     runner, db_path, project_info, task_info = subtask_cli_runner_env
     non_existent_id = str(uuid.uuid4())
 
-    result = runner.invoke(cli, [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'subtask', 'update', non_existent_id,
-        '--name', "New Name For Missing"
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "subtask",
+            "update",
+            non_existent_id,
+            "--name",
+            "New Name For Missing",
+        ],
+    )
 
     # Expect failure status in JSON, check output
     assert result.exit_code == 0  # Command itself runs successfully
     try:
-        output_data = json.loads(result.output)
+        output_data = json.loads(result.stdout)
         assert output_data["status"] == "error"
         assert "message" in output_data
         assert f"Subtask {non_existent_id} not found" in output_data["message"]
     except (json.JSONDecodeError, KeyError) as e:
-        pytest.fail(
-            f"Error parsing JSON error output: {e}\nOutput: {result.output}")
+        pytest.fail(f"Error parsing JSON error output: {e}\nOutput: {result.stdout}")
 
 
 def test_subtask_update_no_options(subtask_cli_runner_env):
@@ -185,21 +237,35 @@ def test_subtask_update_no_options(subtask_cli_runner_env):
     original_status = TaskStatus.NOT_STARTED.value
     original_required = True
     created_data = _create_subtask_cli(
-        runner, db_path, task_id, original_name,
-        status=original_status, required=original_required, description=original_desc
+        runner,
+        db_path,
+        task_id,
+        original_name,
+        status=original_status,
+        required=original_required,
+        description=original_desc,
     )
     subtask_id = created_data["id"]
 
     # Run the update command with no update options
-    result = runner.invoke(cli, [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'subtask', 'update', subtask_id
-    ])
+    result = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "subtask",
+            "update",
+            subtask_id,
+        ],
+    )
 
     # Check CLI output - should return the current state
-    assert result.exit_code == 0, f"CLI Error: {result.output}"
+    assert result.exit_code == 0, f"CLI Error: {result.stdout}"
     try:
-        output_data = json.loads(result.output)
+        output_data = json.loads(result.stdout)
         assert output_data["status"] == "success"
         assert "data" in output_data
         assert output_data["data"]["id"] == subtask_id
@@ -208,7 +274,7 @@ def test_subtask_update_no_options(subtask_cli_runner_env):
         assert output_data["data"]["status"] == original_status
         assert output_data["data"]["required_for_completion"] == original_required
     except (json.JSONDecodeError, KeyError) as e:
-        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.output}")
+        pytest.fail(f"Error parsing JSON output: {e}\nOutput: {result.stdout}")
 
     # Verify directly in DB (nothing should have changed)
     with init_db(db_path) as conn:

@@ -8,7 +8,7 @@ import frontmatter
 from pm.cli import cli
 
 # Define resources path relative to this test file
-RESOURCES_DIR = Path(__file__).parent.parent / 'pm' / 'resources'
+RESOURCES_DIR = Path(__file__).parent.parent / "pm" / "resources"
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def _create_guideline_file(fs_path, name, content, metadata=None):
     file_path = guideline_dir / f"{name}.md"
     # Use the provided metadata dict directly
     post = frontmatter.Post(content=content, metadata=metadata or {})
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         # Use dumps to get string, then write to text file handle
         f.write(frontmatter.dumps(post))
     return file_path
@@ -34,10 +34,14 @@ def test_guideline_copy_success_from_builtin(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         result = runner.invoke(
-            cli, ['guideline', 'copy', 'pm', 'my-default-copy'])  # Use 'pm'
+            cli, ["guideline", "copy", "pm", "my-default-copy"]
+        )  # Use 'pm'
 
         assert result.exit_code == 0
-        assert "Successfully copied 'pm' (Built-in) to custom guideline 'my-default-copy'" in result.output
+        assert (
+            "Successfully copied 'pm' (Built-in) to custom guideline 'my-default-copy'"
+            in result.stdout
+        )
 
         dest_path = fs_path / ".pm" / "guidelines" / "my-default-copy.md"
         assert dest_path.is_file()
@@ -46,10 +50,11 @@ def test_guideline_copy_success_from_builtin(runner):
         post = frontmatter.load(dest_path)
         assert "Welcome to the PM Tool!" in post.content
         # Verify metadata (description) was copied correctly, expecting nesting
-        assert 'metadata' in post.metadata
-        assert isinstance(post.metadata['metadata'], dict)
-        assert "General usage guidelines" in post.metadata['metadata'].get(
-            'description', '')
+        assert "metadata" in post.metadata
+        assert isinstance(post.metadata["metadata"], dict)
+        assert "General usage guidelines" in post.metadata["metadata"].get(
+            "description", ""
+        )
 
 
 def test_guideline_copy_success_from_custom(runner):
@@ -58,13 +63,18 @@ def test_guideline_copy_success_from_custom(runner):
         fs_path = Path(fs)
         # Create the source custom file correctly
         _create_guideline_file(
-            fs_path, "source-custom", "Source Content", {'description': 'Source Desc'})
+            fs_path, "source-custom", "Source Content", {"description": "Source Desc"}
+        )
 
         result = runner.invoke(
-            cli, ['guideline', 'copy', 'source-custom', 'dest-custom'])
+            cli, ["guideline", "copy", "source-custom", "dest-custom"]
+        )
 
         assert result.exit_code == 0
-        assert "Successfully copied 'source-custom' (Custom) to custom guideline 'dest-custom'" in result.output
+        assert (
+            "Successfully copied 'source-custom' (Custom) to custom guideline 'dest-custom'"
+            in result.stdout
+        )
 
         dest_path = fs_path / ".pm" / "guidelines" / "dest-custom.md"
         assert dest_path.is_file()
@@ -72,16 +82,19 @@ def test_guideline_copy_success_from_custom(runner):
         # Verify content and metadata match the source custom file, expecting nesting
         post = frontmatter.load(dest_path)
         assert post.content.strip() == "Source Content"
-        assert post.metadata == {'metadata': {'description': 'Source Desc'}}
+        assert post.metadata == {"metadata": {"description": "Source Desc"}}
 
 
 def test_guideline_copy_error_source_not_found(runner):
     """Test copying when the source guideline doesn't exist."""
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ['guideline', 'copy', 'nonexistent-source', 'wont-happen'])
+            cli, ["guideline", "copy", "nonexistent-source", "wont-happen"]
+        )
         assert result.exit_code != 0
-        assert "Error: Source guideline 'nonexistent-source' not found." in result.output
+        assert (
+            "Error: Source guideline 'nonexistent-source' not found." in result.stderr
+        )
 
 
 def test_guideline_copy_error_destination_exists(runner):
@@ -89,12 +102,15 @@ def test_guideline_copy_error_destination_exists(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         # Create the destination file first using the corrected helper
-        _create_guideline_file(fs_path, "existing-dest",
-                               "Pre-existing content")
+        _create_guideline_file(fs_path, "existing-dest", "Pre-existing content")
 
         # Attempt to copy 'default' (or any valid source) to the existing destination
         result = runner.invoke(
-            cli, ['guideline', 'copy', 'pm', 'existing-dest'])  # Use 'pm'
+            cli, ["guideline", "copy", "pm", "existing-dest"]
+        )  # Use 'pm'
 
         assert result.exit_code != 0
-        assert "Error: Destination custom guideline 'existing-dest' already exists." in result.output
+        assert (
+            "Error: Destination custom guideline 'existing-dest' already exists."
+            in result.stderr
+        )

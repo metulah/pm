@@ -37,16 +37,16 @@ def task_cli_runner_env(tmp_path_factory):
 
     if result_proj.exit_code != 0:
         pytest.fail(
-            f"Failed to create default project for task tests: {result_proj.output}"
+            f"Failed to create default project for task tests: {result_proj.stdout}"
         )
 
     try:
-        project_data = json.loads(result_proj.output)["data"]
+        project_data = json.loads(result_proj.stdout)["data"]
         project_slug = project_data["slug"]
         project_id = project_data["id"]
     except (json.JSONDecodeError, KeyError) as e:
         pytest.fail(
-            f"Failed to parse project creation output: {e}\nOutput: {result_proj.output}"
+            f"Failed to parse project creation output: {e}\nOutput: {result_proj.stdout}"
         )
 
     # Yield runner, db_path, and project identifiers

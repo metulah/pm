@@ -20,7 +20,7 @@ def _create_guideline_file(fs_path, name, content, metadata=None):
     file_path = guideline_dir / f"{name}.md"
     # Use the provided metadata dict directly
     post = frontmatter.Post(content=content, metadata=metadata or {})
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(frontmatter.dumps(post))  # Use dumps to get string, then write
     return file_path
 
@@ -32,11 +32,10 @@ def test_guideline_delete_success(runner):
         file_path = _create_guideline_file(fs_path, "to-delete", "Content")
         assert file_path.is_file()  # Pre-check
 
-        result = runner.invoke(
-            cli, ['guideline', 'delete', 'to-delete', '--force'])
+        result = runner.invoke(cli, ["guideline", "delete", "to-delete", "--force"])
 
         assert result.exit_code == 0
-        assert "Successfully deleted custom guideline 'to-delete'" in result.output
+        assert "Successfully deleted custom guideline 'to-delete'" in result.stdout
         assert not file_path.exists()  # Check file is actually deleted
 
 
@@ -44,14 +43,16 @@ def test_guideline_delete_error_missing_force(runner):
     """Test `pm guideline delete` fails without --force."""
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
-        file_path = _create_guideline_file(
-            fs_path, "no-force-delete", "Content")
+        file_path = _create_guideline_file(fs_path, "no-force-delete", "Content")
         assert file_path.is_file()  # Pre-check
 
-        result = runner.invoke(cli, ['guideline', 'delete', 'no-force-delete'])
+        result = runner.invoke(cli, ["guideline", "delete", "no-force-delete"])
 
         assert result.exit_code != 0
-        assert "Error: Deleting 'no-force-delete' requires the --force flag." in result.output
+        assert (
+            "Error: Deleting 'no-force-delete' requires the --force flag."
+            in result.stderr
+        )
         assert file_path.is_file()  # Check file still exists
 
 
@@ -59,17 +60,17 @@ def test_guideline_delete_error_not_found(runner):
     """Test `pm guideline delete` when the custom guideline doesn't exist."""
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ['guideline', 'delete', 'nonexistent-delete', '--force'])
+            cli, ["guideline", "delete", "nonexistent-delete", "--force"]
+        )
         assert result.exit_code != 0
-        assert "Error: Custom guideline 'nonexistent-delete' not found" in result.output
+        assert "Error: Custom guideline 'nonexistent-delete' not found" in result.stderr
 
 
 def test_guideline_delete_error_on_builtin(runner):
     """Test `pm guideline delete` fails on a built-in guideline."""
     with runner.isolated_filesystem():
         # Attempt to delete 'default', which is built-in
-        result = runner.invoke(
-            cli, ['guideline', 'delete', 'default', '--force'])
+        result = runner.invoke(cli, ["guideline", "delete", "default", "--force"])
         assert result.exit_code != 0
         # The error message should indicate that the *custom* guideline wasn't found
-        assert "Error: Custom guideline 'default' not found" in result.output
+        assert "Error: Custom guideline 'default' not found" in result.stderr

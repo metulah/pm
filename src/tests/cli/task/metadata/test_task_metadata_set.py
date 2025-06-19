@@ -12,28 +12,43 @@ def metadata_test_setup(task_cli_runner_env):
     Yields runner, db_path, project_info, task_id, and task_slug.
     """
     runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
+    project_slug = project_info["project_slug"]
 
     # Create a specific task for metadata tests
     task_name = "CLI Metadata Test Task"
     # Use a predictable slug based on the name
     expected_task_slug = "cli-metadata-test-task"
-    result_task = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
-                                      '--project', project_slug, '--name', task_name])
+    result_task = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            task_name,
+        ],
+    )
 
     if result_task.exit_code != 0:
-        pytest.fail(
-            f"Failed to create task for metadata tests: {result_task.output}")
+        pytest.fail(f"Failed to create task for metadata tests: {result_task.stdout}")
 
     try:
-        task_data = json.loads(result_task.output)['data']
-        task_id = task_data['id']
-        task_slug = task_data['slug']
+        task_data = json.loads(result_task.stdout)["data"]
+        task_id = task_data["id"]
+        task_slug = task_data["slug"]
         # Verify slug matches prediction - important for tests relying on slug
-        assert task_slug == expected_task_slug, f"Expected slug '{expected_task_slug}' but got '{task_slug}'"
+        assert (
+            task_slug == expected_task_slug
+        ), f"Expected slug '{expected_task_slug}' but got '{task_slug}'"
     except (json.JSONDecodeError, KeyError, AssertionError) as e:
         pytest.fail(
-            f"Failed to parse task creation output or verify slug: {e}\nOutput: {result_task.output}")
+            f"Failed to parse task creation output or verify slug: {e}\nOutput: {result_task.stdout}"
+        )
 
     yield runner, db_path, project_info, task_id, task_slug
 
@@ -47,9 +62,24 @@ def test_metadata_set_string(metadata_test_setup):
 
     result_set_str = runner.invoke(
         # Use task_id
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'set', task_id, '--key', key, '--value', value])
-    assert result_set_str.exit_code == 0, f"Output: {result_set_str.output}"
-    response_set_str = json.loads(result_set_str.output)
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "set",
+            task_id,
+            "--key",
+            key,
+            "--value",
+            value,
+        ],
+    )
+    assert result_set_str.exit_code == 0, f"Output: {result_set_str.stdout}"
+    response_set_str = json.loads(result_set_str.stdout)
     assert response_set_str["status"] == "success"
     assert response_set_str["data"]["key"] == key
     assert response_set_str["data"]["value"] == value
@@ -65,9 +95,26 @@ def test_metadata_set_int(metadata_test_setup):
     value_int = 5
 
     result_set_int = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'set', task_id, '--key', key, '--value', value_str, '--type', 'int'])  # Use task_id
-    assert result_set_int.exit_code == 0, f"Output: {result_set_int.output}"
-    response_set_int = json.loads(result_set_int.output)
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "set",
+            task_id,
+            "--key",
+            key,
+            "--value",
+            value_str,
+            "--type",
+            "int",
+        ],
+    )  # Use task_id
+    assert result_set_int.exit_code == 0, f"Output: {result_set_int.stdout}"
+    response_set_int = json.loads(result_set_int.stdout)
     assert response_set_int["status"] == "success"
     assert response_set_int["data"]["key"] == key
     # Should be parsed as int
@@ -81,19 +128,60 @@ def test_metadata_set_overwrite(metadata_test_setup):
     key = "overwrite_meta"
 
     # Set initial value
-    runner.invoke(cli, ['--db-path', db_path, 'task', 'metadata',
-                  'set', task_id, '--key', key, '--value', 'initial'])
+    runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "task",
+            "metadata",
+            "set",
+            task_id,
+            "--key",
+            key,
+            "--value",
+            "initial",
+        ],
+    )
 
     # Overwrite with new value
     result_overwrite = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'set', task_id, '--key', key, '--value', 'overwritten'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "set",
+            task_id,
+            "--key",
+            key,
+            "--value",
+            "overwritten",
+        ],
+    )
     assert result_overwrite.exit_code == 0
-    response_overwrite = json.loads(result_overwrite.output)
+    response_overwrite = json.loads(result_overwrite.stdout)
     assert response_overwrite["status"] == "success"
     assert response_overwrite["data"]["value"] == "overwritten"
 
     # Verify using get command
     result_get = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'get', task_id, '--key', key])
-    response_get = json.loads(result_get.output)
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "get",
+            task_id,
+            "--key",
+            key,
+        ],
+    )
+    response_get = json.loads(result_get.stdout)
     assert response_get["data"][0]["value"] == "overwritten"

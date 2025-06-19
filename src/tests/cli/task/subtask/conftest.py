@@ -20,25 +20,37 @@ def subtask_cli_runner_env(task_cli_runner_env):
 
     # Create a default task within the default project
     task_name = "Default Subtask Test Task"
-    result_task = runner.invoke(cli, [
-        '--db-path', db_path, '--format', 'json',
-        'task', 'create', '--project', project_id, '--name', task_name
-    ])
+    result_task = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_id,
+            "--name",
+            task_name,
+        ],
+    )
 
     if result_task.exit_code != 0:
         pytest.fail(
-            f"Failed to create default task for subtask tests: {result_task.output}")
+            f"Failed to create default task for subtask tests: {result_task.stdout}"
+        )
 
     try:
-        task_data = json.loads(result_task.output)['data']
-        task_id = task_data['id']
-        task_slug = task_data['slug']
+        task_data = json.loads(result_task.stdout)["data"]
+        task_id = task_data["id"]
+        task_slug = task_data["slug"]
     except (json.JSONDecodeError, KeyError) as e:
         pytest.fail(
-            f"Failed to parse task creation output: {e}\nOutput: {result_task.output}")
+            f"Failed to parse task creation output: {e}\nOutput: {result_task.stdout}"
+        )
 
-    task_info = {"task_id": task_id,
-                 "task_slug": task_slug, "task_name": task_name}
+    task_info = {"task_id": task_id, "task_slug": task_slug, "task_name": task_name}
 
     # Yield runner, db_path, project_info, and task_info
     yield runner, db_path, project_info, task_info

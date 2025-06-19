@@ -40,7 +40,7 @@ def test_cli_task_move(cli_runner_env):
             "Project A",
         ],
     )
-    project_a_data = json.loads(result_a.output)["data"]
+    project_a_data = json.loads(result_a.stdout)["data"]
     project_a_id = project_a_data["id"]
     project_a_slug = project_a_data["slug"]
     result_b = runner.invoke(
@@ -56,7 +56,7 @@ def test_cli_task_move(cli_runner_env):
             "Project B",
         ],
     )
-    project_b_data = json.loads(result_b.output)["data"]
+    project_b_data = json.loads(result_b.stdout)["data"]
     project_b_id = project_b_data["id"]
     project_b_slug = project_b_data["slug"]
 
@@ -76,7 +76,7 @@ def test_cli_task_move(cli_runner_env):
             "Task 1",
         ],
     )  # Use slug
-    task_1_data = json.loads(result_task.output)["data"]
+    task_1_data = json.loads(result_task.stdout)["data"]
     task_1_slug = task_1_data["slug"]
 
     # Verify Task 1 is in Project A (using slugs)
@@ -93,7 +93,7 @@ def test_cli_task_move(cli_runner_env):
             task_1_slug,
         ],
     )
-    assert json.loads(result_show.output)["data"]["project_id"] == project_a_id
+    assert json.loads(result_show.stdout)["data"]["project_id"] == project_a_id
 
     # Attempt to move Task 1 (using slugs) to non-existent project (should fail)
     result_move_fail = runner.invoke(
@@ -112,7 +112,7 @@ def test_cli_task_move(cli_runner_env):
         ],
     )
     assert result_move_fail.exit_code == 0  # CLI handles error
-    response_fail = json.loads(result_move_fail.output)
+    response_fail = json.loads(result_move_fail.stdout)
     assert response_fail["status"] == "error"
     # Note: Error message comes from resolver now
     assert (
@@ -137,7 +137,7 @@ def test_cli_task_move(cli_runner_env):
         ],
     )
     assert result_move_ok.exit_code == 0
-    response_ok = json.loads(result_move_ok.output)
+    response_ok = json.loads(result_move_ok.stdout)
     assert response_ok["status"] == "success"
     assert response_ok["data"]["project_id"] == project_b_id
 
@@ -155,4 +155,4 @@ def test_cli_task_move(cli_runner_env):
             task_1_slug,
         ],
     )
-    assert json.loads(result_show_after.output)["data"]["project_id"] == project_b_id
+    assert json.loads(result_show_after.stdout)["data"]["project_id"] == project_b_id

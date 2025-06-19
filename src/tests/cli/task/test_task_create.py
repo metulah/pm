@@ -7,15 +7,28 @@ from pm.cli.__main__ import cli
 def test_task_create_basic(task_cli_runner_env):
     """Test basic task creation using the default project slug."""
     runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
+    project_slug = project_info["project_slug"]
 
-    result_create = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
-                                        '--project', project_slug,
-                                        '--name', 'CLI Task Create 1',
-                                        '--description', 'Task Desc 1'])
+    result_create = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "CLI Task Create 1",
+            "--description",
+            "Task Desc 1",
+        ],
+    )
 
-    assert result_create.exit_code == 0, f"Output: {result_create.output}"
-    response_create = json.loads(result_create.output)
+    assert result_create.exit_code == 0, f"Output: {result_create.stdout}"
+    response_create = json.loads(result_create.stdout)
     assert response_create["status"] == "success"
     assert response_create["data"]["name"] == "CLI Task Create 1"
     assert response_create["data"]["description"] == "Task Desc 1"
@@ -39,15 +52,28 @@ def test_task_create_basic(task_cli_runner_env):
 def test_task_create_explicit_status(task_cli_runner_env):
     """Test creating a task with an explicit status."""
     runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
+    project_slug = project_info["project_slug"]
 
-    result_create = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
-                                        '--project', project_slug,
-                                        '--name', 'CLI Task Create In Progress',
-                                        '--status', 'IN_PROGRESS'])  # Explicit status
+    result_create = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "CLI Task Create In Progress",
+            "--status",
+            "IN_PROGRESS",
+        ],
+    )  # Explicit status
 
-    assert result_create.exit_code == 0, f"Output: {result_create.output}"
-    response_create = json.loads(result_create.output)
+    assert result_create.exit_code == 0, f"Output: {result_create.stdout}"
+    response_create = json.loads(result_create.stdout)
     assert response_create["status"] == "success"
     assert response_create["data"]["name"] == "CLI Task Create In Progress"
     assert response_create["data"]["status"] == TaskStatus.IN_PROGRESS.value
@@ -64,19 +90,32 @@ def test_task_create_explicit_status(task_cli_runner_env):
 def test_task_create_description_from_file(task_cli_runner_env, tmp_path):
     """Test 'task create --description @filepath'."""
     runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
+    project_slug = project_info["project_slug"]
 
     desc_content = "Description from file.\nContains newlines.\nAnd symbols: <>?:"
     filepath = tmp_path / "task_desc_create.txt"
-    filepath.write_text(desc_content, encoding='utf-8')
+    filepath.write_text(desc_content, encoding="utf-8")
 
-    result_create = runner.invoke(cli, ['--db-path', db_path, '--format', 'json', 'task', 'create',
-                                  '--project', project_slug,
-                                        '--name', 'Task With File Desc Create',
-                                        '--description', f"@{filepath}"])
+    result_create = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "Task With File Desc Create",
+            "--description",
+            f"@{filepath}",
+        ],
+    )
 
-    assert result_create.exit_code == 0, f"CLI Error: {result_create.output}"
-    response_create = json.loads(result_create.output)
+    assert result_create.exit_code == 0, f"CLI Error: {result_create.stdout}"
+    response_create = json.loads(result_create.stdout)
     assert response_create["status"] == "success"
     assert response_create["data"]["description"] == desc_content
     task_id = response_create["data"]["id"]
@@ -92,14 +131,25 @@ def test_task_create_description_from_file(task_cli_runner_env, tmp_path):
 def test_task_create_description_from_file_not_found(task_cli_runner_env):
     """Test 'task create --description @filepath' with non-existent file."""
     runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
+    project_slug = project_info["project_slug"]
 
     filepath = "no_such_desc_file_create.txt"
 
-    result_create = runner.invoke(cli, ['--db-path', db_path, 'task', 'create',
-                                  '--project', project_slug,
-                                        '--name', 'Task File Not Found Create',
-                                        '--description', f"@{filepath}"])
+    result_create = runner.invoke(
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "Task File Not Found Create",
+            "--description",
+            f"@{filepath}",
+        ],
+    )
 
     assert result_create.exit_code != 0  # Should fail
     assert "Error: File not found" in result_create.stderr
@@ -109,16 +159,35 @@ def test_task_create_description_from_file_not_found(task_cli_runner_env):
 def test_task_create_status_case_insensitive(task_cli_runner_env):
     """Test creating tasks with case-insensitive status values."""
     runner, db_path, project_info = task_cli_runner_env
-    project_slug = project_info['project_slug']
+    project_slug = project_info["project_slug"]
 
     # 1. Test lowercase status: in_progress
     result_create_lower = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_slug, '--name', 'Case Task Lower', '--status', 'in_progress'])
-    assert result_create_lower.exit_code == 0, f"Create with lowercase status failed: {result_create_lower.output}"
-    response_lower = json.loads(result_create_lower.output)
-    assert response_lower['status'] == 'success'
-    assert response_lower['data']['status'] == 'IN_PROGRESS', "Status should be stored as uppercase IN_PROGRESS"
-    lower_id = response_lower['data']['id']
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "Case Task Lower",
+            "--status",
+            "in_progress",
+        ],
+    )
+    assert (
+        result_create_lower.exit_code == 0
+    ), f"Create with lowercase status failed: {result_create_lower.stdout}"
+    response_lower = json.loads(result_create_lower.stdout)
+    assert response_lower["status"] == "success"
+    assert (
+        response_lower["data"]["status"] == "IN_PROGRESS"
+    ), "Status should be stored as uppercase IN_PROGRESS"
+    lower_id = response_lower["data"]["id"]
 
     # Verify in DB
     with init_db(db_path) as conn:
@@ -128,12 +197,31 @@ def test_task_create_status_case_insensitive(task_cli_runner_env):
 
     # 2. Test mixed-case status: Blocked
     result_create_mixed = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_slug, '--name', 'Case Task Mixed', '--status', 'Blocked'])
-    assert result_create_mixed.exit_code == 0, f"Create with mixed-case status failed: {result_create_mixed.output}"
-    response_mixed = json.loads(result_create_mixed.output)
-    assert response_mixed['status'] == 'success'
-    assert response_mixed['data']['status'] == 'BLOCKED', "Status should be stored as uppercase BLOCKED"
-    mixed_id = response_mixed['data']['id']
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "Case Task Mixed",
+            "--status",
+            "Blocked",
+        ],
+    )
+    assert (
+        result_create_mixed.exit_code == 0
+    ), f"Create with mixed-case status failed: {result_create_mixed.stdout}"
+    response_mixed = json.loads(result_create_mixed.stdout)
+    assert response_mixed["status"] == "success"
+    assert (
+        response_mixed["data"]["status"] == "BLOCKED"
+    ), "Status should be stored as uppercase BLOCKED"
+    mixed_id = response_mixed["data"]["id"]
 
     # Verify in DB
     with init_db(db_path) as conn:
@@ -143,7 +231,27 @@ def test_task_create_status_case_insensitive(task_cli_runner_env):
 
     # 3. Test invalid status value (should fail regardless of case)
     result_create_invalid = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'create', '--project', project_slug, '--name', 'Case Task Invalid', '--status', 'invalidStatus'])
-    assert result_create_invalid.exit_code != 0, "Create with invalid status should fail"
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "create",
+            "--project",
+            project_slug,
+            "--name",
+            "Case Task Invalid",
+            "--status",
+            "invalidStatus",
+        ],
+    )
+    assert (
+        result_create_invalid.exit_code != 0
+    ), "Create with invalid status should fail"
     # Click's error message for invalid choice
-    assert "Invalid value for '--status'" in result_create_invalid.output or "Invalid value for '--status'" in result_create_invalid.stderr
+    assert (
+        "Invalid value for '--status'" in result_create_invalid.stdout
+        or "Invalid value for '--status'" in result_create_invalid.stderr
+    )

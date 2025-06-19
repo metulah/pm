@@ -94,9 +94,9 @@ def test_init_already_initialized_non_interactive(runner: CliRunner, tmp_path: P
         # First run (non-interactive, should succeed)
         result1 = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
         assert result1.exit_code == 0, "First init -y failed unexpectedly"
-        assert (
-            tmp_path / PM_DIR_NAME / DB_FILENAME
-        ).is_file(), "DB file not created on first run"
+        assert (tmp_path / PM_DIR_NAME / DB_FILENAME).is_file(), (
+            "DB file not created on first run"
+        )
 
         # Second run (non-interactive, should fail)
         result2 = runner.invoke(cli, ["init", "-y"], catch_exceptions=False)
@@ -104,9 +104,9 @@ def test_init_already_initialized_non_interactive(runner: CliRunner, tmp_path: P
         print("STDOUT (second run -y):", result2.stdout)
         print("STDERR (second run -y):", result2.stderr)
 
-        assert (
-            result2.exit_code == 0
-        ), "Second init -y should succeed"  # Changed from 1 to 0
+        assert result2.exit_code == 0, (
+            "Second init -y should succeed"
+        )  # Changed from 1 to 0
         # Added check for empty stderr
         assert result2.stderr == "", "Stderr should be empty on successful re-run"
         # Ensure interactive/success messages are NOT printed
@@ -142,7 +142,7 @@ def test_init_success_interactive_confirm(runner: CliRunner, tmp_path: Path):
         assert WELCOME_MSG_SNIPPET in result.stdout
         assert CONFIRM_PROMPT_SNIPPET in result.stdout
         assert SUCCESS_MSG_SNIPPET in result.stdout
-        assert NEXT_STEPS_MSG_SNIPPET in result.stdout  # Check for next steps hint
+        assert NEXT_STEPS_MSG_SNIPPET in result.stdout
 
         # Verify directory and file creation
         pm_dir = tmp_path / PM_DIR_NAME

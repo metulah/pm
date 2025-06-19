@@ -8,9 +8,20 @@ def test_project_show(cli_runner_env):
 
     # Setup: Create a project first
     result_create = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Show Test Project'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "project",
+            "create",
+            "--name",
+            "Show Test Project",
+        ],
+    )
     assert result_create.exit_code == 0
-    response_create = json.loads(result_create.output)
+    response_create = json.loads(result_create.stdout)
     assert response_create["status"] == "success"
     project_id = response_create["data"]["id"]
     project_slug = response_create["data"]["slug"]
@@ -18,9 +29,10 @@ def test_project_show(cli_runner_env):
 
     # Test project show using ID
     result_show_id = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'show', project_id])
+        cli, ["--db-path", db_path, "--format", "json", "project", "show", project_id]
+    )
     assert result_show_id.exit_code == 0
-    response_show_id = json.loads(result_show_id.output)
+    response_show_id = json.loads(result_show_id.stdout)
     assert response_show_id["status"] == "success"
     assert response_show_id["data"]["name"] == "Show Test Project"
     assert response_show_id["data"]["id"] == project_id
@@ -28,9 +40,10 @@ def test_project_show(cli_runner_env):
 
     # Test project show using SLUG
     result_show_slug = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'show', project_slug])
+        cli, ["--db-path", db_path, "--format", "json", "project", "show", project_slug]
+    )
     assert result_show_slug.exit_code == 0
-    response_show_slug = json.loads(result_show_slug.output)
+    response_show_slug = json.loads(result_show_slug.stdout)
     assert response_show_slug["status"] == "success"
     # Verify correct project retrieved
     assert response_show_slug["data"]["id"] == project_id
@@ -46,20 +59,32 @@ def test_project_show_not_found(cli_runner_env):
 
     # Test show with non-existent ID
     result_show_id = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'show', non_existent_id])
+        cli,
+        ["--db-path", db_path, "--format", "json", "project", "show", non_existent_id],
+    )
     # Command succeeds, but returns error status
     assert result_show_id.exit_code == 0
-    response_show_id = json.loads(result_show_id.output)
+    response_show_id = json.loads(result_show_id.stdout)
     assert response_show_id["status"] == "error"
     assert "Project not found" in response_show_id["message"]
     assert non_existent_id in response_show_id["message"]
 
     # Test show with non-existent slug
     result_show_slug = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'show', non_existent_slug])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "project",
+            "show",
+            non_existent_slug,
+        ],
+    )
     # Command succeeds, but returns error status
     assert result_show_slug.exit_code == 0
-    response_show_slug = json.loads(result_show_slug.output)
+    response_show_slug = json.loads(result_show_slug.stdout)
     assert response_show_slug["status"] == "error"
     assert "Project not found" in response_show_slug["message"]
     assert non_existent_slug in response_show_slug["message"]

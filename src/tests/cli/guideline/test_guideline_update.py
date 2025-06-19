@@ -20,7 +20,7 @@ def _create_guideline_file(fs_path, name, content, metadata=None):
     file_path = guideline_dir / f"{name}.md"
     # Use the provided metadata dict directly
     post = frontmatter.Post(content=content, metadata=metadata or {})
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         # Use dumps to get string, then write to text file handle
         f.write(frontmatter.dumps(post))
     return file_path
@@ -31,14 +31,16 @@ def test_guideline_update_success_description(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         file_path = _create_guideline_file(
-            fs_path, "update-desc", "Content", {'description': 'Old Desc'})
+            fs_path, "update-desc", "Content", {"description": "Old Desc"}
+        )
         result = runner.invoke(
-            cli, ['guideline', 'update', 'update-desc', '--description', 'New Desc'])
+            cli, ["guideline", "update", "update-desc", "--description", "New Desc"]
+        )
         assert result.exit_code == 0
-        assert "Successfully updated custom guideline 'update-desc'" in result.output
+        assert "Successfully updated custom guideline 'update-desc'" in result.stdout
         post = frontmatter.load(file_path)
         # Expect nested metadata after update
-        assert post.metadata == {'metadata': {'description': 'New Desc'}}
+        assert post.metadata == {"metadata": {"description": "New Desc"}}
         assert post.content.strip() == "Content"  # Content unchanged
 
 
@@ -47,13 +49,15 @@ def test_guideline_update_success_clear_description(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         file_path = _create_guideline_file(
-            fs_path, "clear-desc", "Content", {'description': 'Old Desc'})
+            fs_path, "clear-desc", "Content", {"description": "Old Desc"}
+        )
         result = runner.invoke(
-            cli, ['guideline', 'update', 'clear-desc', '--description', ''])
+            cli, ["guideline", "update", "clear-desc", "--description", ""]
+        )
         assert result.exit_code == 0
         post = frontmatter.load(file_path)
         # Expect nested empty metadata after clearing the only key
-        assert post.metadata == {'metadata': {}}
+        assert post.metadata == {"metadata": {}}
 
 
 def test_guideline_update_success_content_inline(runner):
@@ -61,14 +65,16 @@ def test_guideline_update_success_content_inline(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         file_path = _create_guideline_file(
-            fs_path, "update-content", "Old", {'description': 'Desc'})
+            fs_path, "update-content", "Old", {"description": "Desc"}
+        )
         result = runner.invoke(
-            cli, ['guideline', 'update', 'update-content', '--content', 'New'])
+            cli, ["guideline", "update", "update-content", "--content", "New"]
+        )
         assert result.exit_code == 0
         post = frontmatter.load(file_path)
         assert post.content.strip() == "New"
         # Description should remain unchanged within the nested structure
-        assert post.metadata == {'metadata': {'description': 'Desc'}}
+        assert post.metadata == {"metadata": {"description": "Desc"}}
 
 
 def test_guideline_update_success_content_from_file(runner):
@@ -76,16 +82,18 @@ def test_guideline_update_success_content_from_file(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         file_path = _create_guideline_file(
-            fs_path, "update-file", "Old", {'other_meta': 'keep'})
+            fs_path, "update-file", "Old", {"other_meta": "keep"}
+        )
         source_path = fs_path / "new_content.md"
         source_path.write_text("New from file")
         result = runner.invoke(
-            cli, ['guideline', 'update', 'update-file', '--content', f'@{source_path}'])
+            cli, ["guideline", "update", "update-file", "--content", f"@{source_path}"]
+        )
         assert result.exit_code == 0
         post = frontmatter.load(file_path)
         assert post.content.strip() == "New from file"
         # Other metadata should be preserved within the nested structure
-        assert post.metadata == {'metadata': {'other_meta': 'keep'}}
+        assert post.metadata == {"metadata": {"other_meta": "keep"}}
 
 
 def test_guideline_update_success_both_desc_and_content(runner):
@@ -93,14 +101,29 @@ def test_guideline_update_success_both_desc_and_content(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         file_path = _create_guideline_file(
-            fs_path, "update-both", "Old Content", {'description': 'Old Desc', 'extra': 'Keep Me'})
-        result = runner.invoke(cli, ['guideline', 'update', 'update-both',
-                               '--description', 'New Desc', '--content', 'New Content'])
+            fs_path,
+            "update-both",
+            "Old Content",
+            {"description": "Old Desc", "extra": "Keep Me"},
+        )
+        result = runner.invoke(
+            cli,
+            [
+                "guideline",
+                "update",
+                "update-both",
+                "--description",
+                "New Desc",
+                "--content",
+                "New Content",
+            ],
+        )
         assert result.exit_code == 0
         post = frontmatter.load(file_path)
         # Expect updated description and preserved extra key within nested structure
-        assert post.metadata == {'metadata': {
-            'description': 'New Desc', 'extra': 'Keep Me'}}
+        assert post.metadata == {
+            "metadata": {"description": "New Desc", "extra": "Keep Me"}
+        }
         assert post.content.strip() == "New Content"
 
 
@@ -108,9 +131,10 @@ def test_guideline_update_error_not_found(runner):
     """Test `pm guideline update` when the custom guideline doesn't exist."""
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ['guideline', 'update', 'nonexistent-update', '--content', 'Wont work'])
+            cli, ["guideline", "update", "nonexistent-update", "--content", "Wont work"]
+        )
         assert result.exit_code != 0
-        assert "Error: Custom guideline 'nonexistent-update' not found" in result.output
+        assert "Error: Custom guideline 'nonexistent-update' not found" in result.stderr
 
 
 def test_guideline_update_error_on_builtin(runner):
@@ -118,10 +142,18 @@ def test_guideline_update_error_on_builtin(runner):
     with runner.isolated_filesystem():
         # Attempt to update 'default', which is built-in
         result = runner.invoke(
-            cli, ['guideline', 'update', 'default', '--description', 'Trying to update built-in'])
+            cli,
+            [
+                "guideline",
+                "update",
+                "default",
+                "--description",
+                "Trying to update built-in",
+            ],
+        )
         assert result.exit_code != 0
         # The error message should indicate that the *custom* guideline wasn't found
-        assert "Error: Custom guideline 'default' not found" in result.output
+        assert "Error: Custom guideline 'default' not found" in result.stderr
 
 
 def test_guideline_update_error_content_file_not_found(runner):
@@ -129,7 +161,18 @@ def test_guideline_update_error_content_file_not_found(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         _create_guideline_file(fs_path, "update-bad-source", "Old")
-        result = runner.invoke(cli, ['guideline', 'update', 'update-bad-source',
-                               '--content', '@nonexistent_update_source.md'])
+        result = runner.invoke(
+            cli,
+            [
+                "guideline",
+                "update",
+                "update-bad-source",
+                "--content",
+                "@nonexistent_update_source.md",
+            ],
+        )
         assert result.exit_code != 0
-        assert "Error reading content file: File specified by '@' not found" in result.output
+        assert (
+            "Error reading content file: File specified by '@' not found"
+            in result.stderr
+        )

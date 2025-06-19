@@ -5,18 +5,31 @@ from pm.cli.__main__ import cli
 
 # --- Deletion Tests ---
 
+
 def test_project_delete_requires_force(cli_runner_env):
     """Test that 'project delete' fails without --force."""
     runner, db_path = cli_runner_env
     # Setup: Create a project
     result_create = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Force Delete Test'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "project",
+            "create",
+            "--name",
+            "Force Delete Test",
+        ],
+    )
     assert result_create.exit_code == 0
-    project_slug = json.loads(result_create.output)['data']['slug']
+    project_slug = json.loads(result_create.stdout)["data"]["slug"]
 
     # Attempt delete without --force
     result_delete = runner.invoke(
-        cli, ['--db-path', db_path, 'project', 'delete', project_slug])
+        cli, ["--db-path", db_path, "project", "delete", project_slug]
+    )
 
     # Expect failure (non-zero exit code) and specific error message
     assert result_delete.exit_code != 0
@@ -36,21 +49,44 @@ def test_project_delete_with_force(cli_runner_env):
     runner, db_path = cli_runner_env
     # Setup: Create a project
     result_create = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'create', '--name', 'Force Delete Success'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "project",
+            "create",
+            "--name",
+            "Force Delete Success",
+        ],
+    )
     assert result_create.exit_code == 0
-    project_slug = json.loads(result_create.output)['data']['slug']
-    project_id = json.loads(result_create.output)[
-        'data']['id']  # Need ID for final check
+    project_slug = json.loads(result_create.stdout)["data"]["slug"]
+    project_id = json.loads(result_create.stdout)["data"][
+        "id"
+    ]  # Need ID for final check
 
     # Attempt delete with --force
     result_delete = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'project', 'delete', project_slug, '--force'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "project",
+            "delete",
+            project_slug,
+            "--force",
+        ],
+    )
 
     # Expect success
     assert result_delete.exit_code == 0
-    response = json.loads(result_delete.output)
-    assert response['status'] == 'success'
-    assert f"Project '{project_slug}' deleted" in response['message']
+    response = json.loads(result_delete.stdout)
+    assert response["status"] == "success"
+    assert f"Project '{project_slug}' deleted" in response["message"]
 
     # Verify project is gone
     conn = init_db(db_path)

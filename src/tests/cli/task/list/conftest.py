@@ -41,8 +41,8 @@ def setup_tasks_for_list_test(task_cli_runner_env):
         )
         assert (
             result.exit_code == 0
-        ), f"Failed to create task '{task_name}': {result.output}"
-        task_data = json.loads(result.output)["data"]
+        ), f"Failed to create task '{task_name}': {result.stdout}"
+        task_data = json.loads(result.stdout)["data"]
         tasks[name] = task_data  # Store the whole dict
         # Don't return anything, just populate the tasks dict
 
@@ -80,7 +80,7 @@ def setup_tasks_for_list_test(task_cli_runner_env):
                 project_slug,
                 completed_slug,
             ],
-        ).output
+        ).stdout
     )["data"]
 
     create_task("To Abandon", TaskStatus.IN_PROGRESS)
@@ -112,7 +112,7 @@ def setup_tasks_for_list_test(task_cli_runner_env):
                 project_slug,
                 abandoned_slug,
             ],
-        ).output
+        ).stdout
     )["data"]
 
     # Return all necessary info (Corrected indentation)
@@ -155,7 +155,7 @@ def setup_tasks_for_all_list_test(tmp_path_factory):
         )
         assert (
             result.exit_code == 0
-        ), f"Failed to create project '{name}': {result.output}"
+        ), f"Failed to create project '{name}': {result.stdout}"
         # Since format is no longer json, we can't parse output this way.
         # We need the slug, so fetch the project after creation.
         # This assumes the default text output includes enough info or we fetch by name.
@@ -208,8 +208,8 @@ def setup_tasks_for_all_list_test(tmp_path_factory):
         )
         assert (
             result.exit_code == 0
-        ), f"Failed to create task '{task_name}': {result.output}"
-        task_data = json.loads(result.output)["data"]
+        ), f"Failed to create task '{task_name}': {result.stdout}"
+        task_data = json.loads(result.stdout)["data"]
         tasks[task_key] = task_data
         return task_data["slug"]
 
@@ -231,7 +231,7 @@ def setup_tasks_for_all_list_test(tmp_path_factory):
         )
         assert (
             result.exit_code == 0
-        ), f"Failed to update task '{task_key}' status: {result.output}"
+        ), f"Failed to update task '{task_key}' status: {result.stdout}"
         # Re-fetch task data to update status in our dict
         show_result = runner.invoke(
             cli,
@@ -246,7 +246,7 @@ def setup_tasks_for_all_list_test(tmp_path_factory):
                 task_slug,
             ],
         )
-        tasks[task_key] = json.loads(show_result.output)["data"]
+        tasks[task_key] = json.loads(show_result.stdout)["data"]
 
     # Create Projects (Use uppercase status values matching the Enum/Choice)
     active_project_slug = create_project("Active Project", "ACTIVE")

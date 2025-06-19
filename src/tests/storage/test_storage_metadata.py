@@ -3,10 +3,14 @@
 import json
 from pm.models import Project, Task, TaskMetadata
 from pm.storage import (
-    init_db, create_project, create_task,
-    create_task_metadata, get_task_metadata,
-    get_task_metadata_value, update_task_metadata,
-    delete_task_metadata
+    init_db,
+    create_project,
+    create_task,
+    create_task_metadata,
+    get_task_metadata,
+    get_task_metadata_value,
+    update_task_metadata,
+    delete_task_metadata,
 )
 
 
@@ -16,23 +20,14 @@ def test_create_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    create_project(conn, Project(
-        id="test-project",
-        name="Test Project"
-    ))
+    create_project(conn, Project(id="test-project", name="Test Project"))
 
-    create_task(conn, Task(
-        id="test-task",
-        project_id="test-project",
-        name="Test Task"
-    ))
+    create_task(conn, Task(id="test-task", project_id="test-project", name="Test Task"))
 
     # Create metadata
-    metadata = create_task_metadata(conn, TaskMetadata.create(
-        task_id="test-task",
-        key="priority",
-        value=1
-    ))
+    metadata = create_task_metadata(
+        conn, TaskMetadata.create(task_id="test-task", key="priority", value=1)
+    )
 
     assert metadata.task_id == "test-task"
     assert metadata.key == "priority"
@@ -48,29 +43,19 @@ def test_get_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    create_project(conn, Project(
-        id="test-project",
-        name="Test Project"
-    ))
+    create_project(conn, Project(id="test-project", name="Test Project"))
 
-    create_task(conn, Task(
-        id="test-task",
-        project_id="test-project",
-        name="Test Task"
-    ))
+    create_task(conn, Task(id="test-task", project_id="test-project", name="Test Task"))
 
     # Create metadata
-    create_task_metadata(conn, TaskMetadata.create(
-        task_id="test-task",
-        key="priority",
-        value=1
-    ))
+    create_task_metadata(
+        conn, TaskMetadata.create(task_id="test-task", key="priority", value=1)
+    )
 
-    create_task_metadata(conn, TaskMetadata.create(
-        task_id="test-task",
-        key="status",
-        value="in-progress"
-    ))
+    create_task_metadata(
+        conn,
+        TaskMetadata.create(task_id="test-task", key="status", value="in-progress"),
+    )
 
     # Get all metadata
     metadata_list = get_task_metadata(conn, "test-task")
@@ -95,23 +80,14 @@ def test_update_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    create_project(conn, Project(
-        id="test-project",
-        name="Test Project"
-    ))
+    create_project(conn, Project(id="test-project", name="Test Project"))
 
-    create_task(conn, Task(
-        id="test-task",
-        project_id="test-project",
-        name="Test Task"
-    ))
+    create_task(conn, Task(id="test-task", project_id="test-project", name="Test Task"))
 
     # Create metadata
-    create_task_metadata(conn, TaskMetadata.create(
-        task_id="test-task",
-        key="priority",
-        value=1
-    ))
+    create_task_metadata(
+        conn, TaskMetadata.create(task_id="test-task", key="priority", value=1)
+    )
 
     # Update metadata
     metadata = update_task_metadata(conn, "test-task", "priority", 2)
@@ -130,23 +106,14 @@ def test_delete_metadata(tmp_path):
     conn = init_db(db_path)
 
     # Create a project and task
-    create_project(conn, Project(
-        id="test-project",
-        name="Test Project"
-    ))
+    create_project(conn, Project(id="test-project", name="Test Project"))
 
-    create_task(conn, Task(
-        id="test-task",
-        project_id="test-project",
-        name="Test Task"
-    ))
+    create_task(conn, Task(id="test-task", project_id="test-project", name="Test Task"))
 
     # Create metadata
-    create_task_metadata(conn, TaskMetadata.create(
-        task_id="test-task",
-        key="priority",
-        value=1
-    ))
+    create_task_metadata(
+        conn, TaskMetadata.create(task_id="test-task", key="priority", value=1)
+    )
 
     # Delete metadata
     success = delete_task_metadata(conn, "test-task", "priority")
@@ -169,16 +136,9 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     conn = init_db(db_path)
 
     # Create a project and task
-    create_project(conn, Project(
-        id="cli-project",
-        name="CLI Project"
-    ))
+    create_project(conn, Project(id="cli-project", name="CLI Project"))
 
-    create_task(conn, Task(
-        id="cli-task",
-        project_id="cli-project",
-        name="CLI Task"
-    ))
+    create_task(conn, Task(id="cli-task", project_id="cli-project", name="CLI Task"))
 
     conn.close()
 
@@ -189,9 +149,24 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # Test setting metadata
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'set', 'cli-task', '--key', 'status', '--value', 'in-progress'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "set",
+            "cli-task",
+            "--key",
+            "status",
+            "--value",
+            "in-progress",
+        ],
+    )
     assert result.exit_code == 0
-    response = json.loads(result.output)
+    response = json.loads(result.stdout)
     assert response["status"] == "success"
     assert response["data"]["key"] == "status"
     assert response["data"]["value"] == "in-progress"
@@ -199,9 +174,22 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # Test getting specific metadata
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'get', 'cli-task', '--key', 'status'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "get",
+            "cli-task",
+            "--key",
+            "status",
+        ],
+    )
     assert result.exit_code == 0
-    response = json.loads(result.output)
+    response = json.loads(result.stdout)
     assert response["status"] == "success"
     assert len(response["data"]) == 1
     assert response["data"][0]["key"] == "status"
@@ -210,15 +198,41 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # Test setting metadata with explicit type
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, 'task', 'metadata', 'set', 'cli-task', '--key', 'priority', '--value', '1', '--type', 'int'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "task",
+            "metadata",
+            "set",
+            "cli-task",
+            "--key",
+            "priority",
+            "--value",
+            "1",
+            "--type",
+            "int",
+        ],
+    )
     assert result.exit_code == 0
 
     # Test getting all metadata
     # Pass --db-path *before* the command group
     result = runner.invoke(
-        cli, ['--db-path', db_path, '--format', 'json', 'task', 'metadata', 'get', 'cli-task'])
+        cli,
+        [
+            "--db-path",
+            db_path,
+            "--format",
+            "json",
+            "task",
+            "metadata",
+            "get",
+            "cli-task",
+        ],
+    )
     assert result.exit_code == 0
-    response = json.loads(result.output)
+    response = json.loads(result.stdout)
     assert response["status"] == "success"
     assert len(response["data"]) == 2  # Now we expect both status and priority
 
@@ -226,6 +240,6 @@ def test_cli_metadata_commands(tmp_path):  # Remove monkeypatch fixture
     # result = runner.invoke(
     #     cli, ['task', 'metadata', 'query', '--key', 'status', '--value', 'in-progress'])
     # assert result.exit_code == 0
-    # response = json.loads(result.output)
+    # response = json.loads(result.stdout)
     # assert response["status"] == "success"
     # assert len(response["data"]) == 1

@@ -20,7 +20,7 @@ def _create_guideline_file(fs_path, name, content, metadata=None):
     file_path = guideline_dir / f"{name}.md"
     # Use the provided metadata dict directly
     post = frontmatter.Post(content=content, metadata=metadata or {})
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         # Use dumps to get string, then write to text file handle
         f.write(frontmatter.dumps(post))
     return file_path
@@ -31,15 +31,23 @@ def test_guideline_create_success_inline(runner):
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
         result = runner.invoke(
-            cli, ['guideline', 'create', 'my-custom', '--content', 'This is **custom** content.'])
+            cli,
+            [
+                "guideline",
+                "create",
+                "my-custom",
+                "--content",
+                "This is **custom** content.",
+            ],
+        )
         assert result.exit_code == 0
-        assert "Successfully created custom guideline 'my-custom'" in result.output
+        assert "Successfully created custom guideline 'my-custom'" in result.stdout
         expected_path = fs_path / ".pm" / "guidelines" / "my-custom.md"
         assert expected_path.is_file()
         post = frontmatter.load(expected_path)
-        assert post.content.strip() == 'This is **custom** content.'
+        assert post.content.strip() == "This is **custom** content."
         # Expect nested empty metadata dict when none provided
-        assert post.metadata == {'metadata': {}}
+        assert post.metadata == {"metadata": {}}
 
 
 def test_guideline_create_success_from_file(runner):
@@ -52,31 +60,45 @@ def test_guideline_create_success_from_file(runner):
         source_path.write_text(source_content)
 
         result = runner.invoke(
-            cli, ['guideline', 'create', 'from-file-guide', '--content', f'@{source_path}'])
+            cli,
+            ["guideline", "create", "from-file-guide", "--content", f"@{source_path}"],
+        )
         assert result.exit_code == 0
-        assert "Successfully created custom guideline 'from-file-guide'" in result.output
+        assert (
+            "Successfully created custom guideline 'from-file-guide'" in result.stdout
+        )
         expected_path = fs_path / ".pm" / "guidelines" / "from-file-guide.md"
         assert expected_path.is_file()
         post = frontmatter.load(expected_path)
         assert post.content.strip() == source_content
         # Expect nested empty metadata dict when none provided
-        assert post.metadata == {'metadata': {}}
+        assert post.metadata == {"metadata": {}}
 
 
 def test_guideline_create_success_with_description(runner):
     """Test `pm guideline create <name> --content <inline> --description <desc>`."""
     with runner.isolated_filesystem() as fs:
         fs_path = Path(fs)
-        result = runner.invoke(cli, ['guideline', 'create', 'desc-guide',
-                               '--content', 'ABC', '--description', 'My Description'])
+        result = runner.invoke(
+            cli,
+            [
+                "guideline",
+                "create",
+                "desc-guide",
+                "--content",
+                "ABC",
+                "--description",
+                "My Description",
+            ],
+        )
         assert result.exit_code == 0
-        assert "Successfully created custom guideline 'desc-guide'" in result.output
+        assert "Successfully created custom guideline 'desc-guide'" in result.stdout
         expected_path = fs_path / ".pm" / "guidelines" / "desc-guide.md"
         assert expected_path.is_file()
         post = frontmatter.load(expected_path)
-        assert post.content.strip() == 'ABC'
+        assert post.content.strip() == "ABC"
         # Expect description nested under 'metadata' key
-        assert post.metadata == {'metadata': {'description': 'My Description'}}
+        assert post.metadata == {"metadata": {"description": "My Description"}}
 
 
 def test_guideline_create_error_already_exists(runner):
@@ -86,15 +108,23 @@ def test_guideline_create_error_already_exists(runner):
         # This call to the helper should now work correctly
         _create_guideline_file(fs_path, "existing-guide", "Old content")
         result = runner.invoke(
-            cli, ['guideline', 'create', 'existing-guide', '--content', 'New content'])
+            cli, ["guideline", "create", "existing-guide", "--content", "New content"]
+        )
         assert result.exit_code != 0
-        assert "Error: Custom guideline 'existing-guide' already exists" in result.output
+        assert (
+            "Error: Custom guideline 'existing-guide' already exists" in result.stderr
+        )
 
 
 def test_guideline_create_error_file_not_found(runner):
     """Test `pm guideline create --content @<path>` when the source file doesn't exist."""
     with runner.isolated_filesystem():
         result = runner.invoke(
-            cli, ['guideline', 'create', 'bad-source', '--content', '@nonexistent_file.md'])
+            cli,
+            ["guideline", "create", "bad-source", "--content", "@nonexistent_file.md"],
+        )
         assert result.exit_code != 0
-        assert "Error reading content file: File specified by '@' not found" in result.output
+        assert (
+            "Error reading content file: File specified by '@' not found"
+            in result.stderr
+        )

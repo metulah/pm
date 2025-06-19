@@ -34,8 +34,8 @@ def setup_projects_and_tasks_cli(runner_and_db):
         result = runner.invoke(
             cli, ["--db-path", db_path, "--format", "json"] + command_args
         )
-        assert result.exit_code == 0, f"Failed to create {data_key}: {result.output}"
-        response = json.loads(result.output)
+        assert result.exit_code == 0, f"Failed to create {data_key}: {result.stdout}"
+        response = json.loads(result.stdout)
         assert response["status"] == "success"
         created_data[data_key] = response["data"]
         return response["data"]  # Return the created object data
@@ -145,14 +145,14 @@ def test_project_tasks_list_by_slug(setup_projects_and_tasks_cli):
 
     assert result.exit_code == 0
     # Check project slug is mentioned (depends on formatter)
-    assert proj1["slug"] in result.output
-    assert task1["name"] in result.output
-    assert task1["slug"] in result.output
-    assert task2["name"] in result.output
-    assert task2["slug"] in result.output
-    assert "Alpha Task 3" not in result.output  # Completed task hidden by default
-    assert "Beta Task 1" not in result.output  # Task from other project
-    assert "Gamma Task 1" not in result.output  # Task from inactive project
+    assert proj1["slug"] in result.stdout
+    assert task1["name"] in result.stdout
+    assert task1["slug"] in result.stdout
+    assert task2["name"] in result.stdout
+    assert task2["slug"] in result.stdout
+    assert "Alpha Task 3" not in result.stdout  # Completed task hidden by default
+    assert "Beta Task 1" not in result.stdout  # Task from other project
+    assert "Gamma Task 1" not in result.stdout  # Task from inactive project
 
 
 def test_project_tasks_list_by_id(setup_projects_and_tasks_cli):
@@ -166,10 +166,10 @@ def test_project_tasks_list_by_id(setup_projects_and_tasks_cli):
     result = runner.invoke(cli, ["--db-path", db_path, "project", "tasks", proj1["id"]])
 
     assert result.exit_code == 0
-    assert task1["name"] in result.output
-    assert task2["name"] in result.output
-    assert "Alpha Task 3" not in result.output
-    assert "Beta Task 1" not in result.output
+    assert task1["name"] in result.stdout
+    assert task2["name"] in result.stdout
+    assert "Alpha Task 3" not in result.stdout
+    assert "Beta Task 1" not in result.stdout
 
 
 def test_project_tasks_list_include_completed(setup_projects_and_tasks_cli):
@@ -186,11 +186,11 @@ def test_project_tasks_list_include_completed(setup_projects_and_tasks_cli):
     )
 
     assert result.exit_code == 0
-    assert task1["name"] in result.output
-    assert task2["name"] in result.output
+    assert task1["name"] in result.stdout
+    assert task2["name"] in result.stdout
     # Completed task should now be visible
-    assert task3["name"] in result.output
-    assert "Beta Task 1" not in result.output
+    assert task3["name"] in result.stdout
+    assert "Beta Task 1" not in result.stdout
 
 
 def test_project_tasks_filter_by_status(setup_projects_and_tasks_cli):
@@ -215,9 +215,9 @@ def test_project_tasks_filter_by_status(setup_projects_and_tasks_cli):
     )
 
     assert result.exit_code == 0
-    assert task2["name"] in result.output
-    assert task1["name"] not in result.output
-    assert "Alpha Task 3" not in result.output  # Completed task also filtered out
+    assert task2["name"] in result.stdout
+    assert task1["name"] not in result.stdout
+    assert "Alpha Task 3" not in result.stdout  # Completed task also filtered out
 
 
 def test_project_tasks_include_inactive(setup_projects_and_tasks_cli):
@@ -233,7 +233,7 @@ def test_project_tasks_include_inactive(setup_projects_and_tasks_cli):
     )
 
     assert result.exit_code == 0
-    assert task5["name"] in result.output
+    assert task5["name"] in result.stdout
 
     # The --inactive flag on `project tasks` doesn't really change behavior
     # because we're already scoped to a single project. Let's confirm it doesn't break.
@@ -241,7 +241,7 @@ def test_project_tasks_include_inactive(setup_projects_and_tasks_cli):
         cli, ["--db-path", db_path, "project", "tasks", proj3["slug"], "--inactive"]
     )
     assert result_inactive.exit_code == 0
-    assert task5["name"] in result_inactive.output
+    assert task5["name"] in result_inactive.stdout
 
 
 def test_project_tasks_show_id(setup_projects_and_tasks_cli):
@@ -256,8 +256,8 @@ def test_project_tasks_show_id(setup_projects_and_tasks_cli):
     )
 
     assert result.exit_code == 0
-    assert task1["name"] in result.output
-    assert task1["id"] in result.output  # Check if the full ID is present
+    assert task1["name"] in result.stdout
+    assert task1["id"] in result.stdout  # Check if the full ID is present
 
 
 def test_project_tasks_show_description(setup_projects_and_tasks_cli):
@@ -287,15 +287,15 @@ def test_project_tasks_show_description(setup_projects_and_tasks_cli):
         ],
     )
     assert task_desc_data.exit_code == 0
-    task_desc = json.loads(task_desc_data.output)["data"]
+    task_desc = json.loads(task_desc_data.stdout)["data"]
 
     result = runner.invoke(
         cli, ["--db-path", db_path, "project", "tasks", proj1["slug"], "--description"]
     )
 
     assert result.exit_code == 0
-    assert task_desc["name"] in result.output
-    assert desc_text in result.output  # Check if the description text is present
+    assert task_desc["name"] in result.stdout
+    assert desc_text in result.stdout  # Check if the description text is present
 
 
 def test_project_tasks_invalid_project(setup_projects_and_tasks_cli):

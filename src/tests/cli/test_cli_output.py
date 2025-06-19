@@ -42,7 +42,7 @@ def output_test_setup(cli_runner_env):
             "ACTIVE",
         ],
     )
-    proj_active_data = json.loads(result_proj_active.output)["data"]
+    proj_active_data = json.loads(result_proj_active.stdout)["data"]
     setup_data["proj_active_id"] = proj_active_data["id"]
     setup_data["proj_active_slug"] = proj_active_data["slug"]
 
@@ -64,7 +64,7 @@ def output_test_setup(cli_runner_env):
             "COMPLETED",
         ],
     )
-    proj_completed_data = json.loads(result_proj_completed.output)["data"]
+    proj_completed_data = json.loads(result_proj_completed.stdout)["data"]
     # Store ID before update
     setup_data["proj_archived_id"] = proj_completed_data["id"]
     # Store slug before update
@@ -88,7 +88,7 @@ def output_test_setup(cli_runner_env):
             "CANCELLED",
         ],
     )
-    proj_cancelled_data = json.loads(result_proj_cancelled.output)["data"]
+    proj_cancelled_data = json.loads(result_proj_cancelled.stdout)["data"]
     setup_data["proj_cancelled_id"] = proj_cancelled_data["id"]
     setup_data["proj_cancelled_slug"] = proj_cancelled_data["slug"]
 
@@ -124,7 +124,7 @@ def output_test_setup(cli_runner_env):
             "IN_PROGRESS",
         ],
     )
-    task_active_data = json.loads(result_task_active.output)["data"]
+    task_active_data = json.loads(result_task_active.stdout)["data"]
     setup_data["task_active_id"] = task_active_data["id"]
     setup_data["task_active_slug"] = task_active_data["slug"]
 
@@ -146,7 +146,7 @@ def output_test_setup(cli_runner_env):
             "COMPLETED",
         ],
     )
-    task_completed_data = json.loads(result_task_completed.output)["data"]
+    task_completed_data = json.loads(result_task_completed.stdout)["data"]
     setup_data["task_completed_id"] = task_completed_data["id"]
     setup_data["task_completed_slug"] = task_completed_data["slug"]
 
@@ -166,7 +166,7 @@ def output_test_setup(cli_runner_env):
             "Cancelled Task",
         ],
     )
-    task_cancelled_data = json.loads(result_task_cancelled.output)["data"]
+    task_cancelled_data = json.loads(result_task_cancelled.stdout)["data"]
     setup_data["task_cancelled_id"] = task_cancelled_data["id"]
     setup_data["task_cancelled_slug"] = task_cancelled_data["slug"]
 
@@ -183,7 +183,7 @@ def test_project_list_text_defaults(output_test_setup):
         cli, ["--db-path", db_path, "--format", "text", "project", "list"]
     )
     assert result.exit_code == 0
-    output = result.output
+    output = result.stdout
     assert "ID" not in output
     assert "DESCRIPTION" not in output
     assert "Active Desc" not in output
@@ -202,7 +202,7 @@ def test_project_list_text_flags(output_test_setup):
         ["--db-path", db_path, "--format", "text", "project", "list", "--completed"],
     )
     assert result_completed.exit_code == 0
-    output_completed = result_completed.output
+    output_completed = result_completed.stdout
     assert "ID" not in output_completed
     assert "DESCRIPTION" not in output_completed
     assert data["proj_active_slug"] in output_completed
@@ -225,7 +225,7 @@ def test_project_list_text_flags(output_test_setup):
         ],
     )
     assert result_id_completed.exit_code == 0
-    output_id_completed = result_id_completed.output
+    output_id_completed = result_id_completed.stdout
     assert "ID" in output_id_completed
     assert "DESCRIPTION" not in output_id_completed
     assert data["proj_active_slug"] in output_id_completed
@@ -239,7 +239,7 @@ def test_project_list_text_flags(output_test_setup):
         ["--db-path", db_path, "--format", "text", "project", "list", "--description"],
     )
     assert result_desc.exit_code == 0
-    output_desc = result_desc.output
+    output_desc = result_desc.stdout
     assert "ID" not in output_desc
     assert "DESCRIPTION" in output_desc
     assert "Active Desc" in output_desc
@@ -263,7 +263,7 @@ def test_project_list_text_flags(output_test_setup):
         ],
     )
     assert result_id_comp_desc.exit_code == 0
-    output_id_comp_desc = result_id_comp_desc.output
+    output_id_comp_desc = result_id_comp_desc.stdout
     assert "ID" in output_id_comp_desc
     assert "DESCRIPTION" in output_id_comp_desc
     assert "Active Desc" in output_id_comp_desc
@@ -279,7 +279,7 @@ def test_project_list_text_flags(output_test_setup):
         cli, ["--db-path", db_path, "--format", "text", "project", "list", "--archived"]
     )
     assert result_arch.exit_code == 0
-    output_arch = result_arch.output
+    output_arch = result_arch.stdout
     assert "ID" not in output_arch
     assert "DESCRIPTION" not in output_arch
     assert data["proj_active_slug"] in output_arch
@@ -292,7 +292,7 @@ def test_project_list_text_flags(output_test_setup):
         ["--db-path", db_path, "--format", "text", "project", "list", "--cancelled"],
     )
     assert result_canc.exit_code == 0
-    output_canc = result_canc.output
+    output_canc = result_canc.stdout
     assert data["proj_active_slug"] in output_canc
     assert data["proj_archived_slug"] not in output_canc
     assert data["proj_cancelled_slug"] in output_canc  # Cancelled shown
@@ -313,7 +313,7 @@ def test_project_list_text_flags(output_test_setup):
         ],
     )
     assert result_all_status.exit_code == 0
-    output_all_status = result_all_status.output
+    output_all_status = result_all_status.stdout
     assert "ID" not in output_all_status
     assert "DESCRIPTION" not in output_all_status
     assert data["proj_active_slug"] in output_all_status
@@ -338,7 +338,7 @@ def test_project_list_text_flags(output_test_setup):
         ],
     )
     assert result_all_flags.exit_code == 0
-    output_all_flags = result_all_flags.output
+    output_all_flags = result_all_flags.stdout
     assert "ID" in output_all_flags
     assert "DESCRIPTION" in output_all_flags
     assert data["proj_active_slug"] in output_all_flags
@@ -365,7 +365,7 @@ def test_project_show_text(output_test_setup):
         ],
     )
     assert result.exit_code == 0
-    output = result.output
+    output = result.stdout
     assert f"Id:          {data['proj_active_id']}" in output
     assert "Name:        Format Active Proj" in output
     assert f"Slug:        {data['proj_active_slug']}" in output
@@ -392,7 +392,7 @@ def test_task_list_text_defaults(output_test_setup):
         ],
     )
     assert result_active_proj.exit_code == 0
-    output_active_proj = result_active_proj.output
+    output_active_proj = result_active_proj.stdout
     assert "ID" not in output_active_proj
     assert "DESCRIPTION" not in output_active_proj
     assert data["task_active_slug"] in output_active_proj
@@ -403,7 +403,7 @@ def test_task_list_text_defaults(output_test_setup):
         cli, ["--db-path", db_path, "--format", "text", "task", "list"]
     )
     assert result_all_proj.exit_code == 0
-    output_all_proj = result_all_proj.output
+    output_all_proj = result_all_proj.stdout
     assert data["task_active_slug"] in output_all_proj
     assert data["task_completed_slug"] not in output_all_proj
     # Task from cancelled project
@@ -430,7 +430,7 @@ def test_task_list_text_flags(output_test_setup):
         ],
     )
     assert result_completed.exit_code == 0
-    output_completed = result_completed.output
+    output_completed = result_completed.stdout
     assert data["task_active_slug"] in output_completed
     assert data["task_completed_slug"] in output_completed
 
@@ -439,7 +439,7 @@ def test_task_list_text_flags(output_test_setup):
         cli, ["--db-path", db_path, "--format", "text", "task", "list", "--inactive"]
     )
     assert result_inactive.exit_code == 0
-    output_inactive = result_inactive.output
+    output_inactive = result_inactive.stdout
     assert data["task_active_slug"] in output_inactive
     # Completed still hidden by default
     assert data["task_completed_slug"] not in output_inactive
@@ -461,7 +461,7 @@ def test_task_list_text_flags(output_test_setup):
         ],
     )
     assert result_inactive_comp.exit_code == 0
-    output_inactive_comp = result_inactive_comp.output
+    output_inactive_comp = result_inactive_comp.stdout
     assert data["task_active_slug"] in output_inactive_comp
     assert data["task_completed_slug"] in output_inactive_comp
     assert data["task_cancelled_slug"] in output_inactive_comp
@@ -483,7 +483,7 @@ def test_task_list_text_flags(output_test_setup):
         ],
     )
     assert result_id_desc.exit_code == 0
-    output_id_desc = result_id_desc.output
+    output_id_desc = result_id_desc.stdout
     assert "ID" in output_id_desc
     assert "DESCRIPTION" in output_id_desc
     assert data["task_active_slug"] in output_id_desc
@@ -509,7 +509,7 @@ def test_task_show_text(output_test_setup):
         ],
     )
     assert result.exit_code == 0
-    output = result.output
+    output = result.stdout
     # Adjusted spacing
     assert f"Id:           {data['task_active_id']}" in output
     # Changed to check for Slug
@@ -539,7 +539,7 @@ def test_project_list_json(output_test_setup):
         ],
     )
     assert result.exit_code == 0
-    output_data = json.loads(result.output)["data"]
+    output_data = json.loads(result.stdout)["data"]
     assert len(output_data) == 3  # Active, Archived, Cancelled
     slugs = {p["slug"] for p in output_data}
     assert data["proj_active_slug"] in slugs
@@ -563,7 +563,7 @@ def test_project_show_json(output_test_setup):
         ],
     )
     assert result.exit_code == 0
-    output_data = json.loads(result.output)["data"]
+    output_data = json.loads(result.stdout)["data"]
     assert output_data["id"] == data["proj_active_id"]
     assert output_data["slug"] == data["proj_active_slug"]
     assert output_data["name"] == "Format Active Proj"
@@ -587,7 +587,7 @@ def test_task_list_json(output_test_setup):
         ],
     )
     assert result.exit_code == 0
-    output_data = json.loads(result.output)["data"]
+    output_data = json.loads(result.stdout)["data"]
     assert len(output_data) == 3  # Active, Completed, Cancelled Task
     slugs = {t["slug"] for t in output_data}
     assert data["task_active_slug"] in slugs
@@ -612,7 +612,7 @@ def test_task_show_json(output_test_setup):
         ],
     )
     assert result.exit_code == 0
-    output_data = json.loads(result.output)["data"]
+    output_data = json.loads(result.stdout)["data"]
     assert output_data["id"] == data["task_active_id"]
     assert output_data["slug"] == data["task_active_slug"]
     assert output_data["name"] == "Format Active Task"
@@ -628,7 +628,7 @@ def test_default_output_is_text(output_test_setup):
         cli, ["--db-path", db_path, "project", "show", data["proj_active_slug"]]
     )
     assert result.exit_code == 0
-    output = result.output.strip()  # Strip leading/trailing whitespace
+    output = result.stdout.strip()  # Strip leading/trailing whitespace
 
     # Basic check: Should not look like JSON
     assert not output.startswith("{")

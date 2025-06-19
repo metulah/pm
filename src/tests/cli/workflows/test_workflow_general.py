@@ -42,7 +42,7 @@ def test_cli_simple_messages(cli_runner_env):
             "Message Test Proj",
         ],
     )
-    project_data = json.loads(result_proj.output)["data"]
+    project_data = json.loads(result_proj.stdout)["data"]
     project_slug = project_data["slug"]
 
     # Test delete success message (Text format) using slug - REQUIRES --force now
@@ -63,7 +63,7 @@ def test_cli_simple_messages(cli_runner_env):
     assert result_del_text.exit_code == 0
     # Check message uses identifier
     # Check stdout for success message
-    assert f"Success: Project '{project_slug}' deleted" in result_del_text.output
+    assert f"Success: Project '{project_slug}' deleted" in result_del_text.stdout
 
     # Test delete error message (Text format) using non-existent slug
     result_del_err_text = runner.invoke(

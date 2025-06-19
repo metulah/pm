@@ -40,7 +40,7 @@ def test_cli_project_delete_standard(cli_runner_env):
             "Delete Test Project",
         ],
     )
-    project_data = json.loads(result_proj.output)["data"]
+    project_data = json.loads(result_proj.stdout)["data"]
     project_slug = project_data["slug"]
     result_task = runner.invoke(
         cli,
@@ -57,7 +57,7 @@ def test_cli_project_delete_standard(cli_runner_env):
             "Task In Delete Project",
         ],
     )  # Use slug
-    task_data = json.loads(result_task.output)["data"]
+    task_data = json.loads(result_task.stdout)["data"]
     task_slug = task_data["slug"]
 
     # Test deleting project (using slug) with task (should fail because --force is missing)
@@ -86,7 +86,7 @@ def test_cli_project_delete_standard(cli_runner_env):
         ],
     )
     assert result_del_task.exit_code == 0
-    assert json.loads(result_del_task.output)["status"] == "success"
+    assert json.loads(result_del_task.stdout)["status"] == "success"
 
     # Test deleting project (using slug) without task (should succeed with --force)
     result_del_ok = runner.invoke(
@@ -103,7 +103,7 @@ def test_cli_project_delete_standard(cli_runner_env):
         ],
     )
     assert result_del_ok.exit_code == 0
-    response_del_ok = json.loads(result_del_ok.output)
+    response_del_ok = json.loads(result_del_ok.stdout)
     assert response_del_ok["status"] == "success"
     assert "deleted" in response_del_ok["message"]
 
@@ -112,8 +112,8 @@ def test_cli_project_delete_standard(cli_runner_env):
         cli, ["--db-path", db_path, "--format", "json", "project", "show", project_slug]
     )
     assert result_show.exit_code == 0  # Command runs but returns error status
-    assert json.loads(result_show.output)["status"] == "error"
-    assert "not found" in json.loads(result_show.output)["message"]
+    assert json.loads(result_show.stdout)["status"] == "error"
+    assert "not found" in json.loads(result_show.stdout)["message"]
 
 
 def test_cli_project_delete_force(cli_runner_env):
@@ -134,7 +134,7 @@ def test_cli_project_delete_force(cli_runner_env):
             "Project C",
         ],
     )
-    project_c_data = json.loads(result_c.output)["data"]
+    project_c_data = json.loads(result_c.stdout)["data"]
     project_c_slug = project_c_data["slug"]
     result_task2 = runner.invoke(
         cli,
@@ -151,7 +151,7 @@ def test_cli_project_delete_force(cli_runner_env):
             "Task 2",
         ],
     )
-    task_2_data = json.loads(result_task2.output)["data"]
+    task_2_data = json.loads(result_task2.stdout)["data"]
     task_2_slug = task_2_data["slug"]
     result_task3 = runner.invoke(
         cli,
@@ -168,7 +168,7 @@ def test_cli_project_delete_force(cli_runner_env):
             "Task 3",
         ],
     )
-    task_3_data = json.loads(result_task3.output)["data"]
+    task_3_data = json.loads(result_task3.stdout)["data"]
     task_3_slug = task_3_data["slug"]
 
     # Attempt delete without force (using slug) (should fail)
@@ -196,7 +196,7 @@ def test_cli_project_delete_force(cli_runner_env):
         ],
     )
     assert result_del_force.exit_code == 0
-    response_del_force = json.loads(result_del_force.output)
+    response_del_force = json.loads(result_del_force.stdout)
     assert response_del_force["status"] == "success"
     assert "deleted" in response_del_force["message"]
 
@@ -205,8 +205,8 @@ def test_cli_project_delete_force(cli_runner_env):
         cli,
         ["--db-path", db_path, "--format", "json", "project", "show", project_c_slug],
     )
-    assert json.loads(result_show_c.output)["status"] == "error"
-    assert "not found" in json.loads(result_show_c.output)["message"]
+    assert json.loads(result_show_c.stdout)["status"] == "error"
+    assert "not found" in json.loads(result_show_c.stdout)["message"]
 
     # Verify Task 2 is gone (using project slug and task slug)
     # Need to use the original project slug here as the project is gone
@@ -223,11 +223,11 @@ def test_cli_project_delete_force(cli_runner_env):
             task_2_slug,
         ],
     )
-    assert json.loads(result_show_t2.output)["status"] == "error"
+    assert json.loads(result_show_t2.stdout)["status"] == "error"
     # The error should come from the project resolver first
     assert (
         "Project not found with identifier"
-        in json.loads(result_show_t2.output)["message"]
+        in json.loads(result_show_t2.stdout)["message"]
     )
 
     # Verify Task 3 is gone (using project slug and task slug)
@@ -244,10 +244,10 @@ def test_cli_project_delete_force(cli_runner_env):
             task_3_slug,
         ],
     )
-    assert json.loads(result_show_t3.output)["status"] == "error"
+    assert json.loads(result_show_t3.stdout)["status"] == "error"
     assert (
         "Project not found with identifier"
-        in json.loads(result_show_t3.output)["message"]
+        in json.loads(result_show_t3.stdout)["message"]
     )
 
 
@@ -270,7 +270,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_proj.exit_code == 0
-    proj_data = json.loads(res_proj.output)["data"]
+    proj_data = json.loads(res_proj.stdout)["data"]
     proj_slug = proj_data["slug"]
     proj_id = proj_data["id"]
 
@@ -291,7 +291,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_task.exit_code == 0
-    task_data = json.loads(res_task.output)["data"]
+    task_data = json.loads(res_task.stdout)["data"]
     task_slug = task_data["slug"]
     task_id = task_data["id"]
 
@@ -314,7 +314,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_task_note.exit_code == 0
-    task_note_id = json.loads(res_task_note.output)["data"]["id"]
+    task_note_id = json.loads(res_task_note.stdout)["data"]["id"]
 
     # 4. Setup Project Note
     res_proj_note = runner.invoke(
@@ -333,7 +333,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_proj_note.exit_code == 0
-    proj_note_id = json.loads(res_proj_note.output)["data"]["id"]
+    proj_note_id = json.loads(res_proj_note.stdout)["data"]["id"]
 
     # 5. Setup Task Metadata
     metadata_key = "cascade_key"
@@ -355,7 +355,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
             metadata_value,
         ],
     )  # Use --value option
-    assert res_meta.exit_code == 0, f"Metadata set failed: {res_meta.output}"
+    assert res_meta.exit_code == 0, f"Metadata set failed: {res_meta.stdout}"
 
     # 6. Setup Subtask
     subtask_name = "Cascade Subtask"
@@ -374,8 +374,8 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
             subtask_name,
         ],
     )
-    assert res_subtask.exit_code == 0, f"Subtask creation failed: {res_subtask.output}"
-    subtask_id = json.loads(res_subtask.output)["data"]["id"]
+    assert res_subtask.exit_code == 0, f"Subtask creation failed: {res_subtask.stdout}"
+    subtask_id = json.loads(res_subtask.stdout)["data"]["id"]
 
     # 7. Setup Dependency Task
     res_dep_task = runner.invoke(
@@ -394,7 +394,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_dep_task.exit_code == 0
-    dep_task_data = json.loads(res_dep_task.output)["data"]
+    dep_task_data = json.loads(res_dep_task.stdout)["data"]
     dep_task_slug = dep_task_data["slug"]
     dep_task_id = dep_task_data["id"]
 
@@ -415,7 +415,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
             dep_task_slug,
         ],
     )  # Dependency task via option
-    assert res_dep.exit_code == 0, f"Dependency add failed: {res_dep.output}"
+    assert res_dep.exit_code == 0, f"Dependency add failed: {res_dep.stdout}"
 
     # 9. Delete Project with --force
     res_delete = runner.invoke(
@@ -432,7 +432,7 @@ def test_cli_project_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_delete.exit_code == 0
-    assert json.loads(res_delete.output)["status"] == "success"
+    assert json.loads(res_delete.stdout)["status"] == "success"
 
     # 10. Verify everything is gone via direct DB check
     conn = init_db(db_path)
@@ -518,7 +518,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_proj.exit_code == 0
-    proj_data = json.loads(res_proj.output)["data"]
+    proj_data = json.loads(res_proj.stdout)["data"]
     proj_slug = proj_data["slug"]
     proj_id = proj_data["id"]
 
@@ -539,7 +539,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_task_del.exit_code == 0
-    task_del_data = json.loads(res_task_del.output)["data"]
+    task_del_data = json.loads(res_task_del.stdout)["data"]
     task_del_slug = task_del_data["slug"]
     task_del_id = task_del_data["id"]
 
@@ -560,7 +560,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_task_other.exit_code == 0
-    task_other_data = json.loads(res_task_other.output)["data"]
+    task_other_data = json.loads(res_task_other.stdout)["data"]
     task_other_slug = task_other_data["slug"]
     task_other_id = task_other_data["id"]
 
@@ -583,7 +583,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_task_note.exit_code == 0
-    task_note_id = json.loads(res_task_note.output)["data"]["id"]
+    task_note_id = json.loads(res_task_note.stdout)["data"]["id"]
 
     # 5. Setup Task Metadata
     metadata_key_task = "cascade_key_task"
@@ -605,7 +605,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
             metadata_value_task,
         ],
     )  # Use --value option
-    assert res_meta.exit_code == 0, f"Metadata set failed: {res_meta.output}"
+    assert res_meta.exit_code == 0, f"Metadata set failed: {res_meta.stdout}"
 
     # 6. Setup Subtask
     subtask_name_del = "Cascade Subtask TaskDel"
@@ -624,8 +624,8 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
             subtask_name_del,
         ],
     )
-    assert res_subtask.exit_code == 0, f"Subtask creation failed: {res_subtask.output}"
-    subtask_id = json.loads(res_subtask.output)["data"]["id"]
+    assert res_subtask.exit_code == 0, f"Subtask creation failed: {res_subtask.stdout}"
+    subtask_id = json.loads(res_subtask.stdout)["data"]["id"]
 
     # 7. Setup Dependency (task_del depends on other_task)
     res_dep = runner.invoke(
@@ -644,7 +644,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
             task_other_slug,
         ],
     )  # Dependency task via option
-    assert res_dep.exit_code == 0, f"Dependency add failed: {res_dep.output}"
+    assert res_dep.exit_code == 0, f"Dependency add failed: {res_dep.stdout}"
 
     # 8. Delete Task with --force
     res_delete = runner.invoke(
@@ -662,7 +662,7 @@ def test_cli_task_delete_cascade_workflow(cli_runner_env):
         ],
     )
     assert res_delete.exit_code == 0
-    assert json.loads(res_delete.output)["status"] == "success"
+    assert json.loads(res_delete.stdout)["status"] == "success"
 
     # 9. Verify associated data is gone, but project and other task remain
     conn = init_db(db_path)

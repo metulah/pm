@@ -58,15 +58,15 @@ def test_init_interactive_default_guideline_selection(runner: CliRunner):
                 f"Failed to read or parse {config_path}: {e}\nContent:\n{config_content}"
             )
 
-        assert (
-            "guidelines" in config_data
-        ), f"Config missing [guidelines] section in:\n{config_content}"
-        assert "active" in config_data.get(
-            "guidelines", {}
-        ), f"Config missing [guidelines].active key in:\n{config_content}"
-        assert config_data["guidelines"]["active"] == [
-            "pm"
-        ], f"Default guideline 'pm' not set correctly in:\n{config_content}"
+        assert "guidelines" in config_data, (
+            f"Config missing [guidelines] section in:\n{config_content}"
+        )
+        assert "active" in config_data.get("guidelines", {}), (
+            f"Config missing [guidelines].active key in:\n{config_content}"
+        )
+        assert config_data["guidelines"]["active"] == ["pm"], (
+            f"Default guideline 'pm' not set correctly in:\n{config_content}"
+        )
 
 
 def test_init_interactive_specific_guideline_selection(runner: CliRunner):
@@ -102,12 +102,12 @@ def test_init_interactive_specific_guideline_selection(runner: CliRunner):
                 f"Failed to read or parse {config_path}: {e}\nContent:\n{config_content}"
             )
 
-        assert (
-            "guidelines" in config_data
-        ), f"Config missing [guidelines] section in:\n{config_content}"
-        assert "active" in config_data.get(
-            "guidelines", {}
-        ), f"Config missing [guidelines].active key in:\n{config_content}"
+        assert "guidelines" in config_data, (
+            f"Config missing [guidelines] section in:\n{config_content}"
+        )
+        assert "active" in config_data.get("guidelines", {}), (
+            f"Config missing [guidelines].active key in:\n{config_content}"
+        )
         # Check for the specific selected guidelines, order preserved
         assert config_data["guidelines"]["active"] == [
             "coding",
@@ -142,9 +142,9 @@ def test_init_interactive_rerun_keep_selection(runner: CliRunner):
         print("STDOUT (interactive rerun keep):", result2.stdout)
         print("STDERR (interactive rerun keep):", result2.stderr)
 
-        assert (
-            result2.exit_code == 0
-        ), f"CLI Error on re-run: {result2.stderr or result2.stdout}"
+        assert result2.exit_code == 0, (
+            f"CLI Error on re-run: {result2.stderr or result2.stdout}"
+        )
         assert result2.stderr == ""
         assert "PM database already exists" in result2.stdout  # Check re-run message
         assert (
@@ -160,9 +160,9 @@ def test_init_interactive_rerun_keep_selection(runner: CliRunner):
                 f"Failed to read or parse config on re-run: {e}\nContent:\n{config_content2}"
             )
 
-        assert (
-            config_data2["guidelines"]["active"] == initial_guidelines
-        ), f"Guidelines changed unexpectedly on re-run:\n{config_content2}"
+        assert config_data2["guidelines"]["active"] == initial_guidelines, (
+            f"Guidelines changed unexpectedly on re-run:\n{config_content2}"
+        )
 
 
 def test_init_interactive_rerun_change_selection(runner: CliRunner):
@@ -190,9 +190,9 @@ def test_init_interactive_rerun_change_selection(runner: CliRunner):
         print("STDOUT (interactive rerun change):", result2.stdout)
         print("STDERR (interactive rerun change):", result2.stderr)
 
-        assert (
-            result2.exit_code == 0
-        ), f"CLI Error on re-run: {result2.stderr or result2.stdout}"
+        assert result2.exit_code == 0, (
+            f"CLI Error on re-run: {result2.stderr or result2.stdout}"
+        )
         assert result2.stderr == ""
         assert "PM database already exists" in result2.stdout  # Check re-run message
         # Check change message
@@ -208,9 +208,9 @@ def test_init_interactive_rerun_change_selection(runner: CliRunner):
                 f"Failed to read or parse config on re-run: {e}\nContent:\n{config_content2}"
             )
 
-        assert (
-            config_data2["guidelines"]["active"] == new_guidelines
-        ), f"Guidelines not updated correctly on re-run:\n{config_content2}"
+        assert config_data2["guidelines"]["active"] == new_guidelines, (
+            f"Guidelines not updated correctly on re-run:\n{config_content2}"
+        )
 
 
 def test_init_non_interactive_first_run_guidelines(runner: CliRunner):
@@ -239,9 +239,9 @@ def test_init_non_interactive_first_run_guidelines(runner: CliRunner):
                 f"Failed to read or parse {config_path}: {e}\nContent:\n{config_content}"
             )
 
-        assert config_data.get("guidelines", {}).get("active") == [
-            "pm"
-        ], f"Default guideline 'pm' not set correctly in:\n{config_content}"
+        assert config_data.get("guidelines", {}).get("active") == ["pm"], (
+            f"Default guideline 'pm' not set correctly in:\n{config_content}"
+        )
 
 
 def test_init_non_interactive_rerun_guidelines(runner: CliRunner):
@@ -270,9 +270,9 @@ def test_init_non_interactive_rerun_guidelines(runner: CliRunner):
         print("STDOUT (non-interactive rerun guidelines):", result2.stdout)
         print("STDERR (non-interactive rerun guidelines):", result2.stderr)
 
-        assert (
-            result2.exit_code == 0
-        ), f"CLI Error on re-run: {result2.stderr or result2.stdout}"
+        assert result2.exit_code == 0, (
+            f"CLI Error on re-run: {result2.stderr or result2.stdout}"
+        )
         assert result2.stderr == ""
         assert "PM database already exists" in result2.stdout  # Check re-run message
         # Check the specific message for skipping config
@@ -291,6 +291,6 @@ def test_init_non_interactive_rerun_guidelines(runner: CliRunner):
                 f"Failed to read or parse config on re-run: {e}\nContent:\n{config_content2}"
             )
 
-        assert (
-            config_data2["guidelines"]["active"] == initial_guidelines
-        ), f"Guidelines changed unexpectedly on non-interactive re-run:\n{config_content2}"
+        assert config_data2["guidelines"]["active"] == initial_guidelines, (
+            f"Guidelines changed unexpectedly on non-interactive re-run:\n{config_content2}"
+        )
