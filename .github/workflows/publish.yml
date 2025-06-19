@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         env:
           UV_SYSTEM_PYTHON: 1 # Install to system Python
-        run: uv sync --locked --extras publish
+        run: uv sync --locked --extra publish
 
       # Build package using uv
       - name: Build package
