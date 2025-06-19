@@ -1,14 +1,15 @@
 # 1. Base Image
-FROM python:3.13-alpine@sha256:18159b2be11db91f84b8f8f655cd860f805dbd9e49a583ddaac8ab39bf4fe1a7 AS builder
+FROM python:3.13-alpine@sha256:9b4929a72599b6c6389ece4ecbf415fd1355129f22bb92bb137eea098f05e975 AS builder
 
 # 2. Working Directory
 WORKDIR /app
 
 # 3. Copy Files
 # Copy project definition and license first for better caching
-COPY pyproject.toml LICENSE ./
+COPY pyproject.toml LICENSE README.md ./
+
 # Copy the source code
-COPY pm ./pm
+COPY src ./pm
 
 # 4. Install Dependencies
 # Install the package and its dependencies
