@@ -9,7 +9,7 @@ WORKDIR /app
 COPY pyproject.toml LICENSE README.md ./
 
 # Copy the source code
-COPY src ./pm
+COPY src ./src
 
 # 4. Install Dependencies
 # Install the package and its dependencies
