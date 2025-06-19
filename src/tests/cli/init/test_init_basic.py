@@ -131,7 +131,7 @@ def test_init_success_interactive_confirm(runner: CliRunner, tmp_path: Path):
     os.chdir(tmp_path)
     try:
         # Provide 'y' and newline as input
-        result = runner.invoke(cli, ["init"], input="y\n", catch_exceptions=False)
+        result = runner.invoke(cli, ["init"], input="y\n\n", catch_exceptions=False)
 
         print("STDOUT (interactive y):", result.stdout)
         print("STDERR (interactive y):", result.stderr)
@@ -161,7 +161,7 @@ def test_init_success_interactive_default(runner: CliRunner, tmp_path: Path):
     os.chdir(tmp_path)
     try:
         # Provide just newline as input (defaults to 'Y')
-        result = runner.invoke(cli, ["init"], input="\n", catch_exceptions=False)
+        result = runner.invoke(cli, ["init"], input="\n\n", catch_exceptions=False)
 
         print("STDOUT (interactive default):", result.stdout)
         print("STDERR (interactive default):", result.stderr)
