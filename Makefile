@@ -2,6 +2,9 @@
 
 .PHONY: install-man test-man clean test lint check setup help
 
+# Default Python version, can be overridden from the command line
+PYTHON_VERSION ?= 3.13
+
 # Default target
 all: install-man
 
@@ -24,15 +27,15 @@ clean:
 	@echo "Man page removed."
 
 # Run all Python tests using uv
-test:
-	@echo "Running Python tests..."
-	@uv run pytest
+test: setup
+	@echo "Running Python tests with Python $(PYTHON_VERSION)..."
+	@uv run -p $(PYTHON_VERSION) pytest
 	@echo "Tests completed."
 
 # Run Ruff linter using uv
-lint:
-	@echo "Running Ruff linter..."
-	@uv run ruff check .
+lint: setup
+	@echo "Running Ruff linter with Python $(PYTHON_VERSION)..."
+	@uv run -p $(PYTHON_VERSION) ruff check .
 	@echo "Linting completed."
 
 # Run linters and tests
@@ -40,8 +43,8 @@ check: lint test
 
 # Set up development environment with uv
 setup:
-	@echo "Setting up development environment with uv..."
-	@uv sync --extra dev
+	@echo "Setting up development environment for Python $(PYTHON_VERSION)..."
+	@uv sync -p $(PYTHON_VERSION) --extra dev
 	@$(MAKE) install-man
 	@echo "Development environment setup complete. Use 'uv run ...' to execute commands."
 
